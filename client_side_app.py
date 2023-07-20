@@ -47,4 +47,4 @@ def terminate_processes(signalNumber, frame):
 
 signal.signal(signal.SIGINT, terminate_processes)
 
-# Comment
+# A new comment added here
