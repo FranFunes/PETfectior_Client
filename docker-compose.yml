@@ -1,0 +1,35 @@
+version: "3.8"
+services:
+  vpn:
+    container_name: vpn
+    image: dperson/openvpn-client:latest
+    cap_add:
+      - net_admin
+    restart: unless-stopped
+    volumes:
+      - ./vpn-config:/vpn
+    security_opt:
+      - label:disable
+    ports:
+      - "1194:1194/udp"
+      - "8000:8000"
+      - "11113:11113"
+    entrypoint: ["/sbin/tini", "--", "/usr/bin/openvpn.sh", "-d"]
+    
+  app:
+    build: .
+    container_name: client-app
+    depends_on:
+      - vpn
+    network_mode: service:vpn
+    cap_add:
+      - SYS_ADMIN
+      - DAC_READ_SEARCH
+    volumes:
+      - app-data:/code/data
+      - ./logs:/code/logs
+    env_file:
+      - .env
+
+volumes:
+  app-data:
