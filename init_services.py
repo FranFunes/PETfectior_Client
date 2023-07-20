@@ -125,3 +125,5 @@ if os.environ["SERVER_INTERACTION"] == "True":
     shared_path_thread = threading.Thread(target = get_shared_path, 
                                                 args = (server_url,), name = 'get_shared_path')        
     shared_path_thread.start()
+
+# This comment is added in the checksum - conflicting
