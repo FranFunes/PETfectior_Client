@@ -1,0 +1,9 @@
+PETfectiorClient es una aplicación diseñada para el intercambio de objetos DICOM entre la red de un cliente y un servidor de procesamiento remoto. Su objetivo es simplificar el flujo de trabajo tanto del lado del usuario como del servidor para aquellos productos comerciales que ofrecen el procesamiento de imágenes médicas en formato SAS (Software As a Service). Este flujo de trabajo requiere que los datos de imagen sean enviados a un servidor remoto, ajeno a la institución del usuario, a través de Internet. Esto habitualmente requiere que el usuario exporte las imágenes a archivos en formato DICOM, las anonimice manualmente, y las suba al servidor a través de una interfaz web convencional. PETfectiorClient provee un flujo de trabajo automatizado para este proceso. El usuario simplemente envía las imágenes a un nodo DICOM que expone PETfectiorClient y espera que las imágenes procesadas lleguen de vuelta a su estación de trabajo. El resto del proceso, que es transparente al usuario, involucra:
+- Recibir las imágenes DICOM y organizarlas en series completas;
+- Registrar los datos de red necesarios para devolver las imágenes procesadas;
+- Extraer los datos de pixel y los metadatos necesarios para el procesamiento, eliminando los datos identificatorios del cliente;
+- Comprimir los datos y enviarlos a través de internet, esperando la respuesta del servidor
+- Una vez recibida la respuesta, extraer los valores de pixeles de la imagen procesada, identificar a qué imagen corresponde y reconstruir los objetos DICOM correspondientes a ese paciente y estudio.
+- Enviar por DICOM las imágenes procesadas a la estación de destino.
+
+La aplicación provee una interfaz web que permite al usuario observar y administrar el flujo de trabajo.
