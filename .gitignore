@@ -3,3 +3,4 @@ envClientSide
 .env
 **/__pycache__
 app_pkg/.DS_Store
+data
