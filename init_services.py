@@ -126,9 +126,4 @@ if os.environ["SERVER_INTERACTION"] == "True":
                                                 args = (server_url,), name = 'get_shared_path')        
     shared_path_thread.start()
 
-<<<<<<< HEAD
-
-# And another comment here
-=======
 # This comment is added in the checksum - conflicting
->>>>>>> checksum
