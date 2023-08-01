@@ -78,6 +78,7 @@ except Exception as e:
             json.dump({'ae_title':'PETFECTIOR',
                        'mirror_mode': False}, 
                        jsonfile, indent = 2)
+        ae_title = 'PETFECTIOR'
     except:
         logger.error("failed when writing local config file. ")
         logger.error(repr(e))
