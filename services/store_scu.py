@@ -3,9 +3,7 @@ from pynetdicom.sop_class import PositronEmissionTomographyImageStorage
 from pydicom import dcmread
 from pydicom.dataset import Dataset
 import os, threading, logging, json
-from logging.handlers import RotatingFileHandler
 from time import sleep
-from shutil import rmtree
 from typing import List, Union, Callable
 from pathlib import Path
 

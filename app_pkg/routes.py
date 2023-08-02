@@ -7,7 +7,6 @@ from datetime import datetime
 
 logger = logging.getLogger('__main__')
 
-
 @application.route('/')
 @application.route('/index')
 @application.route('/tasks')

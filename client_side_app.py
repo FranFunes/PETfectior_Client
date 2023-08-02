@@ -1,8 +1,12 @@
 import signal, logging, os
-
-from app_pkg import application
+from app_pkg import application, db
+from app_pkg.db_models import AppLog
 from init_services import services
 from shutil import rmtree
+
+@application.shell_context_processor
+def make_shell_context():
+    return {'db': db, 'AppLog': AppLog}
 
 logger = logging.getLogger('__main__')
 
@@ -46,5 +50,3 @@ def terminate_processes(signalNumber, frame):
     exit(1)
 
 signal.signal(signal.SIGINT, terminate_processes)
-
-# A new comment added here
