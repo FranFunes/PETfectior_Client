@@ -2,6 +2,10 @@ envClientSide
 .DS_Store
 .env
 **/__pycache__
-app_pkg/.DS_Store
 data
 vpn-config
+SeriesToUnpack
+unpackedSeries
+dcm_templates
+.DS_Store
+app.db

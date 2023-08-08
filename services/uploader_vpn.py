@@ -109,7 +109,11 @@ class SeriesUploader():
                     # If upload was succesful, delete file and send a message to the server                    
                     logger.info(f"Upload successful for task {task_id}")
                     self.task_manager.manage_task(action = 'update', task_id = task_id, task_data = {'status': 'upload ok'})  
-                    self.send_message(basename, recon_settings)
+                    
+                    if self.send_message(basename, recon_settings):
+                        self.task_manager.manage_task(action = 'update', task_id = task_id, task_data = {'status': 'processing'})  
+                    else:
+                        self.task_manager.manage_task(action = 'update', task_id = task_id, task_data = {'status': 'commit to server failed'})  
                     os.remove(filename)
             else:
                 sleep(1)
@@ -137,9 +141,19 @@ class SeriesUploader():
                 'client_port':os.environ["FLASK_RUN_PORT"],  
                 'client_id': client_id,
                 'metadata': self.parse_metadata(metadata)
-            }
-                                
-            post_rsp = requests.post('http://' + os.environ['SERVER_URL'] + '/processing', json = data)
+            }                                
+            
+            try:
+                post_rsp = requests.post('http://' + os.environ['SERVER_URL'] + '/processing', json = data)
+                assert post_rsp.json()['response'] == 'Processing'
+                logger.info(f"post to /processing on succesful.")  
+                return True
+            except Exception as e:
+                logger.error(f"post to /processing on server failed.")                
+                logger.error(repr(e))
+                return False
+                
+            
 
     def parse_metadata(self, ss: Dataset) -> dict:
 
