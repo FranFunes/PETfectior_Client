@@ -182,9 +182,13 @@ class SeriesUnpacker():
         for idx, ds in enumerate(templates):
             ds.PixelData = v[idx].tobytes()
             ds.RescaleSlope = slopes[idx]
+        
+        # Get original SeriesDescription from database
+        base = self.task_manager.data.loc[task_id, 'description']
 
-        # Use .npy file as SeriesDescription
-        series_description = os.path.splitext(os.path.basename(npy_file_path))[0]
+        # Use .npy file as sufix for the SeriesDescription        
+        sufix = '_'.join(os.path.splitext(os.path.basename(npy_file_path))[0].split('_')[1:])
+        series_description = base + '_' + sufix
         series_uid = generate_uid()
         series_number = 1101 + idx
         timenow = datetime.now().strftime('%H%M%S')
