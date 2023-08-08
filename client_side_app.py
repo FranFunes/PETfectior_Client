@@ -4,10 +4,6 @@ from app_pkg.db_models import AppLog
 from init_services import services
 from shutil import rmtree
 
-@application.shell_context_processor
-def make_shell_context():
-    return {'db': db, 'AppLog': AppLog}
-
 logger = logging.getLogger('__main__')
 
 # Handle sigterm

@@ -177,6 +177,7 @@ class StoreSCP(AE):
 
 
     def restart(self, ae_title):
+        
         try:
             self.stop()
         except Exception as e: 

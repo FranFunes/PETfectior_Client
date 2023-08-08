@@ -45,7 +45,7 @@ class StoreSCU(AE):
         # Add requested contexts
         self.add_requested_context(PositronEmissionTomographyImageStorage)
 
-    def store_datasets(self, device: dict, datasets: List[Union[Dataset, str, Path]]) -> List[dict]:
+    def send_datasets(self, device: dict, datasets: List[Union[Dataset, str, Path]]) -> List[dict]:
         
         """
 
@@ -119,11 +119,10 @@ class StoreSCU(AE):
                         logger.error(repr(e))
                         self.task_manager.manage_task(action = 'update', task_id = task_id, task_data = {'status': "send dicoms failed"})    
                     else:                        
-                        # Send datasets to each destination
-                        
+                        # Send datasets to each destination                        
                         msg = []
                         for name, device in dest.items():
-                            succesful = self.store_datasets(device, datasets)
+                            succesful = self.send_datasets(device, datasets)
                             msg.append(f"{name}: {sum(succesful)}/{len(datasets)}")
                         status = '<br>'.join(msg)
                         self.task_manager.manage_task(action = 'update', task_id = task_id, task_data = {'status': status})    
