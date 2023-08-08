@@ -6,3 +6,6 @@ app_pkg/.DS_Store
 data
 app.db
 vpn-config
+SeriesToUnpack
+unpackedSeries
+dcm_templates
