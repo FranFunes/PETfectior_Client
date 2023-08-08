@@ -1,15 +1,15 @@
 import queue, logging, json, os, requests, threading
 
+from sqlalchemy.exc import OperationalError
+
+from app_pkg import application, db
+from app_pkg.db_models import Device
+
 from services.loggers import app_logger
-from services.task_manager import TaskManager
 from services.store_scp import StoreSCP
-from services.compilator import Compilator
-from services.packer import SeriesPacker
-from services.uploader_vpn import SeriesUploader
-from services.downloader_queue import SeriesDownloader
-from services.unpacker import SeriesUnpacker
-from services.store_scu import StoreSCU
-from services.server_monitor import ServerMonitor
+from services.db_store_handler import db_store_handler
+
+from services.task_manager import TaskManager
 
 # Setup logging
 app_logger()
@@ -17,95 +17,49 @@ logger = logging.getLogger('__main__')
 
 # Initialize queues for different processes
 queue_scp = queue.Queue()
-packing_queue = queue.Queue()
-upload_queue = queue.Queue()
 download_queue = queue.Queue()
-unpacking_queue = queue.Queue()
-queue_scu = queue.Queue()
 
 # Task Manager
 task_manager = TaskManager()
 
 # DICOM Store SCP    
-store_scp = StoreSCP(scp_queue = queue_scp)
+store_scp = StoreSCP(scp_queue = queue_scp, c_store_handler=db_store_handler)
 
-# Compilator       
 server_url = os.environ["SERVER_URL"]
-compilator = Compilator(queue_scp, packing_queue, task_manager, server_url)
-
-# Packer
-packer = SeriesPacker(packing_queue, upload_queue, task_manager)
-
-# Uploader    
-mount_point = os.environ["SHARED_MOUNT_POINT"]
-uploader = SeriesUploader(upload_queue, task_manager, mount_point)
-
-# Downloader
-downloader = SeriesDownloader(download_queue, unpacking_queue, task_manager, mount_point)
-
-# Unpacker
-unpacker = SeriesUnpacker(unpacking_queue, queue_scu, task_manager)
-
-# Store SCU
-store_scu = StoreSCU(queue_scu, task_manager)
-
-# Server Monitor
-monitor =  ServerMonitor(server_url, 'check_ping', 1)
 
 # Initialize services
-services = {'Dicom Listener': store_scp, 
-            'Compilator': compilator, 
-            'Packer': packer, 
-            'Uploader': uploader,
-            'Downloader': downloader,
-            'Unpacker': unpacker,
-            'Dicom Send': store_scu,
-            'Server Monitor': monitor}
+services = {'Dicom Listener': store_scp}
 
-# Initialize local config file
-try:
-    with open(os.path.join("data", "local.json"), "r") as jsonfile:         
-        config = json.load(jsonfile)
-    ae_title = config['ae_title']
-    mirror_mode = config['mirror_mode'] 
+# Get SCP AET and port from database or initialize it if not available
+aet = os.environ.get('DEFAULT_STORE_SCP_AET','PETFECTIOR')
+port = int(os.environ.get('DEFAULT_STORE_SCP_PORT', 11113))
 
-except Exception as e:
-    logger.error("failed when reading local config file. ")
-    logger.error(repr(e))
-    logger.error("trying to start store scp with default configuration. ")
+with application.app_context():
     try:
-        with open(os.path.join("data", "local.json"), "w") as jsonfile:      
-            json.dump({'ae_title':'PETFECTIOR',
-                       'mirror_mode': False}, 
-                       jsonfile, indent = 2)
-        ae_title = 'PETFECTIOR'
-    except:
-        logger.error("failed when writing local config file. ")
-        logger.error(repr(e))
-        raise IOError
-
-# Initialize DICOM peers file
-try:
-    with open(os.path.join("data", "peers.json"), "r") as jsonfile:         
-        pass
-except Exception as e:
-    logger.error("failed when reading peers file. ")
-    logger.error(repr(e))
-    logger.error("peers file will be initialized. ")
-    try:
-        with open(os.path.join("data", "peers.json"), "w") as jsonfile:      
-            json.dump({}, jsonfile, indent = 2)
-    except:
-        logger.error("failed when writing peers file. ")
-        logger.error(repr(e))
-        raise IOError
-
+        d = Device.query.get('__local_store_SCP__')                
+        assert d
+        logger.info('local device found in the database')
+        aet = d.ae_title
+        port = d.port
+    except AssertionError:        
+        logger.info('database is available but local device not found.')
+        logger.info('creating local device with default settings.')
+        d = Device(name = '__local_store_SCP__',
+                ae_title = aet,
+                address = '0.0.0.0',
+                port = port)
+        db.session.add(d)
+        db.session.commit()
+    except OperationalError as e:       
+        logger.info('database is not available.')
+        logger.info({repr(e)})
+        logger.info('creating local device with default settings.') 
 
 # Start services
 for name, service in services.items():
     try:
         if name == 'Dicom Listener':
-            service.start(ae_title)
+            service.start(aet, port)
         else:
             service.start()
     except Exception as e:
@@ -114,7 +68,6 @@ for name, service in services.items():
 
 # Get the SHARED_PATH variable from the server, if available (in a separate thread):
 def get_shared_path(server_url):
-
     try:
         get_rsp = requests.get('http://' + server_url + '/get_shared_path')    
         os.environ["SHARED_PATH"] = get_rsp.json()['path']

@@ -1,9 +1,10 @@
 import os, logging
+from queue import Queue
 from datetime import datetime
 from pynetdicom.events import Event
 from pydicom.dataset import Dataset
 from app_pkg import application, db
-from app_pkg.db_models import Patient, Study, Series, Instance, Device, BasicFilter
+from app_pkg.db_models import Patient, Study, Series, Instance
 
 logger = logging.getLogger('__main__')
 
@@ -99,27 +100,89 @@ def db_create_instance(ds: Dataset, filename: str) -> Instance:
     return instance
 
 # Create a handler for the store request event
-def store_handler(event: Event, root_dir:str = 'incoming') -> int:
+def db_store_handler(event: Event, output_queue:Queue, root_dir:str) -> int:
     
-    try:
-        ds = event.dataset
-        ds.file_meta = event.file_meta    
-        os.makedirs(root_dir, exist_ok = True)
-        filepath = os.path.join(root_dir, ds.SOPInstanceUID)
-        ds.save_as(filepath, write_like_original = False)
-        # Store in the database
-        try:
-            db_create_instance(ds, filepath)
-        except ValueError:
-            logger.error("Can't write instance to database: instance already exists")
-            return 0x0117
+    ds = event.dataset
+    ds.file_meta = event.file_meta    
 
+    # Check if dataset has all mandatory information
+    new_ds = Dataset()
+    try:
+        # Append mandatory information to the new dataset
+        new_ds.StudyInstanceUID = ds.StudyInstanceUID
+        new_ds.SeriesInstanceUID = ds.SeriesInstanceUID
+        new_ds.SOPInstanceUID = ds.SOPInstanceUID
+        new_ds.ImagePositionPatient = ds.ImagePositionPatient
+    except AttributeError:
+        # Return error code and log failure information
+        logger.debug("New dataset could not be processed. Missing DICOM information?")
+        return 0xA700 
+    
+    # Try to store dataset in disk and database
+    os.makedirs(root_dir, exist_ok = True)
+    # Construct an unique fname for each dataset received
+    timestamp = datetime.now()
+    filepath = os.path.join(root_dir, timestamp.strftime('%Y%m%d%H%m%S%f'))
+    try:
+        ds.save_as(filepath, write_like_original = False)
+    except FileNotFoundError as e:        
+        logger.debug("New dataset could not be saved - No such file or directory")
+        logger.debug(repr(e))
+        return 0xA700
     except Exception as e:
-        logger.error(f"Can't write instance to storage: {repr(e)}")
+        logger.debug("New dataset could not be saved - unknown error")
+        logger.debug(repr(e))
         return 0xA700
 
-    else:
-        # Return a 'Success' status
-        logger.debug('instance stored successfully.')
-        return 0x0000
+    # Store in the database
+    try:
+        db_create_instance(ds, filepath)
+    except ValueError:
+        logger.error("Can't write instance to database: instance already exists")
+        # Try to delete written file from disk
+        try:
+            os.remove(filepath)
+        except Exception as e:
+            logger.error(f"Can't delete file {filepath} from disk: {repr(e)}")
+        return 0xA700
+
+    # Append non mandatory information to new_ds
+    fields = ['NumberOfSlices','PatientName','StudyDate','SeriesDescription']
+    for field in fields:
+        try:
+            new_ds[field] = ds[field]
+        except:
+            logger.info(f"{field} not available") 
+    
+    # Send recon information in other dataset
+    recon_ds = Dataset()            
+    fields = ['PixelSpacing', 
+                'ReconstructionMethod',
+                'Manufacturer',
+                'ManufacturerModelName',
+                'SliceThickness',
+                'ConvolutionKernel',
+                'PatientWeight',
+                'ActualFrameDuration',
+                'RadiopharmaceuticalInformationSequence',
+                0x000910B3,
+                0x000910B2,
+                0x000910BA,
+                0x000910BB,
+                0x000910DC]
+    for field in fields:
+        try:
+            recon_ds[field] = ds[field]
+        except:
+            logger.debug(f"{field} not available")
+    
+    # Put relevant information in processing queue
+    element = {'dataset':new_ds, 'recon_ds':recon_ds,
+               'address': event.assoc.requestor.info['address'],
+               'ae_title': event.assoc.requestor.info['ae_title']}        
+    output_queue.put(element)
+
+    # Return a 'Success' status
+    logger.debug('instance stored successfully.')
+    return 0x0000
     
