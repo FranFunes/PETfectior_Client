@@ -83,6 +83,8 @@ class Task(db.Model):
     source_aet = db.Column(db.String(16))
     started = db.Column(db.DateTime, default=datetime.utcnow)
     updated = db.Column(db.DateTime)
+    current_step = db.Column(db.String(32))
+    current_step_filename = db.Column(db.Text(), index=True)
 
     # One-to-many relationships (as child)
     series = db.Column(db.String(64), db.ForeignKey('series.SeriesInstanceUID'))    

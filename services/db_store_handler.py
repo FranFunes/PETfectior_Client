@@ -52,7 +52,6 @@ def db_create_series(ds: Dataset) -> Series:
     date = datetime.strptime(ds.SeriesDate + ds.SeriesTime[:6], '%Y%m%d%H%M%S')
     description = ds.SeriesDescription
     mod = ds.Modality
-    number = ds.SeriesNumber
     with application.app_context():
         # Raise error if series already exists
         series = Series.query.get(uid)
@@ -65,7 +64,6 @@ def db_create_series(ds: Dataset) -> Series:
         series = Series(SeriesInstanceUID = uid, 
                         SeriesDate = date,
                         SeriesDescription = description, 
-                        SeriesNumber = number,
                         Modality = mod, 
                         patient = patient,
                         study = study)
@@ -119,10 +117,12 @@ def db_store_handler(event: Event, output_queue:Queue, root_dir:str) -> int:
         return 0xA700 
     
     # Try to store dataset in disk and database
-    os.makedirs(root_dir, exist_ok = True)
+    filedir = os.path.join(root_dir, 
+                           ds.StudyInstanceUID,
+                           ds.SeriesInstanceUID)
+    os.makedirs(filedir, exist_ok = True)
     # Construct an unique fname for each dataset received
-    timestamp = datetime.now()
-    filepath = os.path.join(root_dir, timestamp.strftime('%Y%m%d%H%m%S%f'))
+    filepath = os.path.join(filedir, ds.SOPInstanceUID)
     try:
         ds.save_as(filepath, write_like_original = False)
     except FileNotFoundError as e:        

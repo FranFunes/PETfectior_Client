@@ -5,7 +5,7 @@ from sqlalchemy.exc import OperationalError
 from app_pkg import application, db
 from app_pkg.db_models import Device
 
-from services.loggers import app_logger
+from services.loggers import app_logger, dicom_logger
 from services.store_scp import StoreSCP
 from services.db_store_handler import db_store_handler
 
@@ -13,6 +13,7 @@ from services.task_manager import TaskManager
 
 # Setup logging
 app_logger()
+dicom_logger()
 logger = logging.getLogger('__main__')
 
 # Initialize queues for different processes

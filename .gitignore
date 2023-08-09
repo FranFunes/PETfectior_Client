@@ -6,4 +6,3 @@ app.db
 SeriesToUnpack
 unpackedSeries
 dcm_templates
-old_handler.py

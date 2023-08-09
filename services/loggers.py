@@ -80,6 +80,7 @@ def app_logger():
     bkp_handler.setLevel(logging.DEBUG)
     formatter = CapitalizeFormatter('%(asctime)s;%(levelname)s;%(module)s;%(funcName)s;%(message)s')
     bkp_handler.setFormatter(formatter)
+    app_logger.addHandler(bkp_handler)
 
     db_handler = LogDBHandler(bkp_handler)
     app_logger.addHandler(db_handler)
