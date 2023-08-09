@@ -5,6 +5,9 @@ import numpy as np
 from services.helper_funcs import delete_series
 from pydicom import Dataset
 
+from app_pkg import application
+from app_pkg.db_models import Device, Task, Series
+
 # Configure logging
 logger = logging.getLogger('__main__')
 
@@ -22,11 +25,10 @@ class Compilator():
     
     """
 
-    def __init__(self, input_queue, output_queue, task_manager, server_url, series_timeout = 30, 
+    def __init__(self, input_queue, task_manager, server_url, series_timeout = 30, 
                  min_instances_in_series = 47, slice_gap_tolerance = 0.025):
               
         self.input_queue = input_queue      
-        self.output_queue = output_queue
         self.task_manager = task_manager
         self.server_url = server_url
         self.series_timeout = series_timeout
@@ -89,22 +91,26 @@ class Compilator():
         """
         
             The main processing function that is called when thread is started.
-            · Reads elements from the input queue.
-            · Instances are grouped by its SeriesInstanceUID and source device.
-            · If the instance was already received for the series, it is assigned to a new
-              occurrence of the same series (to handle the case when user sends the same series multiple times).
+            · Reads elements from the input queue, appends the SOPInstanceUID to a list
+            of know SOPs and assigns it to a new or existent Task in the database, with the 
+            following criteria:
+                - If the instance was not in the list, and there is an existent task associated
+                with its SeriesInstanceUID and with the same source device, append the instance
+                to this Task.
+                - Else, create a new Task and append the instance to it.
             
-            When there are no elements in the queue, sends each series to an independent function that checks it for
-            completeness. Then:
-            · If the series is complete, it is put in the output queue.
-            · If not, checks if the waiting period for this series has expired and deletes it in that case. Else, waits for
-              more instances.                
+            When there are no elements in the input queue, each Task is sent to an independent
+            function that checks it for completeness. Then:
+            · If the series is complete, the output data is written to a file and passed to the
+             task_manager, and the Task state is updated in the database.
+            · If not, checks if the waiting period for this Task has expired and signals it in
+            the database it in that case. Else, waits for more instances.               
 
         """
         # Initialize placeholders for received data       
-        series = {} 
+        tasks = {} 
 
-        # Inactive timer to know if series status should be checked or not.
+        # Inactive timer to know if task status should be checked or not.
         inactive_time = 0        
 
         while not self.stop_event.is_set() or not self.input_queue.empty():
@@ -126,6 +132,7 @@ class Compilator():
                 ae_title = queue_element['ae_title']
 
                 # Check if there exists a known device with this ip address.
+                source = Device.query.filter_by(address = ip).first()
                 with open(os.path.join("data",'peers.json')) as jsonfile:
                     peers = json.load(jsonfile)
                 try:

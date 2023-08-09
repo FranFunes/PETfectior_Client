@@ -18,7 +18,7 @@ def terminate_processes(signalNumber, frame):
             logger.error(repr(e))
     
     # Clear temporary folders
-    to_clear = ['incoming','dcm_templates','packed','SeriesToUnpack','unpackedSeries']
+    to_clear = ['dcm_templates','packed','SeriesToUnpack','unpackedSeries']
     for folder in to_clear:
         try:
             logger.info(f"removing {folder}")  

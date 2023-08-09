@@ -8,6 +8,7 @@ from app_pkg.db_models import Device
 from services.loggers import app_logger, dicom_logger
 from services.store_scp import StoreSCP
 from services.db_store_handler import db_store_handler
+from services.compilator import Compilator
 
 from services.task_manager import TaskManager
 
@@ -26,7 +27,9 @@ task_manager = TaskManager()
 # DICOM Store SCP    
 store_scp = StoreSCP(scp_queue = queue_scp, c_store_handler=db_store_handler)
 
+# Compilator       
 server_url = os.environ["SERVER_URL"]
+compilator = Compilator(queue_scp, task_manager, server_url)
 
 # Initialize services
 services = {'Dicom Listener': store_scp}
