@@ -1,13 +1,24 @@
-target_series_uid = '1.2.840.113619.2.290.3.1460327308.171.1691409638.99'
-target_instance_uid = '1.2.840.10008.5.1.4.1.1.128'
+target_series_uid = '1.2.840.113619.2.290.3.1460327308.853.1690804879.484'
+target_instance_uid = '1.2.840.113619.2.290.1460327308.1691005072.793312'
+target_source_addr = '10.87.140.41'
 
 tasks_query = (
+    Task.query.
+    filter_by(source_addr=target_source_addr).
+    join(Series).
+    filter_by(SeriesInstanceUID = target_series_uid).
+    outerjoin(task_instance).
+    outerjoin(Instance).
+    filter(Instance.SOPInstanceUID != target_instance_uid)
+)
+"""
     Task.query
     .join(Series)
-    .outerjoin(Instance, Instance.SeriesInstanceUID == Series.SeriesInstanceUID)
+    .outerjoin(Instance)
     .filter(Series.SeriesInstanceUID == target_series_uid)
-    .filter(Instance.SOPInstanceUID != target_instance_uid)
+    .filter(Task.source_addr == target_source_addr)
     .all()
 )
+"""
 
-print('done')
+print(tasks_query)

@@ -6,6 +6,10 @@ task_destination = db.Table('task_destination',
                             db.Column('task_id', db.String(18), db.ForeignKey('task.id')),
                             db.Column('device_name', db.String(64), db.ForeignKey('device.name')))
 
+task_instance = db.Table('task_instance',
+                            db.Column('task_id', db.String(18), db.ForeignKey('task.id')),
+                            db.Column('sop_instance_uid', db.String(64), db.ForeignKey('instance.SOPInstanceUID')))
+
 class Patient(db.Model):
     PatientID = db.Column(db.String(64), primary_key=True)
     PatientName = db.Column(db.String(64), index=True)
@@ -65,7 +69,7 @@ class Instance(db.Model):
     SeriesInstanceUID = db.Column(db.String(64), db.ForeignKey('series.SeriesInstanceUID'))     
 
     def __repr__(self):
-        return f'<Instance {self.SOPClassUID} from {self.PatientID} stored at {self.filename}>'
+        return f'<Instance {self.SOPInstanceUID} from {self.PatientID} stored at {self.filename}>'
     
 class Device(db.Model):
 
@@ -73,6 +77,8 @@ class Device(db.Model):
     ae_title = db.Column(db.String(64), index=True)
     address = db.Column(db.String(16), index=True)
     port = db.Column(db.Integer(), index=True)
+    is_destination = db.Column(db.Boolean, default=False)
+    created_by_user = db.Column(db.Boolean, default=False)
 
     def __repr__(self):
         return f'<Device {self.name}: {self.ae_title}@{self.address}>'
@@ -84,13 +90,16 @@ class Task(db.Model):
     started = db.Column(db.DateTime, default=datetime.utcnow)
     updated = db.Column(db.DateTime)
     current_step = db.Column(db.String(32))
-    current_step_filename = db.Column(db.Text(), index=True)
+    current_step_filename = db.Column(db.Text())
+    status_msg = db.Column(db.Text())
+    expected_imgs = db.Column(db.Integer)
 
     # One-to-many relationships (as child)
     series = db.Column(db.String(64), db.ForeignKey('series.SeriesInstanceUID'))    
 
     # Many-to-many relationships (as parent)
-    destinations = db.relationship('Device', secondary=task_destination, backref='tasks')    
+    destinations = db.relationship('Device', secondary=task_destination, backref='tasks')  
+    instances =  db.relationship('Instance', secondary=task_instance, backref='tasks')  
 
     def __repr__(self):
         return f'<Task {self.id}>'
@@ -105,3 +114,17 @@ class AppLog(db.Model):
 
     def __repr__(self):
         return f"{self.timestamp.strftime('%Y/%m/%d %H:%M:%S')} | {self.level} | {self.module} | {self.function} | {self.msg}"
+    
+
+def delete_db(tables = [], all = False):
+
+    if not tables and all:
+        tables = [Patient, Study, Series, Instance, Task, Device, AppLog]
+    
+    for table in tables:
+        for instance in table.query.all():
+            db.session.delete(instance)
+    
+    db.session.commit()
+
+    

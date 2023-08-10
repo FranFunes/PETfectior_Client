@@ -9,13 +9,14 @@ logger = logging.getLogger('__main__')
 # Handle sigterm
 def terminate_processes(signalNumber, frame):
     # Stop threads
-    logger.error(f"stopping processes...")
+    logger.info(f"stopping processes...")
     for name, service in services.items():
         try:
             service.stop()
         except Exception as e:
             logger.error(f"failed when stopping {name}")            
             logger.error(repr(e))
+    """
     
     # Clear temporary folders
     to_clear = ['dcm_templates','packed','SeriesToUnpack','unpackedSeries']
@@ -42,7 +43,7 @@ def terminate_processes(signalNumber, frame):
     except Exception as e:
         logger.error(f"error while trying to clear shared folder {os.path.join(mount_point,'processed')}")                  
         logger.error(repr(e))                  
-
+    """
     exit(1)
 
 signal.signal(signal.SIGINT, terminate_processes)

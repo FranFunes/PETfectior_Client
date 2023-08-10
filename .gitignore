@@ -6,3 +6,4 @@ app.db
 SeriesToUnpack
 unpackedSeries
 dcm_templates
+incoming
