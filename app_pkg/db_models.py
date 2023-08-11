@@ -125,15 +125,16 @@ class AppLog(db.Model):
     def __repr__(self):
         return f"{self.timestamp.strftime('%Y/%m/%d %H:%M:%S')} | {self.level} | {self.module} | {self.function} | {self.msg}"
 
-class AppConfig(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+class AppConfig(db.Model):    
+    client_id = db.Column(db.String(64), default='GenericClient', primary_key=True)
     min_instances_in_series = db.Column(db.Integer, default=47)
     slice_gap_tolerance = db.Column(db.Float, default=0.025)
     series_timeout = db.Column(db.Integer, default=30)
     store_scp_port = db.Column(db.Integer, default=11113)
     store_scp_aet = db.Column(db.String(64), default='PETFECTIOR')
     mirror_mode = db.Column(db.Boolean, default=False)
-    client_id = db.Column(db.String(64), default='GenericClient')
+    server_url = db.Column(db.String(64), default='10.0.0.51:5001')
+    shared_path = db.Column(db.String(128), default='//10.87.141.15/Proyectos/PETfectior')
 
     def __repr__(self):
         return f"<AppConfig for client {self.client_id}>"    

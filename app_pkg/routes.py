@@ -20,7 +20,6 @@ def config():
 
 @application.route('/get_tasks_table')
 def get_tasks_table():
-
         
     data = task_manager.get_tasks_table()
     

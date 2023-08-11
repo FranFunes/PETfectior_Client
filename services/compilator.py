@@ -1,4 +1,4 @@
-import json, threading, logging, os, requests, pickle
+import json, threading, logging
 from time import sleep
 from datetime import datetime
 import numpy as np
@@ -24,7 +24,7 @@ class Compilator():
     
     """
 
-    def __init__(self, input_queue, next_step = 'processor'):        
+    def __init__(self, input_queue, next_step = 'validator'):        
         
         self.input_queue = input_queue   
         self.next_step = next_step   
@@ -172,13 +172,7 @@ class Compilator():
                         logger.debug(f"Appending instance {sop_uid} to task {matching_task}")
                         matching_task.updated = timing
                         matching_task.instances.append(Instance.query.get(sop_uid))
-                        try:
-                            task_data[matching_task.id]['datasets'].append(dataset)
-                        except Exception:
-                            print(f"src_id = {src_id}")
-                            print(f"series_uid = {series_uid}")
-                            print(f"sop_uid = {sop_uid}")
-                            raise KeyError
+                        task_data[matching_task.id]['datasets'].append(dataset)                        
                         task_data[matching_task.id]['recon_settings'].append(recon_settings)
                 
                 # If there are no elements in the queue and the thread has been inactive for 5 seconds, check
@@ -197,7 +191,7 @@ class Compilator():
 
                         if status == 'abort':
                             logger.info(f"Task {task.id} timed out")
-                            task.status_msg(f"Failed - timed out")
+                            task.status_msg = "Failed - timed out"
                             task.step_state = -1                        
                         
                         elif status == 'wait':

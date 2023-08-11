@@ -28,13 +28,13 @@ class StoreSCP(AE):
     
     """
 
-    def __init__(self, scp_queue, c_store_handler, ae_title = 'PETFECTIOR', store_dest = 'incoming', address = '0.0.0.0', *args, **kwargs):
+    def __init__(self, input_queue, c_store_handler, ae_title = 'PETFECTIOR', store_dest = 'incoming', address = '0.0.0.0', *args, **kwargs):
 
         super().__init__(ae_title, *args,**kwargs)
 
         # Set class properties
         self.address = address
-        self.queue = scp_queue
+        self.queue = input_queue
         self.store_dest =  store_dest   
         self.handle_store = c_store_handler     
         
