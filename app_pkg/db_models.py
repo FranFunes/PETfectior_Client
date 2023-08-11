@@ -74,28 +74,38 @@ class Instance(db.Model):
 class Device(db.Model):
 
     name = db.Column(db.String(64), primary_key=True)
-    ae_title = db.Column(db.String(64), index=True)
-    address = db.Column(db.String(16), index=True)
-    port = db.Column(db.Integer(), index=True)
+    ae_title = db.Column(db.String(64), index=True, nullable=False)
+    address = db.Column(db.String(16), index=True, nullable=False)
+    port = db.Column(db.Integer(), index=True, nullable=False)
     is_destination = db.Column(db.Boolean, default=False)
-    created_by_user = db.Column(db.Boolean, default=False)
 
     def __repr__(self):
         return f'<Device {self.name}: {self.ae_title}@{self.address}>'
+
+class Source(db.Model):
+
+    identifier = db.Column(db.String(96), primary_key=True)
+    port = db.Column(db.Integer)
+
+    # One-to-many relationships (as parent)
+    related_tasks = db.relationship('Task', backref='task_source', lazy='dynamic')
+
+    def __repr__(self):
+        return f'<Source {self.identifier}>'
     
 class Task(db.Model):
     id = db.Column(db.String(18), primary_key=True)
-    source_addr = db.Column(db.String(16))
-    source_aet = db.Column(db.String(16))
     started = db.Column(db.DateTime, default=datetime.utcnow)
     updated = db.Column(db.DateTime)
     current_step = db.Column(db.String(32))
-    current_step_filename = db.Column(db.Text())
+    current_step_data = db.Column(db.Text()) # JSON
+    step_state = db.Column(db.Integer, index=True) # -1 failed, 0 processing, 1 completed
     status_msg = db.Column(db.Text())
     expected_imgs = db.Column(db.Integer)
 
     # One-to-many relationships (as child)
-    series = db.Column(db.String(64), db.ForeignKey('series.SeriesInstanceUID'))    
+    series = db.Column(db.String(64), db.ForeignKey('series.SeriesInstanceUID')) 
+    source = db.Column(db.String(96), db.ForeignKey('source.identifier'))   
 
     # Many-to-many relationships (as parent)
     destinations = db.relationship('Device', secondary=task_destination, backref='tasks')  
@@ -114,12 +124,24 @@ class AppLog(db.Model):
 
     def __repr__(self):
         return f"{self.timestamp.strftime('%Y/%m/%d %H:%M:%S')} | {self.level} | {self.module} | {self.function} | {self.msg}"
-    
+
+class AppConfig(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    min_instances_in_series = db.Column(db.Integer, default=47)
+    slice_gap_tolerance = db.Column(db.Float, default=0.025)
+    series_timeout = db.Column(db.Integer, default=30)
+    store_scp_port = db.Column(db.Integer, default=11113)
+    store_scp_aet = db.Column(db.String(64), default='PETFECTIOR')
+    mirror_mode = db.Column(db.Boolean, default=False)
+    client_id = db.Column(db.String(64), default='GenericClient')
+
+    def __repr__(self):
+        return f"<AppConfig for client {self.client_id}>"    
 
 def delete_db(tables = [], all = False):
 
     if not tables and all:
-        tables = [Patient, Study, Series, Instance, Task, Device, AppLog]
+        tables = [Patient, Study, Series, Instance, Task, Device, AppLog, AppConfig]
     
     for table in tables:
         for instance in table.query.all():

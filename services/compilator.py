@@ -1,12 +1,11 @@
-import json, threading, logging, os, requests
+import json, threading, logging, os, requests, pickle
 from time import sleep
 from datetime import datetime
 import numpy as np
-from services.helper_funcs import delete_series
 from pydicom import Dataset
 
-from app_pkg import application
-from app_pkg.db_models import Device, Task, Series, Instance, task_instance
+from app_pkg import application, db
+from app_pkg.db_models import Device, Task, Series, Instance, task_instance, Source, AppConfig
 
 # Configure logging
 logger = logging.getLogger('__main__')
@@ -18,14 +17,339 @@ class Compilator():
         This class is used to read DICOM SOP Instances (images) received by the StoreSCP
         and compile them in whole series. Instances are read from input_queue.
         The number of instances present in each series is found through a dedicated function.
+        For each series received, a Task is created in the database.
         
-        When the process has been sleeping during a predefined time, each series is checked to
-        find if it should be put in the output queue, discarded or keep waiting. This is 
-        done by another predefined function.
+        When the process has been sleeping during a predefined time, each task is checked to
+        find if it should be put in the output queue, discarded or keep waiting.
     
     """
 
-    def __init__(self, input_queue, task_manager, server_url, series_timeout = 30, 
-                 min_instances_in_series = 47, slice_gap_tolerance = 0.025):
-              
-        pass
+    def __init__(self, input_queue, next_step = 'processor'):        
+        
+        self.input_queue = input_queue   
+        self.next_step = next_step   
+
+    def start(self):
+
+        """
+        
+            Starts the process thread.            
+
+        """
+                
+        if not self.get_status() == 'Running':
+            # Set an event to stop the thread later 
+            self.stop_event = threading.Event()
+
+            # Create and start the thread
+            self.main_thread = threading.Thread(target = self.main, 
+                                                args = (), name = 'Compilator')        
+            self.main_thread.start()
+            logger.info('Compilator started')
+            return 'Compilator started successfully'
+        else:
+            return 'Compilator is already running'
+
+    def stop(self):
+
+        """
+        
+            Stops the thread by setting an Event.
+
+        """
+        try:
+            self.stop_event.set()
+            self.main_thread.join()
+            logger.info("stopped")
+            return "Compilator stopped"
+        except:
+            logger.info("stopped")
+            return "Compilator could not be stopped"
+
+
+    def get_status(self):
+
+        try:
+            assert self.main_thread.is_alive()            
+        except AttributeError:
+            return 'Not started'
+        except AssertionError:
+            return 'Stopped'
+        except:
+            return 'Unknown'
+        else:
+            return 'Running'
+
+    def main(self):
+
+        """
+        
+            The main processing function that is called when thread is started.
+            · Reads elements from the input queue, appends the SOPInstanceUID to a list
+            of know SOPs and assigns it to a new or existent Task in the database, with the 
+            following criteria:
+                - If the instance was not in the list, and there is an existent task associated
+                with its SeriesInstanceUID and with the same source device, append the instance
+                to this Task.
+                - Else, create a new Task and append the instance to it.
+            
+            When there are no elements in the input queue, each Task is sent to an independent
+            function that checks it for completeness. Then:
+            · If the series is complete, the output data is written to a file and passed to the
+             task_manager, and the Task state is updated in the database.
+            · If not, checks if the waiting period for this Task has expired and signals it in
+            the database it in that case. Else, waits for more instances.               
+
+        """
+        # Initialize temp placeholders for received data      
+        task_data = {} 
+
+        # Inactive timer to know if task status should be checked or not.
+        inactive_time = 0                
+
+        while not self.stop_event.is_set() or not self.input_queue.empty():
+        
+            with application.app_context():
+                # If there are any elements in the input queue, read them.
+                if not self.input_queue.empty():
+                    
+                    # Reset inactivity timer
+                    inactive_time = 0
+
+                    # Read element from queue
+                    queue_element = self.input_queue.get()
+                    dataset = queue_element['dataset']
+                    series_uid = dataset.SeriesInstanceUID
+                    sop_uid = dataset.SOPInstanceUID
+                    recon_settings = queue_element['recon_ds']
+                    ip = queue_element['address']
+                    ae_title = queue_element['ae_title']
+                    timing = datetime.now()
+
+                    # Record this source in the database if it doesn't exist
+                    src_id = f"{ae_title}@{ip}"
+                    source = Source.query.get(src_id)
+                    if not source:
+                        source = Source(identifier = src_id)
+                        db.session.add(source)
+                        
+                    # Check if this SOP should be appended to an existing or new Task.          
+                    tasks = (Task.query.join(Source).filter_by(identifier=src_id).
+                            join(Series).filter_by(SeriesInstanceUID = series_uid)).all()
+                    matching_task = None
+                    i = Instance.query.get(sop_uid)
+                    for task in tasks:
+                        if not i in task.instances:
+                            matching_task = task
+                            break
+                    
+                    if not matching_task:
+
+                        # Create a new task          
+                        logger.info('creating new task')
+                        task_id = timing.strftime('%Y%m%d%H%M%S%f')[:-2]
+
+                        # Create new Task in the database
+                        task = Task(
+                            id = task_id,
+                            started = timing,
+                            updated = timing,
+                            current_step = 'compilator',
+                            status_msg = 'receiving',
+                            step_state = 0,
+                            expected_imgs = self.instances_in_series(dataset),
+                            task_series = Series.query.get(series_uid),
+                            instances = [Instance.query.get(sop_uid)],
+                            task_source = source
+                        )
+                        db.session.add(task)
+                        logger.info(f'created new task {task}')
+                        
+                        # Keep data that can't be stored in the database in a dedicated dict
+                        task_data[task_id] = {'datasets': [dataset], 'recon_settings':[recon_settings]}
+                    else:
+                        # Append to existing series                    
+                        logger.debug(f"Appending instance {sop_uid} to task {matching_task}")
+                        matching_task.updated = timing
+                        matching_task.instances.append(Instance.query.get(sop_uid))
+                        try:
+                            task_data[matching_task.id]['datasets'].append(dataset)
+                        except Exception:
+                            print(f"src_id = {src_id}")
+                            print(f"series_uid = {series_uid}")
+                            print(f"sop_uid = {sop_uid}")
+                            raise KeyError
+                        task_data[matching_task.id]['recon_settings'].append(recon_settings)
+                
+                # If there are no elements in the queue and the thread has been inactive for 5 seconds, check
+                # tasks status
+                elif inactive_time >= 5:
+
+                    logger.debug(f"Inactive, checking tasks status...")
+                    # Reset inactivity timer
+                    inactive_time = 0
+                    for task in Task.query.filter((Task.current_step == 'compilator')&(Task.step_state==0)).all():
+                        
+                        # Check task status
+                        status = self.task_status(task_data[task.id]['datasets'], 
+                                                task.expected_imgs, 
+                                                task.updated)
+
+                        if status == 'abort':
+                            logger.info(f"Task {task.id} timed out")
+                            task.status_msg(f"Failed - timed out")
+                            task.step_state = -1                        
+                        
+                        elif status == 'wait':
+                            logger.info(f"Waiting for task {task.id} with {len(task.instances)} instances to complete.")
+
+                        elif status == 'completed':
+
+                            # From task_data, keep the required for the next step only
+                            recon_settings = self.summarize_data(task_data[task.id])
+                            
+                            # Write task_data to the database and pass the task to the next step
+                            task.current_step_data = recon_settings.to_json()
+                            task.current_step = self.next_step
+                            task.step_state = 1
+
+                            logger.info(f"Task {task.id} completed.") 
+
+                            # Delete temporary data for this task
+                            del task_data[task.id]                         
+                    
+                else:
+                    sleep(1)
+                    inactive_time += 1       
+                            
+                db.session.commit()
+
+    def task_status(self, datasets, n_imgs, last_received):
+
+        """
+        
+            Checks the received status of a task. The status can be one of four:
+            · 'completed': the task is complete and can be packed to further processing.
+            · 'wait': the task is incomplete, but more time should be given to receive the missing instances.
+            · 'abort': the task is incomplete and should be discarded.
+            · 
+
+            Args:
+            · datasets: a list of pydicom datasets, corresponding to the same series, and with no duplicated instances.
+            · n_imgs: the number of images expected for this series.
+            · last_received: datetime object with the moment when the last instance of the series was received.
+        
+        """
+        config = AppConfig.query.first()
+        min_instances = config.min_instances_in_series
+        timeout = config.series_timeout
+        series_timed_out = (datetime.now() - last_received).total_seconds() > timeout
+
+                
+        if n_imgs and n_imgs == len(datasets):
+            if n_imgs >= min_instances:
+                logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances completed by n_imgs criteria.")
+                status = 'completed'
+            elif series_timed_out:
+                logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances doesn't meet minimum instances criteria and waiting period has expired.")
+                status = 'abort'
+            else:
+                logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances doesn't meet minimum instances criteria, but we can wait for more instances.")
+                status = 'wait'
+            
+        elif self.check_for_contiguity(datasets):
+
+            logger.info("series {datasets[0].SeriesInstanceUID} meets contiguity criteria.")
+
+            if series_timed_out:
+                if len(datasets) >= min_instances:
+                    logger.info(f"series {datasets[0].SeriesInstanceUID} completed by contiguity criteria.")
+                    status = 'completed'
+                else:
+                    logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances doesn't meet minimum instances criteria and waiting period has expired.")
+                    status = 'abort'
+            else:
+                if len(datasets) >= min_instances:
+                    logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances meets minimum instances criteria, but we can wait for more instances.")
+                else:
+                    logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances doesn't meet minimum instances criteria, but we can wait for more instances.")
+                status = 'wait'
+
+        else:
+            if series_timed_out:
+                logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances didn't meet contiguity criteria and waiting period has expired.")
+                status = 'abort'
+            else:
+                logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances doesn't meet contiguity criteria but we can wait for more instances.")
+                status = 'wait'
+
+        return status
+    
+    def check_for_contiguity(self, datasets):
+
+        """
+        
+        Checks if a set of dicom images have regular spatial sampling in the z direction.
+
+        Args:
+            · datasets: a list of pydicom.datasets corresponding to the same series.
+        
+        """
+        
+        logger.info(f"checking for series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances")
+
+        tol = AppConfig.query.first()
+
+        slice_positions = [ds.ImagePositionPatient[2] for ds in datasets]
+                
+        slice_positions = np.sort(slice_positions)        
+        slice_gaps = np.diff(slice_positions)               
+        
+        # Check if minimin and maximum slice gaps are within tolerance      
+        lim_inf =  (1 - tol) * slice_gaps.mean()
+        lim_sup =  (1 + tol) * slice_gaps.mean()
+
+        return slice_gaps.min() >= lim_inf and slice_gaps.max() <= lim_sup    
+
+             
+    def instances_in_series(self, dataset: Dataset) -> int:        
+
+        """
+
+            Extracts the number of instances expected in a series. Returns None if
+            it fails.
+
+        """
+
+        try:
+            n_imgs = dataset.NumberOfSlices
+            logger.info(f"{n_imgs} instances expected for series {dataset.SeriesInstanceUID}")      
+        except AttributeError as e:
+            logger.info(f"failed: " + repr(e))            
+            n_imgs = None
+
+        return n_imgs    
+    
+    def summarize_data(self, row):
+
+        # From recon_settings, keep the dataset with the max ActualFrameDuration        
+        try:
+            max_idx = np.argmax([ds.ActualFrameDuration for ds in row['recon_settings']])
+            max_value = row['recon_settings'][max_idx].ActualFrameDuration
+            logger.info(f"Index {max_idx} has max ActualFrameDuration of {max_value}")
+        except Exception as e:
+            max_idx = 0
+            logger.error(f"Could not select max ActualFrameDuration. Using first element")
+            logger.error(repr(e))                                
+        recon_settings = row['recon_settings'][max_idx]
+        
+        # Find SpacingBetweenSlices information
+        z = [ds.ImagePositionPatient[2] for ds in row['datasets']]
+        spacing = np.diff(np.sort(z)).mean()
+        recon_settings.SpacingBetweenSlices = spacing
+        logger.info(f"spacing {spacing:.2f}")
+
+        return recon_settings
+        
+
+            

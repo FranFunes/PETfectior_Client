@@ -1,4 +1,5 @@
 envClientSide
+envPETfectiorClient
 .DS_Store
 **/__pycache__
 data
@@ -7,3 +8,4 @@ SeriesToUnpack
 unpackedSeries
 dcm_templates
 incoming
+img.dcm

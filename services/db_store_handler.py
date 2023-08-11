@@ -116,35 +116,50 @@ def db_store_handler(event: Event, output_queue:Queue, root_dir:str) -> int:
         logger.debug("New dataset could not be processed. Missing DICOM information?")
         return 0xA700 
     
-    # Try to store dataset in disk and database
-    filedir = os.path.join(root_dir, 
-                           ds.StudyInstanceUID,
-                           ds.SeriesInstanceUID)
-    os.makedirs(filedir, exist_ok = True)
-    # Construct an unique fname for each dataset received
-    filepath = os.path.join(filedir, ds.SOPInstanceUID)
-    try:
-        ds.save_as(filepath, write_like_original = False)
-    except FileNotFoundError as e:        
-        logger.debug("New dataset could not be saved - No such file or directory")
-        logger.debug(repr(e))
-        return 0xA700
-    except Exception as e:
-        logger.debug("New dataset could not be saved - unknown error")
-        logger.debug(repr(e))
-        return 0xA700
-
-    # Store in the database
-    try:
-        db_create_instance(ds, filepath)
-    except ValueError:
-        logger.error("Can't write instance to database: instance already exists")
-        # Try to delete written file from disk
-        try:
-            os.remove(filepath)
-        except Exception as e:
-            logger.error(f"Can't delete file {filepath} from disk: {repr(e)}")
-        return 0xA700
+    # Check if instance already exists
+    with application.app_context():
+        instance = Instance.query.get(ds.SOPInstanceUID)
+        if instance:
+            logger.debug('instance already exists')
+        # Check if series, study and patient identifier match
+            try:
+                assert instance.series.SeriesInstanceUID == ds.SeriesInstanceUID
+                assert instance.study.StudyInstanceUID == ds.StudyInstanceUID
+                assert instance.patient.PatientID == str(ds.PatientID)
+            except AssertionError:
+                logger.debug('inconsistent instance received and ignored')
+                return 0xA700
+        else:
+            logger.debug('creating new instance')
+            # Try to store dataset in disk
+            filedir = os.path.join(root_dir, 
+                                ds.StudyInstanceUID,
+                                ds.SeriesInstanceUID)
+            os.makedirs(filedir, exist_ok = True)
+            # Construct an unique fname for each dataset received
+            filepath = os.path.join(filedir, ds.SOPInstanceUID)
+            try:
+                ds.save_as(filepath, write_like_original = False)
+            except FileNotFoundError as e:        
+                logger.debug("New dataset could not be saved - No such file or directory")
+                logger.debug(repr(e))
+                return 0xA700
+            except Exception as e:
+                logger.debug("New dataset could not be saved - unknown error")
+                logger.debug(repr(e))
+                return 0xA700
+    
+            # Store in the database
+            try:
+                db_create_instance(ds, filepath)
+            except Exception as e:
+                logger.error("Can't write new instance to database, trying to delete file")
+                # Try to delete written file from disk
+                try:
+                    os.remove(filepath)
+                except Exception as e:
+                    logger.error(f"Can't delete file {filepath} from disk: {repr(e)}")
+                return 0xA700
 
     # Append non mandatory information to new_ds
     fields = ['NumberOfSlices','PatientName','StudyDate','SeriesDescription']

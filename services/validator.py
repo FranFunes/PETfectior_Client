@@ -1,4 +1,4 @@
-import json, threading, logging, os, requests
+import json, threading, logging, os, requests, pickle
 from time import sleep
 from datetime import datetime
 import numpy as np
@@ -6,30 +6,32 @@ from services.helper_funcs import delete_series
 from pydicom import Dataset
 
 from app_pkg import application, db
-from app_pkg.db_models import Device, Task, Series, Instance, task_instance
+from app_pkg.db_models import Device, Task, Series, Instance, task_instance, Source
 
 # Configure logging
 logger = logging.getLogger('__main__')
 
-class Compilator():
+class Validator():
 
     """
     
-        This class is used to read DICOM SOP Instances (images) received by the StoreSCP
-        and compile them in whole series. Instances are read from input_queue.
-        The number of instances present in each series is found through a dedicated function.
-        
-        When the process has been sleeping during a predefined time, each series is checked to
-        find if it should be put in the output queue, discarded or keep waiting. This is 
-        done by another predefined function.
+        This class is used to verify that a Task is ready to be packed and uploaded to the server.
+        It checks three conditions:
+        - The Task has at least one destination assigned
+        - The dicom headers for the instances associated with the task have enough information to
+        be processed by the server.
+        - A model exists in the server for the recon settings of this task.
+                
     
     """
 
-    def __init__(self, input_queue, task_manager, server_url, series_timeout = 30, 
+    def __init__(self, input_queue, output_path, task_manager, server_url, next_step = 'processor', series_timeout = 30, 
                  min_instances_in_series = 47, slice_gap_tolerance = 0.025):
               
-        self.input_queue = input_queue      
+        self.input_queue = input_queue   
+        self.next_step = next_step   
         self.task_manager = task_manager
+        self.output_path = output_path
         self.server_url = server_url
         self.series_timeout = series_timeout
         self.min_instances_in_series = min_instances_in_series
@@ -131,22 +133,17 @@ class Compilator():
                 ae_title = queue_element['ae_title']
                 timing = datetime.now()
 
-                # Check if there exists a known device with this ip address and ae_title.
-                # Create it if not, with a fantasy name
-                source = Device.query.filter((Device.ae_title == ae_title) & (Device.address == ip)).first()
+                # Record this source in the database if it doesn't exist
+                src_id = f"{ae_title}@{ip}"
+                source = Source.query.get(src_id).first()
                 if not source:
-                    source = Device(
-                        name = timing.strftime('%Y%m%d%H%M%S%f')[:-2],
-                        ae_title = ae_title,
-                        address = ip
-                    )
+                    source = Source(identifier = src_id)
                     db.session.add(source)
                     
                 # Check if this SOP should be appended to an existing or new Task.                
-                matching_task = (Task.query.filter_by(source_addr=ip).join(Series).
-                                filter_by(SeriesInstanceUID = series_uid).
-                                outerjoin(task_instance).
-                                outerjoin(Instance).
+                matching_task = (Task.query.join(Source).filter_by(identifier=src_id).
+                                join(Series).filter_by(SeriesInstanceUID = series_uid).
+                                outerjoin(task_instance).outerjoin(Instance).
                                 filter(Instance.SOPInstanceUID != sop_uid)).first()
                 
                 if not matching_task:
@@ -158,17 +155,17 @@ class Compilator():
                     # Create new Task in the database
                     task = Task(
                         task_id = task_id,
-                        source_addr = ip,
-                        source_aet = ae_title,
                         started = timing,
                         updated = timing,
                         current_step = 'compilator',
                         current_step_filename = '',
                         status_msg = 'receiving',
+                        state = 0,
                         expected_imgs = self.instances_in_series(dataset),
                         task_series = Series.query.get(series_uid),
-                        destinations = self.set_destinations(ip, ae_title),
-                        instances = [Instance.query.get(sop_uid)]
+                        destinations = self.set_destinations(source),
+                        instances = [Instance.query.get(sop_uid)],
+                        task_source = source
                     )
                     db.session.add(task)
                     logger.info(f'created new task {task}')
@@ -178,38 +175,64 @@ class Compilator():
                     task_data[task_id] = row
                 else:
                     # Append to existing series                    
+                    logger.debug(f"Appending instance {sop_uid} to task {matching_task}")
                     matching_task.updated = timing
                     matching_task.instances.append(Instance.query.get(sop_uid))
                     task_data[matching_task.id]['datasets'].append(dataset)
                     task_data[matching_task.id]['recon_settings'].append(recon_settings)
-                    logger.debug(f"Append instance {sop_uid} to task {matching_task}")
             
             # If there are no elements in the queue and the thread has been inactive for 5 seconds, check
-            # series status.
+            # tasks status
             elif inactive_time >= 5 and any(series):
 
                 logger.info(f"Inactive, checking series...")
                 # Reset inactivity timer
                 inactive_time = 0
-                to_delete = []
-                for key, row in series.items():
-
-                    # Check series status
-                    status = self.series_status(row['datasets'], row['expected'], row['timing_last'])
+                for task in Task.query.all():
+                    
+                    # Check task status
+                    status = self.task_status(task_data[task.id]['datasets'], 
+                                              task.expected, 
+                                              task.updated)
 
                     if status == 'abort':
-                        logger.info(f"Series {row['series_uid']} timed out") 
-                        to_delete.append(key)
-                        self.task_manager.manage_task(action = 'update', task_id = key, task_data = {'status': 'failed - timeout'})        
+                        logger.info(f"Task {task.id} timed out")
+                        task.status_msg(f"Failed - timed out")
+                        task.state = -1                        
                     
                     elif status == 'wait':
-                        logger.info(f"Waiting for series {row['series_uid']} with {len(row['sops'])} instances to complete.")
+                        logger.info(f"Waiting for task {task.id} with {len(task.instances)} instances to complete.")
 
                     elif status == 'completed':
 
+                        logger.info(f"Task {task.id} completed.")
+                        
+                        # Write task_data to a file
+                        fname = os.path.join(self.output_path, task.id + '_compilator.pickle')
+                        try:
+                            with open(fname, 'w') as fname:
+                                pickle.dump(task_data[task.id], fname, protocol=pickle.HIGHEST_PROTOCOL)
+                            logger.info(f"Task {task.id} data written to file.")
+                        except Exception as e:
+                            logger.error(f"Task {task.id} data write failed. {repr(e)}")
+                            task.status_msg(f"Failed - write error")  
+                            task.state = -1    
+                        else:
+                            # Pass to next step
+                            task.current_step = self.next_step
+                            task.current_step_filename = fname
+                            self.task_manager.done(task.id)
+
+                        
+
+
+
+
+
+
                         # Update valid destinations for the processed series.
                         try:
-                            row['destinations'] = self.set_destinations(row['requestor_ip'], row['requestor_aet'])
+                            task.destinations.extend(self.set_destinations(row['requestor_ip'], row['requestor_aet']))
                             self.task_manager.manage_task(action = 'update', task_id = key, task_data = {'destinations': '/'.join(row['destinations'])})
                         except Exception as e:
                             logger.error(f"Could not update destinations")
@@ -249,7 +272,7 @@ class Compilator():
                                 logger.error(f"series {row['series_uid']} completed but spacing could not be calculated")
                                 logger.error(repr(e))
                                 self.task_manager.manage_task(action = 'update', task_id = key, task_data = {'status': 'failed - slice spacing'})
-                                delete_series(row['filenames'])
+                                
                             else:
                                 # Check if a model exists in the remote processing server for this model
                                 self.task_manager.manage_task(action = 'update', task_id = key, task_data = {'status': 'checking'})  
@@ -268,26 +291,23 @@ class Compilator():
                                     logger.info(f"series {row['series_uid']} completed but no model found for this recon settings {row['recon_settings']}.")
                                     self.task_manager.manage_task(action = 'update', task_id = key, task_data = {'status': 'failed - no model'})    
                                     delete_series(row['filenames'])
-                            to_delete.append(key)
+                            
                 
-                # Delete series
-                for key in to_delete:
-                    del series[key]
             else:
                 sleep(1)
                 inactive_time += 1
                         
-    def set_destinations(self, ip, aet):
+    def set_destinations(self, source):
 
         destinations = []
         
         # Add devices with "is_destination" == True
         destinations.extend(Device.query.filter_by(is_destination = True).all())        
-        # Check if mirror mode is activated and there are any devices matching the requestor's IP
+        # Check if mirror mode is activated and there are any devices matching the source IP/AET
         mirror_mode = os.environ['MIRROR_MODE_ENABLED'] == 'True'
+        aet, ip = source.identifier.split('@')
         if mirror_mode:                    
-            matching_ip = Device.query.filter_by(address = ip)
-            
+            matching_ip = Device.query.filter_by(address = ip)            
             if len(matching_ip) == 1:
                 destinations.extend(matching_ip)
             else:
@@ -303,7 +323,7 @@ class Compilator():
 
         return destinations
 
-    def series_status(self, datasets, n_imgs, last_received):
+    def task_status(self, datasets, n_imgs, last_received):
 
         """
         
