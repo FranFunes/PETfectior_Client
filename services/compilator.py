@@ -174,7 +174,9 @@ class Compilator():
                         matching_task.instances.append(Instance.query.get(sop_uid))
                         task_data[matching_task.id]['datasets'].append(dataset)                        
                         task_data[matching_task.id]['recon_settings'].append(recon_settings)
-                
+
+                    db.session.commit()
+                    
                 # If there are no elements in the queue and the thread has been inactive for 5 seconds, check
                 # tasks status
                 elif inactive_time >= 5:
@@ -203,7 +205,7 @@ class Compilator():
                             recon_settings = self.summarize_data(task_data[task.id])
                             
                             # Write task_data to the database and pass the task to the next step
-                            task.current_step_data = recon_settings.to_json()
+                            task.recon_settings = recon_settings.to_json()
                             task.current_step = self.next_step
                             task.step_state = 1
 
@@ -212,11 +214,11 @@ class Compilator():
                             # Delete temporary data for this task
                             del task_data[task.id]                         
                     
+                    db.session.commit()
                 else:
                     sleep(1)
                     inactive_time += 1       
                             
-                db.session.commit()
 
     def task_status(self, datasets, n_imgs, last_received):
 

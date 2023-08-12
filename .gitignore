@@ -4,8 +4,9 @@ envPETfectiorClient
 **/__pycache__
 data
 app.db
-SeriesToUnpack
-unpackedSeries
 dcm_templates
 incoming
 img.dcm
+series_to_unpack
+unpacked_series
+packed_series

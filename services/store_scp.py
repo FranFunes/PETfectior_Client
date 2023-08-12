@@ -5,6 +5,9 @@ import pydicom
 import logging, os, json
 from datetime import datetime
 
+from app_pkg import application
+from app_pkg.db_models import AppConfig
+
 # Setup logging behaviour
 logger = logging.getLogger('__main__')
 
@@ -56,14 +59,19 @@ class StoreSCP(AE):
         
         self.handle_echo = handle_echo
 
-    def start(self, ae_title, port):        
+    def start(self):        
 
         """    
 
         Starts the DICOM Store Service Class Provider.
 
         """                      
-        
+        with application.app_context():
+            config = AppConfig.query.first()
+            ae_title = config.store_scp_aet
+            port = config.store_scp_port
+
+
         handlers = [(evt.EVT_C_STORE, self.handle_store, [self.queue, self.store_dest]), (evt.EVT_C_ECHO, self.handle_echo)]   
 
         # Start listening for incoming association requests

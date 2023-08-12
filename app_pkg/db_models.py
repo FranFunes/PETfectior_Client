@@ -98,7 +98,7 @@ class Task(db.Model):
     started = db.Column(db.DateTime, default=datetime.utcnow)
     updated = db.Column(db.DateTime)
     current_step = db.Column(db.String(32))
-    current_step_data = db.Column(db.Text()) # JSON
+    recon_settings = db.Column(db.Text()) # JSON
     step_state = db.Column(db.Integer, index=True) # -1 failed, 0 processing, 1 completed
     status_msg = db.Column(db.Text())
     expected_imgs = db.Column(db.Integer)
@@ -135,6 +135,10 @@ class AppConfig(db.Model):
     mirror_mode = db.Column(db.Boolean, default=False)
     server_url = db.Column(db.String(64), default='10.0.0.51:5001')
     shared_path = db.Column(db.String(128), default='//10.87.141.15/Proyectos/PETfectior')
+    shared_mount_point = db.Column(db.String(128), default='/Volumes/PETfectior')
+    zip_dir = db.Column(db.String(128), default='packed_series')
+    unzip_dir = db.Column(db.String(128), default='unpacked_series')
+    download_path = db.Column(db.String(128), default='series_to_unpack')
 
     def __repr__(self):
         return f"<AppConfig for client {self.client_id}>"    

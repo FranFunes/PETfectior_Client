@@ -11,12 +11,15 @@ from services.db_store_handler import db_store_handler
 from services.compilator import Compilator
 from services.validator import Validator
 from services.task_manager import TaskManager
+from services.packer import SeriesPacker
+from services.uploader import SeriesUploader
+from services.downloader import SeriesDownloader
 
 # Disable warnings (only for developing)
 import warnings
 warnings.filterwarnings("ignore")
 
-# Setup logging
+# Setup logging0
 app_logger()
 dicom_logger()
 logger = logging.getLogger('__main__')
@@ -24,12 +27,15 @@ logger = logging.getLogger('__main__')
 # Initialize queues for different processes
 queues = {
     'compilator': queue.Queue(),
-    'validator': queue.Queue(),    
+    'validator': queue.Queue(),
+    'packer': queue.Queue(),
+    'uploader': queue.Queue(),
+    'downloader': queue.Queue(),    
+    'unpacker': queue.Queue(),
 }
-download_queue = queue.Queue()
 
 # Task manager
-task_manager = TaskManager()
+task_manager = TaskManager(queues)
 
 # DICOM Store SCP    
 store_scp = StoreSCP(input_queue = queues['compilator'], c_store_handler=db_store_handler)
@@ -40,10 +46,24 @@ compilator = Compilator(input_queue = queues['compilator'], next_step = 'validat
 # Validator
 validator = Validator(input_queue = queues['validator'], next_step = 'packer')
 
+# Packer
+packer = SeriesPacker(input_queue = queues['packer'], next_step = 'uploader')
+
+# Uploader
+uploader = SeriesUploader(input_queue = queues['uploader'])
+
+# Downloader
+downloader = SeriesDownloader(input_queue = queues['downloader'], next_step = 'unpacker')
+
+
 # Initialize services
 services = {'Dicom Listener': store_scp,
             'Compilator': compilator,
-            'Validator': validator}
+            'Validator': validator,
+            'Packer': packer,
+            'Uploader': uploader,
+            'Downloader': downloader,
+            'TaskManager': task_manager}
 
 # Get app configuration from database or initialize it
 with application.app_context():
@@ -64,10 +84,7 @@ with application.app_context():
 # Start services
 for name, service in services.items():
     try:
-        if name == 'Dicom Listener':
-            service.start(config.store_scp_aet, config.store_scp_port)
-        else:
-            service.start()
+        service.start()
     except Exception as e:
         logger.error(f"failed when starting {name}")
         logger.error(repr(e))

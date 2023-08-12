@@ -1,39 +1,38 @@
 import os, logging
-#from dropbox import DropboxOAuth2FlowNoRedirect
-
+from app_pkg import application, db
+from app_pkg.db_models import Task, AppConfig
+from shutil import make_archive, unpack_archive, rmtree
+import numpy as np
 # Configure logging
 logger = logging.getLogger('__main__')
 
-def delete_series(filenames):
 
-    """
-    
-        Deletes files from disk.
-        Args:
-            ·filenames: list of str with the filenames to delete.
+def process(task_id):
 
-    """
+    with application.app_context():
 
-    for file in filenames:
-        try:
-            os.remove(file)
-        except:
-            logger.error(f"Could not remove file {file}")
+        task = Task.query.get(task_id)
+        config = AppConfig.query.first()
+        zip_filename = os.path.join(config.shared_mount_point,'to_process',task.id + '_' + config.client_id + '.zip')        
+        unzip_folder = os.path.join('temp',task.id)
+        os.makedirs(unzip_folder, exist_ok=True)
+        unpack_archive(zip_filename, unzip_folder)
+        voxels_file = os.path.join(unzip_folder, 'voxels.npy')
 
-def get_auth_token(APP_KEY, APP_SECRET):
-
-        auth_flow = DropboxOAuth2FlowNoRedirect(APP_KEY, APP_SECRET)
-
-        authorize_url = auth_flow.start()
-        print("1. Go to: " + authorize_url)
-        print("2. Click \"Allow\" (you might have to log in first).")
-        print("3. Copy the authorization code.")
-        auth_code = input("Enter the authorization code here: ").strip()
+        array = np.load(voxels_file)
+        shape = array.shape
+        array[64:96,64:96,20:30] = 0
         
-        try:
-            oauth_result = auth_flow.finish(auth_code)
-            print('Dropbox login successful')
-            return oauth_result.access_token
-        except Exception as e:
-            print('Dropbox login failed. Error: %s' % (e,))
-            return None
+        np.save(os.path.join(unzip_folder, 'processed.npy'), array)
+        os.remove(voxels_file)
+        archive_name = os.path.join(config.shared_mount_point,'processed',task.id + '_' + config.client_id)        
+        make_archive(archive_name, 'zip', unzip_folder)
+
+        rmtree('temp')
+        os.remove(zip_filename)
+
+        # Flag step as completed     
+        task.current_step = 'downloader'
+        task.step_state = 1
+
+        db.session.commit()

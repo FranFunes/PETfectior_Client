@@ -1,67 +1,106 @@
-import pandas as pd
+import json, threading, logging
+from time import sleep
 from datetime import datetime
+import numpy as np
+from pydicom import Dataset
+
+from app_pkg import application, db
+from app_pkg.db_models import Task
+
+# Configure logging
+logger = logging.getLogger('__main__')
 
 class TaskManager():
 
-    def __init__(self):
-
-        # Read previous session data, or initialize data
-        try:
-            data = pd.read_csv('config/tasks.csv')
-        except:    
-            columns = ['task_id',
-                       'source',
-                       'PatientName',
-                       'StudyDate',
-                       'description',
-                       'started',
-                       'status',
-                       'updated',
-                       'imgs',
-                       'destinations'
-                       ]  
-            data = pd.DataFrame(columns = columns).set_index('task_id')                  
-
-        self.data = data
-
-    def _new_task(self, task_data):
-
-        # Append new task to the database          
-        task_id = task_data['task_id']      
-        columns = self.data.columns
-        row = {col: task_data.get(col, '') for col in columns}        
-        row = pd.DataFrame(row, index = [task_id])
-        self.data = pd.concat([self.data, row])
+    """
     
-    def manage_task(self, action, task_id = None, task_data = None):
-
-        if action == 'new':
-            self._new_task(task_data)
-        elif action == 'update':            
-            for key, value in task_data.items():
-                self.data.loc[task_id, key] = value
-            self.data.loc[task_id,'updated'] = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
-        elif action == 'clear_failed':
-            to_delete = self.data[(self.data['status'] == 'failed')].index
-            self.data.drop(to_delete, inplace = True)
-        elif action == 'clear_finished':
-            to_delete = self.data[(self.data['status'] == 'finished')].index
-            self.data.drop(to_delete, inplace = True)
+        This thread finds the Tasks that are ready to initiate the next step
+        and set them to continue.
+        Arguments:
+        - queues: a dictionary with keys equal to the name of each step in
+            the processing pipeline. Each value is the corresponding input_queue 
+            for that process.
     
-    def get_tasks_table(self):
+    """
 
-        data = []
-
-        for task_id, task_data in self.data.iterrows():            
-            row = task_data.to_dict()
-            row['task_id'] = task_id
-            data.append(row)
-
-        return data        
-    
-
-                
-
-
-
+    def __init__(self, queues: dict):        
         
+        self.input_queues = queues 
+
+    def start(self):
+
+        """
+        
+            Starts the process thread.            
+
+        """
+                
+        if not self.get_status() == 'Running':
+            # Set an event to stop the thread later 
+            self.stop_event = threading.Event()
+
+            # Create and start the thread
+            self.main_thread = threading.Thread(target = self.main, 
+                                                args = (), name = 'task_manager')        
+            self.main_thread.start()
+            logger.info('task manager started')
+            return 'Task Manager started successfully'
+        else:
+            return 'Task Manager is already running'
+
+    def stop(self):
+
+        """
+        
+            Stops the thread by setting an Event.
+
+        """
+        try:
+            self.stop_event.set()
+            self.main_thread.join()
+            logger.info("stopped")
+            return "Task Manager stopped"
+        except:
+            logger.info("stopped")
+            return "Task Manager could not be stopped"
+
+
+    def get_status(self):
+
+        try:
+            assert self.main_thread.is_alive()            
+        except AttributeError:
+            return 'Not started'
+        except AssertionError:
+            return 'Stopped'
+        except:
+            return 'Unknown'
+        else:
+            return 'Running'
+
+    def main(self):
+
+        """
+        
+        A loop that continuously searches for those Task with step_state = 1.
+
+        """
+        
+        while not self.stop_event.is_set():
+            
+            with application.app_context():
+                # Find tasks with step_state = 1 (step completed) and
+                # put them in the next step input queue
+                tasks = Task.query.filter_by(step_state = 1).all()
+                for task in tasks:
+                    # Update task_status
+                    logger.info(f'passing task {task.id} to {task.current_step}')
+                    timing = datetime.now()
+                    task.updated = timing
+                    task.step_state = 0
+                    # Trigger next step by putting an element in its input queue
+                    self.input_queues[task.current_step].put(task.id)
+                    db.session.commit()
+                    
+                if not tasks:
+                    sleep(1) 

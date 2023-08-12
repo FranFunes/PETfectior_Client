@@ -6,28 +6,18 @@ from pydicom import dcmread
 from pydicom.uid import generate_uid
 from datetime import datetime
 
+from app_pkg import application, db
+from app_pkg.db_models import AppConfig, Task
+
 # Configure logging
 logger = logging.getLogger('__main__')
 
 class SeriesUnpacker():
 
-    def __init__(self, input_queue, output_queue, task_manager, 
-                 template_path = 'dcm_templates', 
-                 unzipDir = 'unpackedSeries'):
+    def __init__(self, input_queue, next_step = 'store_scu'):
 
         self.input_queue = input_queue
-        self.output_queue = output_queue
-        self.unzipDir = unzipDir
-        self.task_manager = task_manager
-        self.template_path = template_path
-
-        # Create store directory if it does not exist.
-        try:
-            os.makedirs(unzipDir, exist_ok = True)
-            logger.debug('Destination directory created successfully')
-        except:
-            logger.error('Destination directory could not be created')
-
+        self.next_step = next_step
 
     def start(self):
 
@@ -38,28 +28,32 @@ class SeriesUnpacker():
         """
 
         # Set an event to stop the thread later 
-        self.stop_event = threading.Event()        
+        self.stop_event = threading.Event() 
 
         try:
-            assert os.path.isdir(self.unzipDir)
+            # Check if AppConfig is available
+            with application.app_context():
+                config = AppConfig.query.first()
+        except Exception as e:
+            logger.error("can't start, AppConfig not available")            
+            return "Unpacker can't be started: database not available"    
+
+        # Create temporary directory if it does not exist.
+        try:
+            os.makedirs(config.unzip_dir, exist_ok = True)
+            logger.info(f'destination {config.unzip_dir} directory created successfully')
         except:
-            logger.error(f"SeriesUnpacker can't start: {self.unzipDir} does not exist")
-            return "Packer can't be started: an error ocurred when creating a temporary folder"
-        else:                
-            if not self.get_status() == 'Running':
-                # Create and start the thread
-                self.main_thread = threading.Thread(target = self.main, args = ())        
-                self.main_thread.start()
-                logger.info('SeriesUnpacker started')
-
-                if not os.path.isdir(self.template_path):
-                    logger.warning(f"{self.template_path} does not exist")
-                    return "Unpacker started but a required directory is missing"
-                else:
-                    return "Unpacker started successfully"
-            else:
-                return "Unpacker is already running"
-
+            logger.error(f'destination {config.unzip_dir} directory could not be created')
+            return "Unpacker can't be started: storage access error"
+         
+        if not self.get_status() == 'Running':
+            # Create and start the thread
+            self.main_thread = threading.Thread(target = self.main, args = ())        
+            self.main_thread.start()
+            logger.info('Unpacker started')
+            return "Unpacker started successfully"
+        else:
+            return "Unpacker is already running"
 
 
     def stop(self):
@@ -96,60 +90,63 @@ class SeriesUnpacker():
     def main(self):
 
         while not self.stop_event.is_set() or not self.input_queue.empty():
+            with application.app_context():
+                    
+                # If there are any elements in the input queue, read them.
+                if not self.input_queue.empty():
+                    # Get zip filename and task id from the queue
+                    task = Task.query.get(self.input_queue.get())
+                    config = AppConfig.query.first()
 
-            # If there are any elements in the input queue, read them.
-            if not self.input_queue.empty():
-                # Get zip filename and task id from the queue
-                element = self.input_queue.get()
-                filename = element['filename']
-                task_id = element['task_id']
+                    filename = os.path.join(config.download_path, task.id + '_' + config.client_id + '.zip')
 
-                # Build zip filename
-                zip_fname = os.path.splitext(os.path.basename(filename))[0]               
+                    # Build zip filename
+                    zip_fname = os.path.splitext(os.path.basename(filename))[0]               
 
-                # Decompress files                
-                extract_dir = os.path.join(self.unzipDir, zip_fname)
-                logger.info(f"Decompressing {filename} to {extract_dir}")
-                self.task_manager.manage_task(action = 'update', task_id = task_id, task_data = {'status': 'decompressing'})    
-                try:
-                    unpack_archive(filename, extract_dir)
-                    logger.info(f"{filename} decompressed successfully")
-                    self.task_manager.manage_task(action = 'update', task_id = task_id, task_data = {'status': 'decompressed ok'})    
-                except Exception as e:
-                    logger.error(f"Could not decompress file {filename}")
-                    logger.error(repr(e))
-                    self.task_manager.manage_task(action = 'update', task_id = task_id, task_data = {'status': 'decompressed failed'})    
+                    # Decompress files                
+                    extract_dir = os.path.join(config.unzip_dir, zip_fname)
+                    logger.info(f"Decompressing {filename} to {extract_dir}")
+                    task.status_msg = 'decompressing'    
+                    try:
+                        unpack_archive(filename, extract_dir)
+                        logger.info(f"{filename} decompressed successfully")
+                        task.status_msg = 'decompressed ok'
+                    except Exception as e:
+                        logger.error(f"Could not decompress file {filename}")
+                        logger.error(repr(e))
+                        task.status_msg = 'decompressed failed'                        
+                    else:
+                        
+                        # List decompressed files
+                        filelist = os.listdir(extract_dir)
+
+                        # Keep .npy files only
+                        npy_files = [file for file in filelist if os.path.splitext(file)[1] == '.npy']
+                        task.status_msg = 'building dicoms'
+                        
+                        success = 0
+                        datasets = []
+                        for idx, npy_file in enumerate(npy_files):                        
+                            # Build dicom files
+                            try:
+                                datasets.extend(self.build_dicom_files(os.path.join(extract_dir, npy_file), task.id, idx))
+                                success += 1
+                                logger.info(f"Building dicoms for {npy_file} successful")
+                            except Exception as e:
+                                logger.error(f"Failed when building dicoms for {npy_file}")
+                                logger.error(repr(e))
+
+                        task.status_msg = f"building dicoms {success}/{len(npy_files)}" 
+                        
+                        # Add datasets to the database
+                        content = {'datasets': datasets, 'task_id': task_id}         
+                        logger.info(f"{len(datasets)} dicoms put on queue for task {task_id}")           
+                        
+                        self.output_queue.put(content)
+
+                    db.session.commit()
                 else:
-                    
-                    # List decompressed files
-                    filelist = os.listdir(extract_dir)
-
-                    # Keep .npy files only
-                    npy_files = [file for file in filelist if os.path.splitext(file)[1] == '.npy']
-                    
-                    self.task_manager.manage_task(action = 'update', task_id = task_id, task_data = {'status': 'building dicoms'})    
-                    success = 0
-                    datasets = []
-                    for idx, npy_file in enumerate(npy_files):                        
-                        # Build dicom files
-                        try:
-                            datasets.extend(self.build_dicom_files(os.path.join(extract_dir, npy_file), task_id, idx))
-                            success += 1
-                            logger.info(f"Building dicoms for {npy_file} successful")
-                        except Exception as e:
-                            logger.error(f"Failed when building dicoms for {npy_file}")
-                            logger.error( repr(e))
-                                            
-                    self.task_manager.manage_task(action = 'update', task_id = task_id, task_data = {'status': f"building dicoms {success}/{len(npy_files)}"})    
-                    
-                    # Put datasets in the output queue to be sent through DICOM interface
-                    content = {'datasets': datasets, 'task_id': task_id}         
-                    logger.info(f"{len(datasets)} dicoms put on queue for task {task_id}")           
-                    
-                    self.output_queue.put(content)
-
-            else:
-                sleep(1)
+                    sleep(1)
 
     def build_dicom_files(self, npy_file_path, task_id, idx):
 

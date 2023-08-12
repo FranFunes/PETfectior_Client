@@ -3,7 +3,6 @@ from requests import ConnectionError
 from time import sleep
 from datetime import datetime
 import numpy as np
-from services.helper_funcs import delete_series
 from pydicom import Dataset
 
 from typing import List
@@ -92,7 +91,7 @@ class Validator():
             · Reads a task id from the input queue
             · Tries to find an appropiate destination for the Task, and flags it as failed if
             it couldn't
-            · Checks if recon settings (available as serialized JSON in Task.current_step_data)
+            · Checks if recon settings (available as serialized JSON in Task.recon_settings)
             is enough to complete
             · Sends a POST to the server to check if there exists a model for these recon settings         
                
@@ -103,26 +102,27 @@ class Validator():
             
             with application.app_context():
 
+                timing = datetime.now()
                 # If there are any elements in the input queue, read them.
                 if not self.input_queue.empty():
 
                     # Read task id from the input queue
-                    task_id = self.input_queue.get()
-                    task = Task.query.get(task_id)
+                    task = Task.query.get(self.input_queue.get())
+                    task.updated = timing
                     task.status_msg = 'validating'
 
                     # Set destinations for this task
-                    destinations = self.set_destinations(task_id)
+                    destinations = self.set_destinations(task.id)
                     if not destinations:
-                        logger.error(f"task {task_id} destination is unknown.")
+                        logger.error(f"task {task.id} destination is unknown.")
                         task.status_msg = 'failed - no destination'
-                        task.step_state = -1
+                        task.step_state = -1                        
                     else:
                         task.destinations.extend(destinations)
                         # Check if dicom information is complete
-                        recon_settings = Dataset.from_json(task.current_step_data)
+                        recon_settings = Dataset.from_json(task.recon_settings)
                         if not self.check_dicom_parameters(recon_settings):
-                            logger.info(f"task {task_id} completed but there are missing dicom information.")
+                            logger.info(f"task {task.id} completed but there are missing dicom information.")
                             task.status_msg = 'failed - missing info'
                             task.step_state = -1                            
                         else:
@@ -130,7 +130,7 @@ class Validator():
                             try:
                                 assert self.check_model(recon_settings)
                             except AssertionError:                            
-                                logger.error(f"task {task_id} completed but no model found for this recon settings.")
+                                logger.error(f"task {task.id} completed but no model found for this recon settings.")
                                 task.status_msg = 'failed - no model'
                                 task.step_state = -1  
                             except ConnectionError as e:                            
@@ -139,21 +139,21 @@ class Validator():
                                 task.status_msg = 'failed - server connection'
                                 task.step_state = -1
                             except AttributeError as e:
-                                logger.error(f"missing dicom information for task {task_id}.")
+                                logger.error(f"missing dicom information for task {task.id}.")
                                 logger.error(repr(e))
                                 task.status_msg = 'failed - missing info'
                                 task.step_state = -1                  
                             else:
                                 # Flag step as completed                                
                                 task.current_step = self.next_step
-                                task.step_state = 1
                                 task.status_msg = 'validated'
+                                task.step_state = 1
                                 logger.info(f"Task {task.id} validated.")
                     
+                    db.session.commit()
                 else:
                     sleep(1)
 
-                db.session.commit()
                         
     def set_destinations(self, task_id: str) -> List[Device]:
 

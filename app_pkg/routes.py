@@ -1,7 +1,7 @@
 from app_pkg import application
 from flask import render_template, request, jsonify
 import json, ipaddress, os, logging, psutil
-from init_services import services, task_manager, download_queue
+from init_services import services, task_manager
 import pandas as pd
 from datetime import datetime
 
@@ -260,9 +260,12 @@ def process_ready():
     """
 
     # Pass the task_id to the downloader to extract the results   
-    try: 
-        download_queue.put(request.json['task_id'])
-        logger.info(request.json['task_id'] + " put in the download_queue")
+    try:
+        # Flag step as completed     
+        task = Task.query.get(request.json['task_id'])
+        task.current_step = 'downloader'
+        task.step_state = 1
+        logger.info(f"Task {task.id} processing done, downloading results.")        
         return jsonify(message = 'Acknowledge'), 200    
     except:
         logger.error("request.json['task_id'] couldn't be read")
