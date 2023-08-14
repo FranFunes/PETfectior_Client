@@ -97,25 +97,8 @@ def db_create_instance(ds: Dataset, filename: str) -> Instance:
         
     return instance
 
-# Create a handler for the store request event
-def db_store_handler(event: Event, output_queue:Queue, root_dir:str) -> int:
-    
-    ds = event.dataset
-    ds.file_meta = event.file_meta    
+def store_dataset(ds, root_dir):
 
-    # Check if dataset has all mandatory information
-    new_ds = Dataset()
-    try:
-        # Append mandatory information to the new dataset
-        new_ds.StudyInstanceUID = ds.StudyInstanceUID
-        new_ds.SeriesInstanceUID = ds.SeriesInstanceUID
-        new_ds.SOPInstanceUID = ds.SOPInstanceUID
-        new_ds.ImagePositionPatient = ds.ImagePositionPatient
-    except AttributeError:
-        # Return error code and log failure information
-        logger.debug("New dataset could not be processed. Missing DICOM information?")
-        return 0xA700 
-    
     # Check if instance already exists
     with application.app_context():
         instance = Instance.query.get(ds.SOPInstanceUID)
@@ -160,6 +143,33 @@ def db_store_handler(event: Event, output_queue:Queue, root_dir:str) -> int:
                 except Exception as e:
                     logger.error(f"Can't delete file {filepath} from disk: {repr(e)}")
                 return 0xA700
+    
+    return 0x0000
+
+
+# Create a handler for the store request event
+def db_store_handler(event: Event, output_queue:Queue, root_dir:str) -> int:
+    
+    ds = event.dataset
+    ds.file_meta = event.file_meta    
+
+    # Check if dataset has all mandatory information
+    new_ds = Dataset()
+    try:
+        # Append mandatory information to the new dataset
+        new_ds.StudyInstanceUID = ds.StudyInstanceUID
+        new_ds.SeriesInstanceUID = ds.SeriesInstanceUID
+        new_ds.SOPInstanceUID = ds.SOPInstanceUID
+        new_ds.ImagePositionPatient = ds.ImagePositionPatient
+    except AttributeError:
+        # Return error code and log failure information
+        logger.debug("New dataset could not be processed. Missing DICOM information?")
+        return 0xA700
+
+    try:
+        assert store_dataset(ds, root_dir) == 0
+    except:
+        return 0xA700
 
     # Append non mandatory information to new_ds
     fields = ['NumberOfSlices','PatientName','StudyDate','SeriesDescription']

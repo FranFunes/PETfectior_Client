@@ -5,9 +5,10 @@ import numpy as np
 from pydicom import dcmread
 from pydicom.uid import generate_uid
 from datetime import datetime
+from services.db_store_handler import store_dataset
 
 from app_pkg import application, db
-from app_pkg.db_models import AppConfig, Task
+from app_pkg.db_models import AppConfig, Task, Series
 
 # Configure logging
 logger = logging.getLogger('__main__')
@@ -110,11 +111,11 @@ class SeriesUnpacker():
                     try:
                         unpack_archive(filename, extract_dir)
                         logger.info(f"{filename} decompressed successfully")
-                        task.status_msg = 'decompressed ok'
+                        task.status_msg = 'decompression ok'
                     except Exception as e:
                         logger.error(f"Could not decompress file {filename}")
                         logger.error(repr(e))
-                        task.status_msg = 'decompressed failed'                        
+                        task.status_msg = 'decompression failed'                        
                     else:
                         
                         # List decompressed files
@@ -125,30 +126,45 @@ class SeriesUnpacker():
                         task.status_msg = 'building dicoms'
                         
                         success = 0
-                        datasets = []
+                        stored_ok = 0
                         for idx, npy_file in enumerate(npy_files):                        
                             # Build dicom files
                             try:
-                                datasets.extend(self.build_dicom_files(os.path.join(extract_dir, npy_file), task.id, idx))
+                                series_uid, datasets = self.build_dicom_files(os.path.join(extract_dir, npy_file), task.id, idx)
+                                # Add datasets to the database 
+                                for ds in datasets:
+                                    stored_ok += store_dataset(ds, 'incoming') == 0
+                                # Link this series as a result for this task
+                                s = Series.query.get(series_uid)
+                                task.result_series.append(s)
                                 success += 1
                                 logger.info(f"Building dicoms for {npy_file} successful")
                             except Exception as e:
                                 logger.error(f"Failed when building dicoms for {npy_file}")
                                 logger.error(repr(e))
 
+                        logger.info(f"{stored_ok} dicom stored succesfully")                        
                         task.status_msg = f"building dicoms {success}/{len(npy_files)}" 
-                        
-                        # Add datasets to the database
-                        content = {'datasets': datasets, 'task_id': task_id}         
-                        logger.info(f"{len(datasets)} dicoms put on queue for task {task_id}")           
-                        
-                        self.output_queue.put(content)
+
+                        # Check if all the expected instances have been correctly stored
+                        # in the database
+                        if stored_ok == len(npy_files) * len(task.instances):
+                            # Flag step as completed
+                            logger.info(f"{task.id}: all expected instances succesfully stored in database")                              
+                            task.current_step = self.next_step
+                            task.step_state = 1    
+                            task.status_msg = f"storing results failed"
+                        else:
+                            # Flag step as failed
+                            logger.info(f"{task.id}: not all expected instances stored")
+                            logger.info(f"{task.id}: expected {len(npy_files) * len(task.instances)} stored {stored_ok}")                            
+                            task.step_state = -1    
 
                     db.session.commit()
                 else:
                     sleep(1)
 
-    def build_dicom_files(self, npy_file_path, task_id, idx):
+    def build_dicom_files(self, npy_file_path, task_id, series_number_addition):
 
         # Load and process voxels
         try:
@@ -164,11 +180,10 @@ class SeriesUnpacker():
         # Normalize each slice to 2**16 - 1 as max value and convert to uint16
         v = (v / slopes).astype(np.uint16)   
 
-        # Load templates
-        templates = []        
-        filenames = os.listdir(os.path.join(self.template_path, task_id))
-        for file in filenames:
-            templates.append(dcmread(os.path.join(self.template_path, task_id, file)))            
+        # Load original instances to use as templates
+        with application.app_context():
+            task = Task.query.get(task_id)
+            templates = [dcmread(i.filename) for i in task.instances]         
             
         # Sort by slice location
         z = [ds.ImagePositionPatient[2] for ds in templates]
@@ -181,9 +196,9 @@ class SeriesUnpacker():
             ds.RescaleSlope = slopes[idx]
 
         # Use .npy file as SeriesDescription
-        series_description = os.path.splitext(os.path.basename(npy_file_path))[0]
+        series_description = templates[0].SeriesDescription + '_' + os.path.splitext(os.path.basename(npy_file_path))[0]
         series_uid = generate_uid()
-        series_number = 1101 + idx
+        series_number = 1101 + series_number_addition
         timenow = datetime.now().strftime('%H%M%S')
         for ds in templates:
             ds.InstanceCreationTime = timenow
@@ -193,7 +208,7 @@ class SeriesUnpacker():
             ds.SeriesNumber = series_number
             ds.SeriesDescription = series_description
 
-        return templates
+        return [series_uid, templates]
 
 
 

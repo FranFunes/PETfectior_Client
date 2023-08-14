@@ -14,6 +14,8 @@ from services.task_manager import TaskManager
 from services.packer import SeriesPacker
 from services.uploader import SeriesUploader
 from services.downloader import SeriesDownloader
+from services.unpacker import SeriesUnpacker
+from services.store_scu import StoreSCU
 
 # Disable warnings (only for developing)
 import warnings
@@ -32,6 +34,7 @@ queues = {
     'uploader': queue.Queue(),
     'downloader': queue.Queue(),    
     'unpacker': queue.Queue(),
+    'store_scu': queue.Queue()
 }
 
 # Task manager
@@ -55,6 +58,12 @@ uploader = SeriesUploader(input_queue = queues['uploader'])
 # Downloader
 downloader = SeriesDownloader(input_queue = queues['downloader'], next_step = 'unpacker')
 
+# Unpacker
+unpacker = SeriesUnpacker(input_queue = queues['unpacker'], next_step = 'store_scu')
+
+# Store SCU
+store_scu = StoreSCU(input_queue = queues['store_scu'])
+
 
 # Initialize services
 services = {'Dicom Listener': store_scp,
@@ -63,6 +72,8 @@ services = {'Dicom Listener': store_scp,
             'Packer': packer,
             'Uploader': uploader,
             'Downloader': downloader,
+            'Unpacker': unpacker,
+            'StoreSCU': store_scu,
             'TaskManager': task_manager}
 
 # Get app configuration from database or initialize it

@@ -49,10 +49,11 @@ class Series(db.Model):
     # One-to-many relationships (as child)
     PatientID = db.Column(db.String(64), db.ForeignKey('patient.PatientID'))
     StudyInstanceUID = db.Column(db.String(64), db.ForeignKey('study.StudyInstanceUID'))
+    originating_task = db.Column(db.String(18), db.ForeignKey('task.id'))
 
     # One-to-many relationships (as parent)
     instances = db.relationship('Instance', backref='series', lazy='dynamic')
-    tasks = db.relationship('Task', backref='task_series', lazy='dynamic')     
+    tasks = db.relationship('Task', backref='task_series', lazy='dynamic', foreign_keys='Task.series')     
 
     def __repr__(self):
         return f'<Series {self.SeriesDescription} from {self.PatientID}>'    
@@ -106,6 +107,9 @@ class Task(db.Model):
     # One-to-many relationships (as child)
     series = db.Column(db.String(64), db.ForeignKey('series.SeriesInstanceUID')) 
     source = db.Column(db.String(96), db.ForeignKey('source.identifier'))   
+
+    # One-to-many relationships (as parent)
+    result_series = db.relationship('Series', backref='result_task', lazy='dynamic', foreign_keys='Series.originating_task')
 
     # Many-to-many relationships (as parent)
     destinations = db.relationship('Device', secondary=task_destination, backref='tasks')  

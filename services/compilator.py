@@ -134,8 +134,8 @@ class Compilator():
                         db.session.add(source)
                         
                     # Check if this SOP should be appended to an existing or new Task.          
-                    tasks = (Task.query.join(Source).filter_by(identifier=src_id).
-                            join(Series).filter_by(SeriesInstanceUID = series_uid)).all()
+                    tasks = (Task.query.filter_by(series = series_uid).
+                            join(Source).filter_by(identifier=src_id)).all()
                     matching_task = None
                     i = Instance.query.get(sop_uid)
                     for task in tasks:
@@ -332,7 +332,7 @@ class Compilator():
         try:
             max_idx = np.argmax([ds.ActualFrameDuration for ds in row['recon_settings']])
             max_value = row['recon_settings'][max_idx].ActualFrameDuration
-            logger.info(f"Index {max_idx} has max ActualFrameDuration of {max_value}")
+            logger.debug(f"Index {max_idx} has max ActualFrameDuration of {max_value}")
         except Exception as e:
             max_idx = 0
             logger.error(f"Could not select max ActualFrameDuration. Using first element")
@@ -343,7 +343,7 @@ class Compilator():
         z = [ds.ImagePositionPatient[2] for ds in row['datasets']]
         spacing = np.diff(np.sort(z)).mean()
         recon_settings.SpacingBetweenSlices = spacing
-        logger.info(f"spacing {spacing:.2f}")
+        logger.debug(f"spacing {spacing:.2f}")
 
         return recon_settings
         
