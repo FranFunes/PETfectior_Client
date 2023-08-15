@@ -124,7 +124,7 @@ class Compilator():
                     recon_settings = queue_element['recon_ds']
                     ip = queue_element['address']
                     ae_title = queue_element['ae_title']
-                    timing = datetime.now()
+                    timing = datetime.utcnow()
 
                     # Record this source in the database if it doesn't exist
                     src_id = f"{ae_title}@{ip}"

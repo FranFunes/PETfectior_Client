@@ -106,6 +106,7 @@ class SeriesUploader():
                     try:                    
                         logger.info(f"Uploading {filename}")    
                         task.status_msg = 'uploading'
+                        db.session.commit()
                         basename = os.path.basename(filename)
                         copy(filename, os.path.join(config.shared_mount_point, 'to_process'))
                     except Exception as e:
@@ -116,11 +117,16 @@ class SeriesUploader():
                         # If upload was succesful, delete file and send a message to the server                    
                         logger.info(f"Upload successful for task {task.id}")
                         task.status_msg = 'upload ok'
-                        if self.send_message(basename, task.recon_settings, config):
+                        db.session.commit()
+                        try:                                                        
+                            assert self.send_message(basename, task.recon_settings, config)
                             task.status_msg = 'processing'
                             os.remove(filename)
+                            logger.info('commit to server ok')
                             logger.info(f"File {filename} deleted")
-                        else:
+                        except Exception as e:
+                            logger.error('commit to server failed')
+                            logger.error(repr(e))
                             task.status_msg = 'commit to server failed'
                     db.session.commit()
                 else:
@@ -130,7 +136,7 @@ class SeriesUploader():
         
         if not os.environ["SERVER_INTERACTION"] == "True":
             return True                        
-            
+                
         # Send the post
         data = {
             'input_file': filename,
@@ -152,7 +158,8 @@ class SeriesUploader():
 
         """
         
-        Esta función toma un pydicom.dataset y devuelve un diccionario con las siguientes keys:
+        Esta función toma un pydicom.dataset (o su versión json serializada) y devuelve
+        un diccionario con las siguientes keys:
 
         'ManufacturerModelName'
         'ReconstructionMethod'
@@ -164,7 +171,9 @@ class SeriesUploader():
         'HalfLife'
 
         """
-        
+        if type(ss == str):
+            ss = Dataset.from_json(ss)
+
         if ss.Manufacturer == 'SIEMENS':
             recon_method = ss.ReconstructionMethod
             iterations_index = recon_method.find('i')

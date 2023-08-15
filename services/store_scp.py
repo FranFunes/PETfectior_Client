@@ -1,9 +1,7 @@
 from pynetdicom import AE, evt
 from pynetdicom.sop_class import PositronEmissionTomographyImageStorage, Verification
-from pydicom.dataset import Dataset
 import pydicom
-import logging, os, json
-from datetime import datetime
+import logging, os
 
 from app_pkg import application
 from app_pkg.db_models import AppConfig
@@ -99,14 +97,14 @@ class StoreSCP(AE):
             return 'Dicom Listener could not be stopped!'
 
 
-    def restart(self, ae_title):
+    def restart(self):
         
         try:
             self.stop()
         except Exception as e: 
             logger.info("Server could not be stopped")
             logger.info(repr(e))
-        self.start(ae_title)
+        self.start()
 
     def get_status(self):
 

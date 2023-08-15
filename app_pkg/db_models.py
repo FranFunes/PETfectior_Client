@@ -1,5 +1,6 @@
 from app_pkg import db
 from datetime import datetime
+from sqlalchemy import event
 
 # Association tables for many-to-many relationships
 task_destination = db.Table('task_destination',
@@ -117,6 +118,10 @@ class Task(db.Model):
 
     def __repr__(self):
         return f'<Task {self.id}>'
+
+@event.listens_for(Task, 'before_update')
+def update_task_modified_timestamp(mapper, connection, target):
+    target.updated = datetime.utcnow()
 
 class AppLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)

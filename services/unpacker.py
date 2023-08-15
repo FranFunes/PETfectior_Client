@@ -1,5 +1,6 @@
 import threading, logging, os, json
 from shutil import unpack_archive
+from copy import deepcopy
 from time import sleep
 import numpy as np
 from pydicom import dcmread
@@ -98,6 +99,7 @@ class SeriesUnpacker():
                     # Get zip filename and task id from the queue
                     task = Task.query.get(self.input_queue.get())
                     config = AppConfig.query.first()
+                    templates = [dcmread(i.filename) for i in task.instances]  
 
                     filename = os.path.join(config.download_path, task.id + '_' + config.client_id + '.zip')
 
@@ -108,10 +110,12 @@ class SeriesUnpacker():
                     extract_dir = os.path.join(config.unzip_dir, zip_fname)
                     logger.info(f"Decompressing {filename} to {extract_dir}")
                     task.status_msg = 'decompressing'    
+                    db.session.commit()
                     try:
                         unpack_archive(filename, extract_dir)
                         logger.info(f"{filename} decompressed successfully")
                         task.status_msg = 'decompression ok'
+                        db.session.commit()
                     except Exception as e:
                         logger.error(f"Could not decompress file {filename}")
                         logger.error(repr(e))
@@ -124,13 +128,14 @@ class SeriesUnpacker():
                         # Keep .npy files only
                         npy_files = [file for file in filelist if os.path.splitext(file)[1] == '.npy']
                         task.status_msg = 'building dicoms'
+                        db.session.commit()
                         
                         success = 0
                         stored_ok = 0
                         for idx, npy_file in enumerate(npy_files):                        
                             # Build dicom files
                             try:
-                                series_uid, datasets = self.build_dicom_files(os.path.join(extract_dir, npy_file), task.id, idx)
+                                series_uid, datasets = self.build_dicom_files(os.path.join(extract_dir, npy_file), templates, idx)
                                 # Add datasets to the database 
                                 for ds in datasets:
                                     stored_ok += store_dataset(ds, 'incoming') == 0
@@ -145,6 +150,7 @@ class SeriesUnpacker():
 
                         logger.info(f"{stored_ok} dicom stored succesfully")                        
                         task.status_msg = f"building dicoms {success}/{len(npy_files)}" 
+                        db.session.commit()
 
                         # Check if all the expected instances have been correctly stored
                         # in the database
@@ -153,7 +159,7 @@ class SeriesUnpacker():
                             logger.info(f"{task.id}: all expected instances succesfully stored in database")                              
                             task.current_step = self.next_step
                             task.step_state = 1    
-                            task.status_msg = f"storing results failed"
+                            task.status_msg = f"storing results ok"
                         else:
                             # Flag step as failed
                             logger.info(f"{task.id}: not all expected instances stored")
@@ -164,8 +170,10 @@ class SeriesUnpacker():
                 else:
                     sleep(1)
 
-    def build_dicom_files(self, npy_file_path, task_id, series_number_addition):
+    def build_dicom_files(self, npy_file_path, templates, series_number_addition):
 
+        # Create new deep copy of templates
+        datasets = [deepcopy(ds) for ds in templates]
         # Load and process voxels
         try:
             v = np.load(npy_file_path)            
@@ -178,29 +186,25 @@ class SeriesUnpacker():
         # Calculate rescale slopes for each slice
         slopes = (v.max(axis = (1,2)) / (2**15 - 1)).reshape((v.shape[0],1,1))        
         # Normalize each slice to 2**16 - 1 as max value and convert to uint16
-        v = (v / slopes).astype(np.uint16)   
-
-        # Load original instances to use as templates
-        with application.app_context():
-            task = Task.query.get(task_id)
-            templates = [dcmread(i.filename) for i in task.instances]         
+        v = (v / slopes).astype(np.uint16)          
             
         # Sort by slice location
-        z = [ds.ImagePositionPatient[2] for ds in templates]
+        z = [ds.ImagePositionPatient[2] for ds in datasets]
         order = np.argsort(z)
-        templates = [templates[idx] for idx in order]
+        datasets = [datasets[idx] for idx in order]
         
         # Replace voxel values on templates
-        for idx, ds in enumerate(templates):
+        for idx, ds in enumerate(datasets):
             ds.PixelData = v[idx].tobytes()
             ds.RescaleSlope = slopes[idx]
 
         # Use .npy file as SeriesDescription
-        series_description = templates[0].SeriesDescription + '_' + os.path.splitext(os.path.basename(npy_file_path))[0]
+        sufix = '_'.join(os.path.splitext(os.path.basename(npy_file_path))[0].split('_')[1:])
+        series_description = datasets[0].SeriesDescription + '_' + sufix
         series_uid = generate_uid()
         series_number = 1101 + series_number_addition
         timenow = datetime.now().strftime('%H%M%S')
-        for ds in templates:
+        for ds in datasets:            
             ds.InstanceCreationTime = timenow
             ds.SOPInstanceUID = generate_uid()
             ds.ContentTime = timenow
@@ -208,7 +212,7 @@ class SeriesUnpacker():
             ds.SeriesNumber = series_number
             ds.SeriesDescription = series_description
 
-        return [series_uid, templates]
+        return [series_uid, datasets]
 
 
 

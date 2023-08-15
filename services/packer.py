@@ -2,7 +2,7 @@ import threading, logging, os, json
 from shutil import make_archive, rmtree
 from simple_file_checksum import get_checksum
 from time import sleep
-from pydicom import dcmread, Dataset
+from pydicom import dcmread
 import numpy as np
 
 from app_pkg import application, db
@@ -110,7 +110,7 @@ class SeriesPacker():
                         metadata = {
                             'client_id': config.client_id,
                             'task_id': task.id,
-                            'recon_settings': task.recon_settings,
+                            'recon_settings': json.loads(task.recon_settings),
                             'sha256':get_checksum(os.path.join('temp_series_packer', 'voxels.npy'), algorithm="SHA256")
                         }
                         with open(os.path.join("temp_series_packer", "metadata.json"), "w") as jsonfile:  

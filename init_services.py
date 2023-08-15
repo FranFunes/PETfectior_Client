@@ -16,6 +16,7 @@ from services.uploader import SeriesUploader
 from services.downloader import SeriesDownloader
 from services.unpacker import SeriesUnpacker
 from services.store_scu import StoreSCU
+from services.server_monitor import ServerMonitor
 
 # Disable warnings (only for developing)
 import warnings
@@ -64,6 +65,9 @@ unpacker = SeriesUnpacker(input_queue = queues['unpacker'], next_step = 'store_s
 # Store SCU
 store_scu = StoreSCU(input_queue = queues['store_scu'])
 
+# Server Monitor
+monitor =  ServerMonitor('check_ping', 1)
+
 
 # Initialize services
 services = {'Dicom Listener': store_scp,
@@ -74,7 +78,8 @@ services = {'Dicom Listener': store_scp,
             'Downloader': downloader,
             'Unpacker': unpacker,
             'StoreSCU': store_scu,
-            'TaskManager': task_manager}
+            'Task Manager': task_manager,
+            'Server Monitor': monitor}
 
 # Get app configuration from database or initialize it
 db_available = False
@@ -98,11 +103,12 @@ with application.app_context():
 # Start services
 if db_available:
     for name, service in services.items():
-        try:
-            service.start()
-        except Exception as e:
-            logger.error(f"failed when starting {name}")
-            logger.error(repr(e))
+        if name != 'ServerMonitor':
+            try:
+                service.start()
+            except Exception as e:
+                logger.error(f"failed when starting {name}")
+                logger.error(repr(e))
 
 else:
     logger.error(f"services won't start as database is not available")

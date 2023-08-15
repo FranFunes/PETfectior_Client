@@ -80,6 +80,7 @@ def toggle_mirror_mode():
     try:
         c = AppConfig.query.first()
         c.mirror_mode = not c.mirror_mode
+        mirror_mode = c.mirror_mode
         db.session.commit()
     except Exception as e:
         logger.error("can't access mirror_mode on database")
@@ -121,11 +122,11 @@ def manage_local_device():
     try:
         c = AppConfig.query.first()
         c.store_scp_aet = request.json["ae_title"]
-        c.store_scp_port = request.json.get("port", default = c.store_scp_port)
+        c.store_scp_port = request.json.get("port", c.store_scp_port)
         db.session.commit()
         # Try to restart DICOM services with the new configuration
-        services['store_scp'].restart()
-        services['store_scu'].ae_title = request.json["ae_title"]   
+        services['Dicom Listener'].restart()
+        services['StoreSCU'].ae_title = request.json["ae_title"]   
         return {"message":"Local device was updated successfully"}        
     except OperationalError as e:
         logger.error("can't access config in database")
@@ -171,15 +172,13 @@ def manage_remote_devices():
         try:   
             assert d
             db.session.delete(d)
-            for f in d.basic_filters.all():
-                db.session.delete(f)  
             db.session.commit()
             logger.info(f'device {d} deleted')
             return jsonify(message = "Dispositivo eliminado correctamente"), 200
         except AssertionError:
             logger.error('trying to delete unexistent device')
             return jsonify(message = "Error: el dispositivo no existe"), 500    
-        except:
+        except Exception as e:
             logger.error('uknown error when searching database')
             logger.error(repr(e))
             return jsonify(message = "Error al leer la base de datos"), 500    
@@ -209,9 +208,7 @@ def manage_remote_devices():
             return jsonify(message = "Error: el dispositivo ya existe"), 500    
         try:
             # Add device to database
-            new_d = Device(name = device_name, ae_title = ae_title, address = address, port = port,
-            imgs_series = request.json["imgs_series"] or "Unknown",
-            imgs_study = request.json["imgs_study"] or "Unknown")
+            new_d = Device(name = device_name, ae_title = ae_title, address = address, port = port, is_destination = request.json['is_destination'])
             db.session.add(new_d)
             db.session.commit()
             logger.info(f'device {new_d} created.') 
@@ -233,8 +230,7 @@ def manage_remote_devices():
             d.ae_title = ae_title
             d.address = address
             d.port = port
-            d.imgs_series = request.json["imgs_series"] or "Unknown"
-            d.imgs_study = request.json["imgs_study"] or "Unknown"
+            d.is_destination = request.json['is_destination']
             db.session.commit()
             logger.info('device edited')
             return {"message":"Dispositivo editado correctamente"}    
@@ -294,6 +290,7 @@ def process_ready():
         task = Task.query.get(request.json['task_id'])
         task.current_step = 'downloader'
         task.step_state = 1
+        db.session.commit()
         logger.info(f"Task {task.id} processing done, downloading results.")        
         return jsonify(message = 'Acknowledge'), 200    
     except:
@@ -310,6 +307,7 @@ def logs():
 def get_modules_names():
 
     modules = ['client_side_app',
+               'db_store_handler',
                'routes',
                'init_services',
                'server_monitor',
@@ -328,7 +326,7 @@ def get_modules_names():
 def get_logs():
 
     if not request.json['ignore']:
-        df = pd.read_csv(os.environ['LOGGING_FILE'], sep=';', names = ['datetime','level','module','function','message'])
+        df = pd.read_csv(os.environ['LOGGING_FILEPATH'], sep=';', names = ['datetime','level','module','function','message'])
         df['datetime'] = df['datetime'].map(lambda x: datetime.strptime(x,'%Y-%m-%d %H:%M:%S,%f'))
 
         # Filter by level

@@ -13,15 +13,14 @@ def db_create_patient(ds: Dataset) -> Patient:
     
     pat_id = str(ds.PatientID)
     pat_name = str(ds.PatientName)
-    with application.app_context():
-        # Raise error if patient already exists
-        patient = Patient.query.get(pat_id)
-        if patient is not None:
-            logger.error('patient already exists.')
-            raise ValueError("This patient already exists")
-        patient = Patient(PatientID = pat_id, PatientName = pat_name)
-        db.session.add(patient)
-        db.session.commit()
+    # Raise error if patient already exists
+    patient = Patient.query.get(pat_id)
+    if patient is not None:
+        logger.error('patient already exists.')
+        raise ValueError("This patient already exists")
+    patient = Patient(PatientID = pat_id, PatientName = pat_name)
+    db.session.add(patient)
+    db.session.commit()
     return patient
 
 def db_create_study(ds: Dataset) -> Study:
@@ -29,20 +28,20 @@ def db_create_study(ds: Dataset) -> Study:
     uid = ds.StudyInstanceUID
     date = datetime.strptime(ds.StudyDate + ds.StudyTime[:6], '%Y%m%d%H%M%S')
     description = ds.StudyDescription
-    with application.app_context():
-        # Raise error if study already exists
-        study = Study.query.get(uid)
-        if study is not None:
-            logger.error('study already exists.')
-            raise ValueError("This study already exists")
-        # Check if patient already exists and create it if not
-        patient = Patient.query.get(ds.PatientID) or db_create_patient(ds)
-        study = Study(StudyInstanceUID = uid, 
-                      StudyDate = date,
-                      StudyDescription = description, 
-                      patient = patient)
-        db.session.add(study)
-        db.session.commit()
+
+    # Raise error if study already exists
+    study = Study.query.get(uid)
+    if study is not None:
+        logger.error('study already exists.')
+        raise ValueError("This study already exists")
+    # Check if patient already exists and create it if not
+    patient = Patient.query.get(ds.PatientID) or db_create_patient(ds)
+    study = Study(StudyInstanceUID = uid, 
+                    StudyDate = date,
+                    StudyDescription = description, 
+                    patient = patient)
+    db.session.add(study)
+    db.session.commit()
 
     return study
     
@@ -52,23 +51,23 @@ def db_create_series(ds: Dataset) -> Series:
     date = datetime.strptime(ds.SeriesDate + ds.SeriesTime[:6], '%Y%m%d%H%M%S')
     description = ds.SeriesDescription
     mod = ds.Modality
-    with application.app_context():
-        # Raise error if series already exists
-        series = Series.query.get(uid)
-        if series is not None:
-            logger.error('series already exists.')
-            raise ValueError("This series already exists")
-        # Check if patient and study already exist or create them if not
-        patient = Patient.query.get(ds.PatientID) or db_create_patient(ds)
-        study = Study.query.get(ds.StudyInstanceUID) or db_create_study(ds)
-        series = Series(SeriesInstanceUID = uid, 
-                        SeriesDate = date,
-                        SeriesDescription = description, 
-                        Modality = mod, 
-                        patient = patient,
-                        study = study)
-        db.session.add(series)
-        db.session.commit()
+
+    # Raise error if series already exists
+    series = Series.query.get(uid)
+    if series is not None:
+        logger.error('series already exists.')
+        raise ValueError("This series already exists")
+    # Check if patient and study already exist or create them if not
+    patient = Patient.query.get(ds.PatientID) or db_create_patient(ds)
+    study = Study.query.get(ds.StudyInstanceUID) or db_create_study(ds)
+    series = Series(SeriesInstanceUID = uid, 
+                    SeriesDate = date,
+                    SeriesDescription = description, 
+                    Modality = mod, 
+                    patient = patient,
+                    study = study)
+    db.session.add(series)
+    db.session.commit()
         
     return series
 
@@ -76,76 +75,72 @@ def db_create_instance(ds: Dataset, filename: str) -> Instance:
 
     uid = ds.SOPInstanceUID
     uid_class = ds.SOPClassUID
-    with application.app_context():
-        # Raise error if instance already exists
-        instance = Instance.query.get(uid)
-        if instance is not None:
-            logger.error('instance already exists.')
-            raise ValueError("This instance already exists")
-        # Check if patient, study and series already exist or create them if not
-        patient = Patient.query.get(ds.PatientID) or db_create_patient(ds)
-        study = Study.query.get(ds.StudyInstanceUID) or db_create_study(ds)
-        series = Series.query.get(ds.SeriesInstanceUID) or db_create_series(ds)
-        instance = Instance(SOPInstanceUID = uid, 
-                            SOPClassUID = uid_class,
-                            filename = filename,
-                            patient = patient,
-                            study = study,
-                            series = series)
-        db.session.add(instance)
-        db.session.commit()
+    
+    # Raise error if instance already exists
+    instance = Instance.query.get(uid)
+    if instance is not None:
+        logger.error('instance already exists.')
+        raise ValueError("This instance already exists")
+    # Check if patient, study and series already exist or create them if not
+    patient = Patient.query.get(ds.PatientID) or db_create_patient(ds)
+    study = Study.query.get(ds.StudyInstanceUID) or db_create_study(ds)
+    series = Series.query.get(ds.SeriesInstanceUID) or db_create_series(ds)
+    instance = Instance(SOPInstanceUID = uid, 
+                        SOPClassUID = uid_class,
+                        filename = filename,
+                        patient = patient,
+                        study = study,
+                        series = series)
+    db.session.add(instance)
+    db.session.commit()
         
     return instance
 
 def store_dataset(ds, root_dir):
 
-    # Check if instance already exists
-    with application.app_context():
-        instance = Instance.query.get(ds.SOPInstanceUID)
-        if instance:
-            logger.debug('instance already exists')
-        # Check if series, study and patient identifier match
-            try:
-                assert instance.series.SeriesInstanceUID == ds.SeriesInstanceUID
-                assert instance.study.StudyInstanceUID == ds.StudyInstanceUID
-                assert instance.patient.PatientID == str(ds.PatientID)
-            except AssertionError:
-                logger.debug('inconsistent instance received and ignored')
-                return 0xA700
-        else:
-            logger.debug('creating new instance')
-            # Try to store dataset in disk
-            filedir = os.path.join(root_dir, 
-                                ds.StudyInstanceUID,
-                                ds.SeriesInstanceUID)
-            os.makedirs(filedir, exist_ok = True)
-            # Construct an unique fname for each dataset received
-            filepath = os.path.join(filedir, ds.SOPInstanceUID)
-            try:
-                ds.save_as(filepath, write_like_original = False)
-            except FileNotFoundError as e:        
-                logger.debug("New dataset could not be saved - No such file or directory")
-                logger.debug(repr(e))
-                return 0xA700
-            except Exception as e:
-                logger.debug("New dataset could not be saved - unknown error")
-                logger.debug(repr(e))
-                return 0xA700
-    
-            # Store in the database
-            try:
-                db_create_instance(ds, filepath)
-            except Exception as e:
-                logger.error("Can't write new instance to database, trying to delete file")
-                # Try to delete written file from disk
-                try:
-                    os.remove(filepath)
-                except Exception as e:
-                    logger.error(f"Can't delete file {filepath} from disk: {repr(e)}")
-                return 0xA700
-    
-    return 0x0000
+    # Check if instance already exists    
+    instance = Instance.query.get(ds.SOPInstanceUID)
+    # If instance already exists, don't store it
+    if instance:
+        logger.debug('instance already exists. Ignoring')
+        return 1
+    else:
+        logger.debug('adding instance to database')
+        # Try to store dataset in disk
+        filedir = os.path.join(root_dir, 
+                            ds.StudyInstanceUID,
+                            ds.SeriesInstanceUID)
+        os.makedirs(filedir, exist_ok = True)
+        # Construct an unique fname for each dataset received
+        filepath = os.path.join(filedir, ds.SOPInstanceUID)
+        try:
+            ds.save_as(filepath, write_like_original = False)
+        except FileNotFoundError as e:        
+            logger.debug("New dataset could not be saved - No such file or directory")
+            logger.debug(repr(e))
+            return -1
+        except Exception as e:
+            logger.debug("New dataset could not be saved - unknown error")
+            logger.debug(repr(e))
+            return -1
 
+        # Store in the database
+        try:
+            db_create_instance(ds, filepath)
+        except ValueError as e:
+            logger.info('instance already exists')
+            return 1
+        except Exception as e:
+            logger.error("Can't write new instance to database, trying to delete file")
+            logger.error(repr(e))
+            # Try to delete written file from disk
+            try:
+                os.remove(filepath)
+            except Exception as e:
+                logger.error(f"Can't delete file {filepath} from disk: {repr(e)}")
+            return -1
+    
+    return 0
 
 # Create a handler for the store request event
 def db_store_handler(event: Event, output_queue:Queue, root_dir:str) -> int:
@@ -166,10 +161,16 @@ def db_store_handler(event: Event, output_queue:Queue, root_dir:str) -> int:
         logger.debug("New dataset could not be processed. Missing DICOM information?")
         return 0xA700
 
-    try:
-        assert store_dataset(ds, root_dir) == 0
-    except:
+
+    with application.app_context():
+        store_result = store_dataset(ds, root_dir)
+    if store_result == -1:
+        logger.debug('an ocurred error when storing dataset.')
         return 0xA700
+    elif store_result == 1:
+        logger.debug('instance exists and will not be stored, but put in compilator')
+    else:
+        logger.debug('instance stored successfully')
 
     # Append non mandatory information to new_ds
     fields = ['NumberOfSlices','PatientName','StudyDate','SeriesDescription']
@@ -207,7 +208,6 @@ def db_store_handler(event: Event, output_queue:Queue, root_dir:str) -> int:
                'ae_title': event.assoc.requestor.info['ae_title']}        
     output_queue.put(element)
 
-    # Return a 'Success' status
-    logger.debug('instance stored successfully.')
+    # Return a 'Success' status    
     return 0x0000
     

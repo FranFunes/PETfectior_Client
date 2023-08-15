@@ -5,6 +5,8 @@ from init_services import services
 from shutil import rmtree
 
 logger = logging.getLogger('__main__')
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 
 # Handle sigterm
 def terminate_processes(signalNumber, frame):

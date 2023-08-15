@@ -39,7 +39,15 @@ class Validator():
             Starts the process thread.            
 
         """
-                
+
+        try:
+            # Check if AppConfig is available
+            with application.app_context():
+                config = AppConfig.query.first()
+        except Exception as e:
+            logger.error("can't start, AppConfig not available")            
+            return "Validator can't be started: database not available"
+
         if not self.get_status() == 'Running':
             # Set an event to stop the thread later 
             self.stop_event = threading.Event()
@@ -108,8 +116,8 @@ class Validator():
 
                     # Read task id from the input queue
                     task = Task.query.get(self.input_queue.get())
-                    task.updated = timing
                     task.status_msg = 'validating'
+                    db.session.commit()
 
                     # Set destinations for this task
                     destinations = self.set_destinations(task.id)
@@ -149,8 +157,9 @@ class Validator():
                                 task.status_msg = 'validated'
                                 task.step_state = 1
                                 logger.info(f"Task {task.id} validated.")
-                    
+                                
                     db.session.commit()
+                        
                 else:
                     sleep(1)
 
