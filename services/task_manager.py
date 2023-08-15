@@ -95,8 +95,6 @@ class TaskManager():
                 for task in tasks:
                     # Update task_status
                     logger.info(f'passing task {task.id} to {task.current_step}')
-                    timing = datetime.now()
-                    task.updated = timing
                     task.step_state = 0
                     # Trigger next step by putting an element in its input queue
                     self.input_queues[task.current_step].put(task.id)

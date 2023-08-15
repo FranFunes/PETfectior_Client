@@ -93,6 +93,7 @@ class SeriesPacker():
                 if not self.input_queue.empty():                    
                     task = Task.query.get(self.input_queue.get())
                     task.status_msg = 'compressing'
+                    db.session.commit()
                     config = AppConfig.query.first()
                                         
                     try:

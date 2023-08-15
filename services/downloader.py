@@ -107,12 +107,14 @@ class SeriesDownloader():
                     # Reconstruct the filename from task_id and client_id
                     fname = task.id + '_' + config.client_id + '.zip'
                     task.status_msg = 'downloading'
+                    db.session.commit()
 
                     # Download fname                
                     try:
                         fpath = os.path.join(os.path.join(config.shared_mount_point, 'processed'), fname)
                         local_fname = os.path.join(config.download_path, fname)                    
-                        logger.info(f"downloading {fpath} over vpn")                    
+                        logger.info(f"downloading {fpath} over vpn")     
+                        db.session.commit()               
                         copy(fpath, local_fname)
                     except FileNotFoundError as e:
                         logger.error('Download error: file ' + fpath + ' not found')
