@@ -42,9 +42,8 @@ class ServerMonitor():
                 config = AppConfig.query.first()
         except Exception as e:
             logger.error("can't start, AppConfig not available")            
-            return "Validator can't be started: database not available"
-        
-        self.ping_url = 'http://' + config.server_url + '/' + self.ping_route
+            return "Server Monitor can't be started: database not available"
+                
         if not self.get_status() == 'Running':
             # Create and start the thread if all conditions are fullfilled
             self.main_thread = threading.Thread(target = self.main, args = ())   
@@ -86,9 +85,13 @@ class ServerMonitor():
 
     def ping(self):
         
+        with application.app_context():
+            server_url = AppConfig.query.first().server_url
+
+        ping_url = 'http://' + server_url + '/' + self.ping_route
         start = datetime.now()
         try:
-            page = requests.get(self.ping_url, timeout = 5)
+            page = requests.get(ping_url, timeout = 5)
             logger.debug(f'Connection succesful!')
             stop = datetime.now()
             etime = (stop - start).seconds

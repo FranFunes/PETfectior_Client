@@ -1,5 +1,6 @@
-import signal, logging
+import signal, logging, os
 from app_pkg import application, db
+from app_pkg.db_models import AppLog
 from init_services import services
 from shutil import rmtree
 

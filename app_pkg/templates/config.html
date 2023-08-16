@@ -50,6 +50,45 @@
     
     <div class="container-sm pt-3">
 
+        <!-- Modal for local config CRUD -->
+        <div class="modal fade" id="localConfigModal">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+            
+                    <!-- Modal Header -->
+                    <div class="modal-header">
+                    <h4 class="modal-title">Local Application Config</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+            
+                    <!-- Modal body -->
+                    <div class="modal-body">
+                        <form id="localAppConfigForm">        
+                            <div class="mb-3">
+                                <label for="localConfigClientID" class="form-label">Client ID</label>
+                                <input type="text" class="form-control" id="localConfigClientID" name="localConfigClientID">
+                            </div>        
+                            <div class="mb-3">
+                                <label for="localConfigServerURL" class="form-label">Server URL</label>
+                                <input type="text" class="form-control" id="localConfigServerURL" name="localConfigServerURL">
+                            </div>        
+                            <div class="mb-3">
+                                <label for="localConfigSharedPath" class="form-label">Shared path</label>
+                                <input type="text" class="form-control" id="localConfigSharedPath" name="localConfigSharedPath">
+                            </div>                   
+                            <div class="mb-3">
+                                <input type="checkbox" class="form-check-input" id="localConfigMirrorMode" name="localConfigMirrorMode">
+                                <label for="localConfigMirrorMode" class="form-check-label">Mirror mode</label>
+                            </div>                      
+                            <div class="modal-footer">
+                                <button type="submit" id="localAppConfigSubmit" class="btn btn-danger" data-bs-dismiss="modal">Send</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Modal for local device CRUD -->
         <div class="modal fade" id="localDeviceModal">
             <div class="modal-dialog modal-dialog-centered">
@@ -65,7 +104,7 @@
                     <div class="modal-body">
                         <form id="localDeviceManagerForm">        
                             <div class="mb-3">
-                                <label for="deviceManagerAET" class="form-label">AE Title</label>
+                                <label for="localdeviceManagerAET" class="form-label">AE Title</label>
                                 <input type="text" class="form-control" id="localDeviceManagerAET" name="localDeviceManagerAET">
                             </div>                  
                             <div class="modal-footer">
@@ -136,9 +175,14 @@
                     <div class="card-body">                            
                         <div class="grid-container">                            
                             <div class="grid-item">Client ID:</div>
-                            <div class="grid-item" id="clientID"></div>
+                            <div class="grid-item" id="clientID"></div>                            
+                            <div class="grid-item">Server URL:</div>
+                            <div class="grid-item" id="serverURL">10.0.0.51:5001</div>
                             <div class="grid-item">Mirror Mode: </div>
-                            <div class="grid-item"><input type="checkbox" class="form-check-input" id="mirrorMode" name="mirrorMode"></div>                          
+                            <div class="grid-item"><input type="checkbox" class="form-check-input" id="mirrorMode" name="mirrorMode" disabled></div>                          
+                        </div>
+                        <div class="col text-end">
+                            <button type="button" id="editLocalConfig" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#localConfigModal">Edit</button>
                         </div>
                     </div>
                 </div>

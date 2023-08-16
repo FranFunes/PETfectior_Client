@@ -1,50 +1,24 @@
 $(document).ready(function () {
-    // Initialize clientID
+    // Initialize AppConfig
     $.ajax({
-        url: "/get_client_id",   
+        url: "/get_app_config",   
         contentType: "application/json",
         success: function(response) {                    
-            // Update client ID
+            // Update data
             $("#clientID").text(response.client_id)  
-        },
-        error: function(xhr, status, error) {
-            // handle error response here
-            $("#clientID").text('Not available - server error')  
-            console.log(xhr.responseText);
-        }
-        }); 
-
-    // Initialize mirror mode
-    $.ajax({
-        url: "/get_mirror_mode",   
-        contentType: "application/json",
-        success: function(response) {                    
-            // Update mirror mode
+            $("#serverURL").text(response.server_url)
             $( "#mirrorMode" ).prop( "checked", response.mirror_mode )  
+            localStorage.setItem("sharedPath", response.shared_path)
         },
         error: function(xhr, status, error) {
             // handle error response here
+            $("#clientID").text('Not available - server error')
+            $("#serverURL").text('Not available - server error')
             $( "#mirrorMode" ).prop( "checked", false )  
+
             console.log(xhr.responseText);
         }
         }); 
-
-    // Toggle mirror behaviour
-    $("#mirrorMode").on('click', function () {
-        $.ajax({
-            url: "/toggle_mirror_mode",   
-            contentType: "application/json",
-            success: function(response) {                    
-                // Update mirror mode
-                $( "#mirrorMode" ).prop( "checked", response.mirror_mode )     
-            },
-            error: function(xhr, status, error) {
-                // handle error response here
-                console.log(xhr.responseText);
-            }
-            });
-                
-    })
 
     // Initialize local device
     $.ajax({
@@ -92,11 +66,57 @@ $(document).ready(function () {
             devices_table.rows().deselect()
         }
     });
+
+    // App config manager
+    $("#editLocalConfig").on('click', function () {    
+        // Fill form with local device info        
+        $('.modal-title').text('Edit App Configuration') 
+        $('#localConfigClientID').val($("#clientID").text()) 
+        $('#localConfigServerURL').val($("#serverURL").text()) 
+        if (localStorage.getItem('sharedPath') !== null) {
+            $('#localConfigSharedPath').val(localStorage.getItem('sharedPath'))            
+        } else {
+            $('#localConfigSharedPath').val("Unknown")
+        }
+        $( "#localConfigMirrorMode" ).prop( "checked", $( "#mirrorMode" ).prop( "checked" )) 
+
+    })
+    $("#localAppConfigForm").submit(function(event) {
+        // Prevent the form from submitting normally
+        event.preventDefault();      
+        var ajax_data = {
+            "client_id":  $('#localConfigClientID').val(),
+            "server_url":  $('#localConfigServerURL').val(),
+            "shared_path":  $('#localConfigSharedPath').val(),
+            "mirror_mode": $("#localConfigMirrorMode").prop("checked")
+        }
+        $.ajax({
+            url: "/manage_app_config",
+            method: "POST",
+            data:   JSON.stringify(ajax_data),
+            dataType: "json",
+            contentType: "application/json",
+            success: function(response) {                    
+                // Show success message
+                alert(response.message)
+                // Update local device info                 
+                $('#clientID').text(ajax_data.client_id)
+                $('#serverURL').text(ajax_data.server_url)
+                localStorage.setItem("sharedPath", ajax_data.shared_path)
+                $("#mirrorMode").prop("checked", ajax_data.mirror_mode)
+            },
+            error: function(xhr, status, error) {
+                // handle error response here
+                alert("Update config failed");
+            }
+            });  
+    });  
     
     // Local device manager
     $("#editLocalDevice").on('click', function () {    
         // Fill form with local device info
-        $('#localDeviceManagerAET').val($("#localAET").text())        
+        $('#localDeviceManagerAET').val($("#localAET").text())  
+        $('.modal-title').text('Edit local DICOM configuration')      
     })
 
     // Edit local device form submit

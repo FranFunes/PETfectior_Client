@@ -74,21 +74,24 @@ def get_mirror_mode():
 
     return data
 
-@application.route('/toggle_mirror_mode')
-def toggle_mirror_mode():
+@application.route('/get_app_config')
+def get_app_config():
 
     try:
         c = AppConfig.query.first()
-        c.mirror_mode = not c.mirror_mode
+        client_id = c.client_id
+        server_url = c.server_url
         mirror_mode = c.mirror_mode
-        db.session.commit()
+        shared_path = c.shared_path        
     except Exception as e:
-        logger.error("can't access mirror_mode on database")
-        logger.error(repr(e))
-        mirror_mode = "Not available - contact support"      
+        logger.error("can't access config in database")
+        logger.error(repr(e))     
         
     data = {
-        "mirror_mode": mirror_mode
+        "mirror_mode": mirror_mode,
+        "server_url": server_url,
+        "shared_path": shared_path,
+        "client_id": client_id,
     }
 
     return data
@@ -116,6 +119,20 @@ def get_local_device():
     }
 
     return data
+
+@application.route('/manage_app_config', methods=['GET', 'POST'])
+def manage_app_config():   
+    try:
+        c = AppConfig.query.first()
+        c.client_id = request.json["client_id"]
+        c.server_url = request.json["server_url"]
+        c.shared_path = request.json["shared_path"]
+        c.mirror_mode = request.json["mirror_mode"]
+        db.session.commit()
+        return {"message":"App config was updated successfully"}        
+    except OperationalError as e:
+        logger.error("can't access config in database")
+        return jsonify(message = 'Error: database is not available'), 500     
 
 @application.route('/manage_local_device', methods=['GET', 'POST'])
 def manage_local_device():   
@@ -351,3 +368,5 @@ def get_logs():
         data = []
 
     return {"data": data}
+
+
