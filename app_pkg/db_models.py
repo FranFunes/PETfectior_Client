@@ -1,3 +1,4 @@
+import os
 from app_pkg import db
 from datetime import datetime
 from sqlalchemy import event
@@ -158,9 +159,9 @@ class AppConfig(db.Model):
     server_url = db.Column(db.String(64), default='10.0.0.51:5001')
     shared_path = db.Column(db.String(128), default='//10.87.141.15/Proyectos/PETfectior')
     shared_mount_point = db.Column(db.String(128), default='/Volumes/PETfectior')
-    zip_dir = db.Column(db.String(128), default='packed_series')
-    unzip_dir = db.Column(db.String(128), default='unpacked_series')
-    download_path = db.Column(db.String(128), default='series_to_unpack')
+    zip_dir = db.Column(db.String(128), default=os.path.join('temp','packed_series'))
+    unzip_dir = db.Column(db.String(128), default=os.path.join('temp','unpacked_series'))
+    download_path = db.Column(db.String(128), default=os.path.join('temp','series_to_unpack'))
 
     def __repr__(self):
         return f"<AppConfig for client {self.client_id}>"    

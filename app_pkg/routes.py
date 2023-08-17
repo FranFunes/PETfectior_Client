@@ -1,8 +1,8 @@
 from app_pkg import application, db
 from app_pkg.db_models import Device, Task, AppConfig
 from flask import render_template, request, jsonify
-import json, ipaddress, os, logging, psutil
-from init_services import services, task_manager
+import ipaddress, os, logging, psutil
+from app_pkg.services import services
 import pandas as pd
 from datetime import datetime
 
@@ -326,7 +326,7 @@ def get_modules_names():
     modules = ['client_side_app',
                'db_store_handler',
                'routes',
-               'init_services',
+               'services',
                'server_monitor',
                'task_manager',
                'store_scp',               

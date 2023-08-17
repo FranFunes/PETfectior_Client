@@ -1,12 +1,12 @@
-import threading, logging, os, json
-from shutil import unpack_archive
+import threading, logging, os
+from shutil import unpack_archive, rmtree
 from copy import deepcopy
 from time import sleep
 import numpy as np
 from pydicom import dcmread
 from pydicom.uid import generate_uid
 from datetime import datetime
-from services.db_store_handler import store_dataset
+from app_pkg.services.db_store_handler import store_dataset
 
 from app_pkg import application, db
 from app_pkg.db_models import AppConfig, Task, Series
@@ -160,6 +160,10 @@ class SeriesUnpacker():
                             task.current_step = self.next_step
                             task.step_state = 1    
                             task.status_msg = f"storing results ok"
+
+                            # Delete temporary files
+                            os.remove(filename)
+                            rmtree(extract_dir)
                         else:
                             # Flag step as failed
                             logger.info(f"{task.id}: not all expected instances stored")

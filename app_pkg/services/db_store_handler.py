@@ -189,8 +189,7 @@ def store_dataset(ds, root_dir):
             except Exception as e:
                 logger.error(f"Can't delete file {filepath} from disk: {repr(e)}")
             """
-            return -1
-        
+            return -1        
     
     return 0
 

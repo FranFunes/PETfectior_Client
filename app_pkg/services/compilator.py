@@ -1,4 +1,4 @@
-import json, threading, logging
+import threading, logging
 from time import sleep
 from datetime import datetime
 import numpy as np
@@ -6,7 +6,7 @@ from pydicom import Dataset
 
 from app_pkg import application, db
 from app_pkg.db_models import Task, Series, Instance, Source, AppConfig
-from services.db_store_handler import extract_from_dataset
+from app_pkg.services.db_store_handler import extract_from_dataset
 
 # Configure logging
 logger = logging.getLogger('__main__')

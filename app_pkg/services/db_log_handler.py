@@ -1,5 +1,7 @@
 import logging
-from services.loggers import CapitalizeFormatter
+from app_pkg import application, db
+from app_pkg.services.loggers import CapitalizeFormatter
+from app_pkg.db_models import AppLog
 
 class LogDBHandler(logging.Handler):
     

@@ -5,24 +5,24 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 from app_pkg import application, db
 from app_pkg.db_models import AppConfig
 
-from services.loggers import app_logger, dicom_logger
-from services.store_scp import StoreSCP
-from services.db_store_handler import db_store_handler
-from services.compilator import Compilator
-from services.validator import Validator
-from services.task_manager import TaskManager
-from services.packer import SeriesPacker
-from services.uploader import SeriesUploader
-from services.downloader import SeriesDownloader
-from services.unpacker import SeriesUnpacker
-from services.store_scu import StoreSCU
-from services.server_monitor import ServerMonitor
+from app_pkg.services.loggers import app_logger, dicom_logger
+from app_pkg.services.store_scp import StoreSCP
+from app_pkg.services.db_store_handler import db_store_handler
+from app_pkg.services.compilator import Compilator
+from app_pkg.services.validator import Validator
+from app_pkg.services.task_manager import TaskManager
+from app_pkg.services.packer import SeriesPacker
+from app_pkg.services.uploader import SeriesUploader
+from app_pkg.services.downloader import SeriesDownloader
+from app_pkg.services.unpacker import SeriesUnpacker
+from app_pkg.services.store_scu import StoreSCU
+from app_pkg.services.server_monitor import ServerMonitor
 
 # Disable warnings (only for developing)
 import warnings
 warnings.filterwarnings("ignore")
 
-# Setup logging0
+# Setup logging
 app_logger()
 dicom_logger()
 logger = logging.getLogger('__main__')
@@ -67,7 +67,6 @@ store_scu = StoreSCU(input_queue = queues['store_scu'])
 
 # Server Monitor
 monitor =  ServerMonitor('check_ping', 1)
-
 
 # Initialize services
 services = {'Dicom Listener': store_scp,

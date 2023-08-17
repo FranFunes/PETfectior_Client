@@ -14,7 +14,6 @@ WORKDIR /code
 COPY app_pkg app_pkg
 COPY services services
 COPY client_side_app.py client_side_app.py
-COPY init_services.py init_services.py
 
 EXPOSE 8000
 
