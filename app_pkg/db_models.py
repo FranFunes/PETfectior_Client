@@ -1,8 +1,9 @@
-import os
+import os, logging
 from app_pkg import db
 from datetime import datetime
 from sqlalchemy import event
    
+logger = logging.getLogger('__main__')
 
 # Association tables for many-to-many relationships
 task_destination = db.Table('task_destination',
@@ -18,7 +19,7 @@ class Patient(db.Model):
     PatientName = db.Column(db.String(64), index=True)
 
     # Cross-references down
-    studies = db.relationship('Study', backref='patient', lazy='dynamic')    
+    studies = db.relationship('Study', backref='patient', lazy='dynamic', cascade='all, delete-orphan')    
     series = db.relationship('Series', backref='patient', lazy='dynamic')    
     instances = db.relationship('Instance', backref='patient', lazy='dynamic')    
     
@@ -36,7 +37,7 @@ class Study(db.Model):
     PatientID = db.Column(db.String(64), db.ForeignKey('patient.PatientID'))
 
     # Cross-references down
-    series = db.relationship('Series', backref='study', lazy='dynamic')    
+    series = db.relationship('Series', backref='study', lazy='dynamic', cascade='all, delete-orphan')    
     instances = db.relationship('Instance', backref='study', lazy='dynamic')     
 
     def __repr__(self):
@@ -50,26 +51,23 @@ class Series(db.Model):
     SeriesDescription = db.Column(db.String(64), index=True)
     Modality = db.Column(db.String(64), index=True)
     
-
     # One-to-many relationships (as child)
     PatientID = db.Column(db.String(64), db.ForeignKey('patient.PatientID'))
     StudyInstanceUID = db.Column(db.String(64), db.ForeignKey('study.StudyInstanceUID'))
     originating_task = db.Column(db.String(18), db.ForeignKey('task.id'))
 
     # One-to-many relationships (as parent)
-    instances = db.relationship('Instance', backref='series', lazy='dynamic')
+    instances = db.relationship('Instance', backref='series', lazy='dynamic', cascade='all, delete-orphan')
     tasks = db.relationship('Task', backref='task_series', lazy='dynamic', foreign_keys='Task.series')     
 
     def __repr__(self):
         return f'<Series {self.SeriesDescription} from {self.PatientID}>'    
     
-    
 class Instance(db.Model):
 
     SOPInstanceUID = db.Column(db.String(64), primary_key=True)
     SOPClassUID = db.Column(db.String(64), index=True)   
-    filename = db.Column(db.Text())
-    
+    filename = db.Column(db.Text())    
 
     # One-to-many relationships (as child)
     PatientID = db.Column(db.String(64), db.ForeignKey('patient.PatientID'))
@@ -78,7 +76,15 @@ class Instance(db.Model):
 
     def __repr__(self):
         return f'<Instance {self.SOPInstanceUID} from {self.PatientID} stored at {self.filename}>'
-    
+
+@event.listens_for(Instance, 'before_delete')
+def delete_instance(mapper, connection, target):
+    # Delete file from disk
+    try:
+        os.remove(target.filename)
+        logger.debug(f"{target.filename} deleted from storage")
+    except:
+        logger.error(f"could'n delete {target.filename} from storage")
     
 class Device(db.Model):
 
@@ -88,7 +94,6 @@ class Device(db.Model):
     port = db.Column(db.Integer(), index=True, nullable=False)
     is_destination = db.Column(db.Boolean, default=False)
     
-
     def __repr__(self):
         return f'<Device {self.name}: {self.ae_title}@{self.address}>'
     
@@ -96,8 +101,7 @@ class Device(db.Model):
 class Source(db.Model):
 
     identifier = db.Column(db.String(96), primary_key=True)
-    port = db.Column(db.Integer)
-    
+    port = db.Column(db.Integer)    
 
     # One-to-many relationships (as parent)
     related_tasks = db.relationship('Task', backref='task_source', lazy='dynamic')
@@ -132,8 +136,22 @@ class Task(db.Model):
 
 @event.listens_for(Task, 'before_update')
 def update_task_modified_timestamp(mapper, connection, target):
+    # Perform actions before a Task instance is modified
+    logger.debug(f"updating task {target.id}")
     target.updated = datetime.utcnow()
     
+@event.listens_for(Task, 'before_delete')
+def delete_task(mapper, connection, target):
+    # Delete originating series if it is not related to other tasks
+    logger.info(f"deleting task {target.id}")
+    
+    source_series = Series.query.get(target.series)
+    has_other_related_tasks = db.session.query(db.exists().where(Task.series == source_series.SeriesInstanceUID, Task.id != target.id)).scalar()
+    if not has_other_related_tasks:
+        logger.info(f"task {target.id} deleting source series")
+        db.session.delete(source_series)        
+    else:
+        logger.info(f"task {target.id} source series won't be deleted")
 
 class AppLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -143,7 +161,6 @@ class AppLog(db.Model):
     function = db.Column(db.String(64), index=True)
     msg = db.Column(db.String(256))
     
-
     def __repr__(self):
         return f"{self.timestamp.strftime('%Y/%m/%d %H:%M:%S')} | {self.level} | {self.module} | {self.function} | {self.msg}"
     
