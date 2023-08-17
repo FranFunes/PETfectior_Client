@@ -1,6 +1,7 @@
 from app_pkg import db
 from datetime import datetime
 from sqlalchemy import event
+   
 
 # Association tables for many-to-many relationships
 task_destination = db.Table('task_destination',
@@ -22,12 +23,13 @@ class Patient(db.Model):
     
     def __repr__(self):
         return f'<Patient {self.PatientName}>'
-    
+
 class Study(db.Model):
 
     StudyInstanceUID = db.Column(db.String(64), primary_key=True)
     StudyDate = db.Column(db.DateTime, index=True)    
     StudyDescription = db.Column(db.String(64), index=True)
+
 
     # Cross-references up
     PatientID = db.Column(db.String(64), db.ForeignKey('patient.PatientID'))
@@ -38,6 +40,7 @@ class Study(db.Model):
 
     def __repr__(self):
         return f'<Study {self.StudyDescription} from {self.PatientID}>'
+
     
 class Series(db.Model):
 
@@ -45,7 +48,7 @@ class Series(db.Model):
     SeriesDate = db.Column(db.DateTime, index=True)
     SeriesDescription = db.Column(db.String(64), index=True)
     Modality = db.Column(db.String(64), index=True)
-    metadata_fname = db.Column(db.Text(), index=True)
+    
 
     # One-to-many relationships (as child)
     PatientID = db.Column(db.String(64), db.ForeignKey('patient.PatientID'))
@@ -59,11 +62,13 @@ class Series(db.Model):
     def __repr__(self):
         return f'<Series {self.SeriesDescription} from {self.PatientID}>'    
     
+    
 class Instance(db.Model):
 
     SOPInstanceUID = db.Column(db.String(64), primary_key=True)
     SOPClassUID = db.Column(db.String(64), index=True)   
-    filename = db.Column(db.Text(), index=True)
+    filename = db.Column(db.Text())
+    
 
     # One-to-many relationships (as child)
     PatientID = db.Column(db.String(64), db.ForeignKey('patient.PatientID'))
@@ -73,6 +78,7 @@ class Instance(db.Model):
     def __repr__(self):
         return f'<Instance {self.SOPInstanceUID} from {self.PatientID} stored at {self.filename}>'
     
+    
 class Device(db.Model):
 
     name = db.Column(db.String(64), primary_key=True)
@@ -80,20 +86,24 @@ class Device(db.Model):
     address = db.Column(db.String(16), index=True, nullable=False)
     port = db.Column(db.Integer(), index=True, nullable=False)
     is_destination = db.Column(db.Boolean, default=False)
+    
 
     def __repr__(self):
         return f'<Device {self.name}: {self.ae_title}@{self.address}>'
+    
 
 class Source(db.Model):
 
     identifier = db.Column(db.String(96), primary_key=True)
     port = db.Column(db.Integer)
+    
 
     # One-to-many relationships (as parent)
     related_tasks = db.relationship('Task', backref='task_source', lazy='dynamic')
 
     def __repr__(self):
         return f'<Source {self.identifier}>'
+    
     
 class Task(db.Model):
     id = db.Column(db.String(18), primary_key=True)
@@ -104,7 +114,7 @@ class Task(db.Model):
     step_state = db.Column(db.Integer, index=True) # -1 failed, 0 processing, 1 completed
     status_msg = db.Column(db.Text())
     expected_imgs = db.Column(db.Integer)
-
+    
     # One-to-many relationships (as child)
     series = db.Column(db.String(64), db.ForeignKey('series.SeriesInstanceUID')) 
     source = db.Column(db.String(96), db.ForeignKey('source.identifier'))   
@@ -117,11 +127,12 @@ class Task(db.Model):
     instances =  db.relationship('Instance', secondary=task_instance, backref='tasks')  
 
     def __repr__(self):
-        return f'<Task {self.id}>'
+        return f'<Task {self.id}>' 
 
 @event.listens_for(Task, 'before_update')
 def update_task_modified_timestamp(mapper, connection, target):
     target.updated = datetime.utcnow()
+    
 
 class AppLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -130,12 +141,14 @@ class AppLog(db.Model):
     module = db.Column(db.String(64), index=True)
     function = db.Column(db.String(64), index=True)
     msg = db.Column(db.String(256))
+    
 
     def __repr__(self):
         return f"{self.timestamp.strftime('%Y/%m/%d %H:%M:%S')} | {self.level} | {self.module} | {self.function} | {self.msg}"
+    
 
 class AppConfig(db.Model):    
-    client_id = db.Column(db.String(64), default='GenericClient', primary_key=True)
+    client_id = db.Column(db.String(64), default='GenericClient', primary_key=True)    
     min_instances_in_series = db.Column(db.Integer, default=47)
     slice_gap_tolerance = db.Column(db.Float, default=0.025)
     series_timeout = db.Column(db.Integer, default=30)
@@ -152,6 +165,7 @@ class AppConfig(db.Model):
     def __repr__(self):
         return f"<AppConfig for client {self.client_id}>"    
 
+
 def delete_db(tables = [], all = False):
 
     if not tables and all:
@@ -163,4 +177,3 @@ def delete_db(tables = [], all = False):
     
     db.session.commit()
 
-    

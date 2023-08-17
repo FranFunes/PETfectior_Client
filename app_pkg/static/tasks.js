@@ -30,8 +30,7 @@ $(document).ready(function () {
                             style: 'os',
                             selector: 'td',
                             info: false,
-                        },
-        scrollY:        400,
+                        }
     });
     
     // Auto refresh, keeping selected rows and scrolling position

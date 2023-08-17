@@ -1,6 +1,6 @@
 import queue, logging
 
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, ProgrammingError
 
 from app_pkg import application, db
 from app_pkg.db_models import AppConfig
@@ -82,13 +82,13 @@ services = {'Dicom Listener': store_scp,
             'Server Monitor': monitor}
 
 # Get app configuration from database or initialize it
-db_available = False
+app_config_available = False
 with application.app_context():
     try:
         config = AppConfig.query.first()
         assert config 
         logger.info('app config found in the database')
-        db_available = True
+        app_config_available = True
     except AssertionError:        
         logger.info('database is available but app config not found.')
         logger.info('initializing app config with default settings.')
@@ -96,14 +96,17 @@ with application.app_context():
         db.session.add(c)
         db.session.commit()
         config = AppConfig.query.first()
-        db_available = True
+        app_config_available = True
     except OperationalError as e:       
         logger.info("database is not available. App config can't be initialized")
+    except ProgrammingError as e:
+        logger.info("database has not been initialized properly. App config can't be initialized")
+
 
 # Start services
-if db_available:
+if app_config_available:
     for name, service in services.items():
-        if name != 'ServerMonitor':
+        if name != 'Server Monitor':
             try:
                 service.start()
             except Exception as e:

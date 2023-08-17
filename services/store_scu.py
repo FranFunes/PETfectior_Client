@@ -101,7 +101,9 @@ class StoreSCU(AE):
                     for result in task.result_series.all():
                         for instance in result.instances.all():
                             datasets.append(instance.filename)
-                    task.status_msg = 'sending dicoms'
+
+                    logger.info(f'sending DICOMs for task {task.id}')
+                    task.status_msg = 'sending DICOMs'
                     
                     # Send datasets to each destination
                     dest = {d.name: {'ae_title':d.ae_title,'address':d.address,'port':d.port} for d in task.destinations}                  
@@ -109,6 +111,7 @@ class StoreSCU(AE):
                     for name, device in dest.items():
                         succesful = self.send_datasets(device, datasets)
                         msg.append(f"{name}: {sum(succesful)}/{len(datasets)}")
+                    logger.info(f'sending DICOMs task {task.id} ' + ' '.join(msg))
                     status = '<br>'.join(msg)
                     task.status_msg = status   
                     task.step_state = 2             

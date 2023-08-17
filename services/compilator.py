@@ -5,7 +5,8 @@ import numpy as np
 from pydicom import Dataset
 
 from app_pkg import application, db
-from app_pkg.db_models import Device, Task, Series, Instance, task_instance, Source, AppConfig
+from app_pkg.db_models import Task, Series, Instance, Source, AppConfig
+from services.db_store_handler import extract_from_dataset
 
 # Configure logging
 logger = logging.getLogger('__main__')
@@ -101,8 +102,19 @@ class Compilator():
             the database it in that case. Else, waits for more instances.               
 
         """
-        # Initialize temp placeholders for received data      
-        task_data = {} 
+        # Reinitilize volatile data for existing tasks  
+        logger.info("initializing task data")  
+        self.task_data = {}
+        with application.app_context():
+            tasks = Task.query.filter(Task.current_step == 'compilator').all() 
+            for t in tasks:
+                dss, recon = list(zip(*[extract_from_dataset(inst.filename) for inst in t.instances]))
+                self.task_data[t.id] = {
+                    'datasets': list(dss),
+                    'recon_settings': list(recon)
+                }
+        logger.info("initializing task data ended")  
+            
 
         # Inactive timer to know if task status should be checked or not.
         inactive_time = 0                
@@ -166,14 +178,13 @@ class Compilator():
                         logger.info(f'created new task {task}')
                         
                         # Keep data that can't be stored in the database in a dedicated dict
-                        task_data[task_id] = {'datasets': [dataset], 'recon_settings':[recon_settings]}
+                        self.task_data[task_id] = {'datasets': [dataset], 'recon_settings':[recon_settings]}
                     else:
                         # Append to existing series                    
                         logger.debug(f"Appending instance {sop_uid} to task {matching_task}")
-                        matching_task.updated = timing
                         matching_task.instances.append(Instance.query.get(sop_uid))
-                        task_data[matching_task.id]['datasets'].append(dataset)                        
-                        task_data[matching_task.id]['recon_settings'].append(recon_settings)
+                        self.task_data[matching_task.id]['datasets'].append(dataset)                        
+                        self.task_data[matching_task.id]['recon_settings'].append(recon_settings)
 
                     db.session.commit()
                     
@@ -187,32 +198,37 @@ class Compilator():
                     for task in Task.query.filter((Task.current_step == 'compilator')&(Task.step_state==0)).all():
                         
                         # Check task status
-                        status = self.task_status(task_data[task.id]['datasets'], 
-                                                task.expected_imgs, 
-                                                task.updated)
-
-                        if status == 'abort':
-                            logger.info(f"Task {task.id} timed out")
-                            task.status_msg = "Failed - timed out"
-                            task.step_state = -1                        
-                        
-                        elif status == 'wait':
-                            logger.info(f"Waiting for task {task.id} with {len(task.instances)} instances to complete.")
-
-                        elif status == 'completed':
-
-                            # From task_data, keep the required for the next step only
-                            recon_settings = self.summarize_data(task_data[task.id])
+                        try:
+                            status = self.task_status(self.task_data[task.id]['datasets'], 
+                                                    task.expected_imgs, 
+                                                    task.updated)
+                        except KeyError:
+                            logger.info(f"Task {task.id} temporal data lost after app reset")
+                            task.status_msg = "Failed - send again"
+                            task.step_state = -1
+                        else:
+                            if status == 'abort':
+                                logger.info(f"Task {task.id} timed out")
+                                task.status_msg = "Failed - timed out"
+                                task.step_state = -1                        
                             
-                            # Write task_data to the database and pass the task to the next step
-                            task.recon_settings = recon_settings.to_json()
-                            task.current_step = self.next_step
-                            task.step_state = 1
+                            elif status == 'wait':
+                                logger.info(f"Waiting for task {task.id} with {len(task.instances)} instances to complete.")
 
-                            logger.info(f"Task {task.id} completed.") 
+                            elif status == 'completed':
 
-                            # Delete temporary data for this task
-                            del task_data[task.id]                         
+                                # From task_data, keep the required for the next step only
+                                recon_settings = self.summarize_data(self.task_data[task.id])
+                                
+                                # Write task_data to the database and pass the task to the next step
+                                task.recon_settings = recon_settings.to_json()
+                                task.current_step = self.next_step
+                                task.step_state = 1
+
+                                logger.info(f"Task {task.id} completed.") 
+
+                                # Delete temporary data for this task
+                                del self.task_data[task.id]                         
                     
                     db.session.commit()
                 else:
@@ -239,7 +255,9 @@ class Compilator():
         config = AppConfig.query.first()
         min_instances = config.min_instances_in_series
         timeout = config.series_timeout
-        series_timed_out = (datetime.now() - last_received).total_seconds() > timeout
+        logger.info(f"elapsed: {(datetime.utcnow() - last_received).total_seconds()}")
+        logger.info(f"timeout: {timeout}")
+        series_timed_out = (datetime.utcnow() - last_received).total_seconds() > timeout
 
                 
         if n_imgs and n_imgs == len(datasets):
@@ -255,7 +273,7 @@ class Compilator():
             
         elif self.check_for_contiguity(datasets):
 
-            logger.info("series {datasets[0].SeriesInstanceUID} meets contiguity criteria.")
+            logger.info(f"series {datasets[0].SeriesInstanceUID} meets contiguity criteria.")
 
             if series_timed_out:
                 if len(datasets) >= min_instances:
@@ -294,7 +312,7 @@ class Compilator():
         
         logger.info(f"checking for series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances")
 
-        tol = AppConfig.query.first()
+        tol = AppConfig.query.first().slice_gap_tolerance
 
         slice_positions = [ds.ImagePositionPatient[2] for ds in datasets]
                 

@@ -3,6 +3,7 @@ from app_pkg import application, db
 from app_pkg.db_models import Task, AppConfig
 from shutil import make_archive, unpack_archive, rmtree
 import numpy as np
+from pydicom import Dataset
 # Configure logging
 logger = logging.getLogger('__main__')
 
@@ -36,3 +37,5 @@ def process(task_id):
         task.step_state = 1
 
         db.session.commit()
+
+
