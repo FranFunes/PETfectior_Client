@@ -126,7 +126,9 @@ class Validator():
                         task.status_msg = 'failed - no destination'
                         task.step_state = -1                        
                     else:
-                        task.destinations.extend(destinations)
+                        for dest in destinations:
+                            if not dest in task.destinations:
+                                task.destinations.append(dest)
                         # Check if dicom information is complete
                         recon_settings = Dataset.from_json(task.recon_settings)
                         if not self.check_dicom_parameters(recon_settings):

@@ -1,13 +1,14 @@
-import queue, logging
+import queue, logging, sys
 
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 from app_pkg import application, db
 from app_pkg.db_models import AppConfig
 
-from app_pkg.services.loggers import app_logger, dicom_logger
+from app_pkg.functions.loggers import app_logger, dicom_logger
+from app_pkg.functions.db_store_handler import db_store_handler
+
 from app_pkg.services.store_scp import StoreSCP
-from app_pkg.services.db_store_handler import db_store_handler
 from app_pkg.services.compilator import Compilator
 from app_pkg.services.validator import Validator
 from app_pkg.services.task_manager import TaskManager
@@ -104,13 +105,14 @@ with application.app_context():
 
 # Start services
 if app_config_available:
-    for name, service in services.items():
-        if name != 'Server Monitor':
-            try:
-                service.start()
-            except Exception as e:
-                logger.error(f"failed when starting {name}")
-                logger.error(repr(e))
+    if 'db' not in sys.argv:
+        for name, service in services.items():
+            if name != 'Server Monitor':
+                try:
+                    service.start()
+                except Exception as e:
+                    logger.error(f"failed when starting {name}")
+                    logger.error(repr(e))
 
 else:
     logger.error(f"services won't start as database is not available")

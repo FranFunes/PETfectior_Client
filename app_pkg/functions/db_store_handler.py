@@ -194,7 +194,6 @@ def store_dataset(ds, root_dir):
     return 0
 
 
-
 # Create a handler for the store request event
 def db_store_handler(event: Event, output_queue:Queue, root_dir:str) -> int:
     

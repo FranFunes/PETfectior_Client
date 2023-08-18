@@ -10,3 +10,4 @@ img.dcm
 series_to_unpack
 unpacked_series
 packed_series
+docker-compose copy.yml

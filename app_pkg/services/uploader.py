@@ -128,6 +128,7 @@ class SeriesUploader():
                             logger.error('commit to server failed')
                             logger.error(repr(e))
                             task.status_msg = 'commit to server failed'
+                            task.step_state = -1
                     db.session.commit()
                 else:
                     sleep(1)

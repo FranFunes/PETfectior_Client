@@ -6,7 +6,7 @@ import numpy as np
 from pydicom import dcmread
 from pydicom.uid import generate_uid
 from datetime import datetime
-from app_pkg.services.db_store_handler import store_dataset
+from app_pkg.functions.db_store_handler import store_dataset
 
 from app_pkg import application, db
 from app_pkg.db_models import AppConfig, Task, Series

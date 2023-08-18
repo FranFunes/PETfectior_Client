@@ -6,7 +6,7 @@ from pydicom import Dataset
 
 from app_pkg import application, db
 from app_pkg.db_models import Task, Series, Instance, Source, AppConfig
-from app_pkg.services.db_store_handler import extract_from_dataset
+from app_pkg.functions.db_store_handler import extract_from_dataset
 
 # Configure logging
 logger = logging.getLogger('__main__')
@@ -102,20 +102,6 @@ class Compilator():
             the database it in that case. Else, waits for more instances.               
 
         """
-        # Reinitilize volatile data for existing tasks  
-        logger.info("initializing task data")  
-        self.task_data = {}
-        with application.app_context():
-            tasks = Task.query.filter(Task.current_step == 'compilator').all() 
-            for t in tasks:
-                dss, recon = list(zip(*[extract_from_dataset(inst.filename) for inst in t.instances]))
-                self.task_data[t.id] = {
-                    'datasets': list(dss),
-                    'recon_settings': list(recon)
-                }
-        logger.info("initializing task data ended")  
-            
-
         # Inactive timer to know if task status should be checked or not.
         inactive_time = 0                
 
@@ -146,7 +132,9 @@ class Compilator():
                         db.session.add(source)
                         
                     # Check if this SOP should be appended to an existing or new Task.          
-                    tasks = (Task.query.filter_by(series = series_uid).
+                    tasks = (Task.query.filter_by(current_step = 'compilator').
+                            filter_by(step_state = 0). 
+                            filter_by(series = series_uid).
                             join(Source).filter_by(identifier=src_id)).all()
                     matching_task = None
                     i = Instance.query.get(sop_uid)
@@ -175,16 +163,11 @@ class Compilator():
                             task_source = source
                         )
                         db.session.add(task)
-                        logger.info(f'created new task {task}')
-                        
-                        # Keep data that can't be stored in the database in a dedicated dict
-                        self.task_data[task_id] = {'datasets': [dataset], 'recon_settings':[recon_settings]}
+                        logger.info(f'created new task {task}')                        
                     else:
                         # Append to existing series                    
                         logger.debug(f"Appending instance {sop_uid} to task {matching_task}")
                         matching_task.instances.append(Instance.query.get(sop_uid))
-                        self.task_data[matching_task.id]['datasets'].append(dataset)                        
-                        self.task_data[matching_task.id]['recon_settings'].append(recon_settings)
 
                     db.session.commit()
                     
@@ -198,37 +181,28 @@ class Compilator():
                     for task in Task.query.filter((Task.current_step == 'compilator')&(Task.step_state==0)).all():
                         
                         # Check task status
-                        try:
-                            status = self.task_status(self.task_data[task.id]['datasets'], 
-                                                    task.expected_imgs, 
-                                                    task.updated)
-                        except KeyError:
-                            logger.info(f"Task {task.id} temporal data lost after app reset")
-                            task.status_msg = "Failed - send again"
-                            task.step_state = -1
-                        else:
-                            if status == 'abort':
-                                logger.info(f"Task {task.id} timed out")
-                                task.status_msg = "Failed - timed out"
-                                task.step_state = -1                        
+                        datasets, recon_settings = self.fetch_task_data(task.id)
+                        status = self.task_status(datasets, 
+                                                task.expected_imgs, 
+                                                task.updated)
+                        if status == 'abort':
+                            logger.info(f"Task {task.id} timed out")
+                            task.status_msg = "Failed - timed out"
+                            task.step_state = -1                        
+                        
+                        elif status == 'wait':
+                            logger.info(f"Waiting for task {task.id} with {len(task.instances)} instances to complete.")
+
+                        elif status == 'completed':
+
+                            # From task_data, keep the required for the next step only
+                            recon_settings = self.summarize_data(recon_settings, datasets)
                             
-                            elif status == 'wait':
-                                logger.info(f"Waiting for task {task.id} with {len(task.instances)} instances to complete.")
-
-                            elif status == 'completed':
-
-                                # From task_data, keep the required for the next step only
-                                recon_settings = self.summarize_data(self.task_data[task.id])
-                                
-                                # Write task_data to the database and pass the task to the next step
-                                task.recon_settings = recon_settings.to_json()
-                                task.current_step = self.next_step
-                                task.step_state = 1
-
-                                logger.info(f"Task {task.id} completed.") 
-
-                                # Delete temporary data for this task
-                                del self.task_data[task.id]                         
+                            # Write task_data to the database and pass the task to the next step
+                            task.recon_settings = recon_settings.to_json()
+                            task.current_step = self.next_step
+                            task.step_state = 1
+                            logger.info(f"Task {task.id} completed.")                       
                     
                     db.session.commit()
                 else:
@@ -255,8 +229,6 @@ class Compilator():
         config = AppConfig.query.first()
         min_instances = config.min_instances_in_series
         timeout = config.series_timeout
-        logger.info(f"elapsed: {(datetime.utcnow() - last_received).total_seconds()}")
-        logger.info(f"timeout: {timeout}")
         series_timed_out = (datetime.utcnow() - last_received).total_seconds() > timeout
 
                 
@@ -344,21 +316,21 @@ class Compilator():
 
         return n_imgs    
     
-    def summarize_data(self, row):
+    def summarize_data(self, recon_settings, datasets):
 
         # From recon_settings, keep the dataset with the max ActualFrameDuration        
         try:
-            max_idx = np.argmax([ds.ActualFrameDuration for ds in row['recon_settings']])
-            max_value = row['recon_settings'][max_idx].ActualFrameDuration
+            max_idx = np.argmax([ds.ActualFrameDuration for ds in recon_settings])
+            max_value = recon_settings[max_idx].ActualFrameDuration
             logger.debug(f"Index {max_idx} has max ActualFrameDuration of {max_value}")
         except Exception as e:
             max_idx = 0
             logger.error(f"Could not select max ActualFrameDuration. Using first element")
             logger.error(repr(e))                                
-        recon_settings = row['recon_settings'][max_idx]
+        recon_settings = recon_settings[max_idx]
         
         # Find SpacingBetweenSlices information
-        z = [ds.ImagePositionPatient[2] for ds in row['datasets']]
+        z = [ds.ImagePositionPatient[2] for ds in datasets]
         spacing = np.diff(np.sort(z)).mean()
         recon_settings.SpacingBetweenSlices = spacing
         logger.debug(f"spacing {spacing:.2f}")
@@ -366,4 +338,10 @@ class Compilator():
         return recon_settings
         
 
-            
+    def fetch_task_data(self, task_id):
+
+        logger.info(f"fetching datasets for task {task_id}")
+        t = Task.query.get(task_id)        
+        dss, recon = list(zip(*[extract_from_dataset(inst.filename) for inst in t.instances]))        
+
+        return list(dss), list(recon)

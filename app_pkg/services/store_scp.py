@@ -115,7 +115,10 @@ class StoreSCP(AE):
             # Create an AE and send a C - ECHO to ourselves            
             ae = AE()            
             ae.add_requested_context(Verification)
-            assoc = ae.associate("127.0.0.1", 11113)
+            with application.app_context():
+                config = AppConfig.query.first()                
+            port = config.store_scp_port
+            assoc = ae.associate("127.0.0.1", port)
 
             if assoc.is_established:
                 status = assoc.send_c_echo()

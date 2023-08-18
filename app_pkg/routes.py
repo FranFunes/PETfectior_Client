@@ -1,12 +1,15 @@
-from app_pkg import application, db
-from app_pkg.db_models import Device, Task, AppConfig
 from flask import render_template, request, jsonify
 import ipaddress, os, logging, psutil
-from app_pkg.services import services
 import pandas as pd
 from datetime import datetime
-
 from sqlalchemy.exc import OperationalError
+
+
+from app_pkg import application, db
+from app_pkg.db_models import Device, Task, AppConfig
+from app_pkg.services import services
+from app_pkg.functions.task_actions import delete_task, restart_task, retry_last_step, delete_finished, delete_failed
+
 
 logger = logging.getLogger('__main__')
 
@@ -20,6 +23,20 @@ def tasks():
 def config():
 
     return render_template('config.html')
+
+@application.route('/dashboard')
+def dashboard():
+
+    return render_template('dashboard.html')
+
+@application.route('/logs')
+def logs():    
+    
+    return render_template('logs.html')
+
+###################################################################################
+###########################           TASKS          ##############################
+###################################################################################
 
 @application.route('/get_tasks_table')
 def get_tasks_table(): 
@@ -41,38 +58,30 @@ def get_tasks_table():
 
     return {"data": data}
 
-@application.route('/get_client_id')
-def get_client_id():
+@application.route('/manage_tasks', methods=['GET', 'POST'])
+def manage_tasks():
 
-    try:
-        client_id = AppConfig.query.first().client_id
-    except Exception as e:
-        logger.error("can't access client_id on database")
-        logger.error(repr(e))
-        client_id = "Not available - contact support"      
-        
-    data = {
-        "client_id": client_id
-    }
+    action = request.json['action']
+    if not action in ['delete_finished','delete_failed']:
+        id = request.json['task_id']            
 
-    return data
+    if action == 'delete':
+        message, code = delete_task(id)   
+    elif action == 'retry_last_step':
+        message, code = retry_last_step(id)   
+    elif action == 'restart':
+        message, code = restart_task(id)   
+    elif action == 'delete_finished':
+        message, code = delete_finished()   
+    elif action == 'delete_failed':
+        message, code = delete_failed()   
+
+    return jsonify(message = message), code
 
 
-@application.route('/get_mirror_mode')
-def get_mirror_mode():
-
-    try:
-        mirror_mode = AppConfig.query.first().client_id
-    except Exception as e:
-        logger.error("can't access mirror_mode on database")
-        logger.error(repr(e))
-        mirror_mode = "Not available - contact support"      
-        
-    data = {
-        "mirror_mode": mirror_mode
-    }
-
-    return data
+###################################################################################
+##########################           CONFIG           #############################
+###################################################################################
 
 @application.route('/get_app_config')
 def get_app_config():
@@ -255,11 +264,10 @@ def manage_remote_devices():
             logger.info('edit device failed')
             print(repr(e))
             return {"message":"Error al acceder a la base de datos"}
-    
-@application.route('/dashboard')
-def dashboard():
 
-    return render_template('dashboard.html')
+###################################################################################
+###########################         PROCESSES        ##############################
+###################################################################################    
 
 @application.route('/check_server_connection')
 def check_server_connection():
@@ -291,34 +299,9 @@ def manage_service():
 
     return {"result": result}
 
-# Route for server interaction
-@application.route('/process_ready', methods=['GET', 'POST'])
-def process_ready():
-
-    """"
-
-     The server uses this route to signal the completion of a processing task
-
-    """
-
-    # Pass the task_id to the downloader to extract the results   
-    try:
-        # Flag step as completed     
-        task = Task.query.get(request.json['task_id'])
-        task.current_step = 'downloader'
-        task.step_state = 1
-        db.session.commit()
-        logger.info(f"Task {task.id} processing done, downloading results.")        
-        return jsonify(message = 'Acknowledge'), 200    
-    except:
-        logger.error("request.json['task_id'] couldn't be read")
-        return jsonify(message = 'Missing task_id in request json'), 500    
-
-
-@application.route('/logs')
-def logs():    
-    
-    return render_template('logs.html')
+###################################################################################
+###########################           LOGS           ##############################
+###################################################################################    
 
 @application.route('/get_modules_names')
 def get_modules_names():
@@ -335,7 +318,9 @@ def get_modules_names():
                'uploader',
                'downloader',
                'unpacker',
-               'store_scu']
+               'store_scu',
+               'db_models',
+               'task_actions']
     
     return {'data': modules}
 
@@ -368,5 +353,35 @@ def get_logs():
         data = []
 
     return {"data": data}
+
+###################################################################################
+######################          SERVER INTERACTION           ######################
+###################################################################################    
+
+# Route for server interaction
+@application.route('/process_ready', methods=['GET', 'POST'])
+def process_ready():
+
+    """"
+
+     The server uses this route to signal the completion of a processing task
+
+    """
+
+    # Pass the task_id to the downloader to extract the results   
+    try:
+        # Flag step as completed     
+        task = Task.query.get(request.json['task_id'])
+        task.current_step = 'downloader'
+        task.step_state = 1
+        db.session.commit()
+        logger.info(f"Task {task.id} processing done, downloading results.")        
+        return jsonify(message = 'Acknowledge'), 200    
+    except:
+        logger.error("request.json['task_id'] couldn't be read")
+        return jsonify(message = 'Missing task_id in request json'), 500    
+
+
+
 
 

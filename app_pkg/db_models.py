@@ -82,7 +82,6 @@ def delete_instance(mapper, connection, target):
     # Delete file from disk
     try:
         os.remove(target.filename)
-        logger.debug(f"{target.filename} deleted from storage")
     except:
         logger.error(f"could'n delete {target.filename} from storage")
     
@@ -125,7 +124,7 @@ class Task(db.Model):
     source = db.Column(db.String(96), db.ForeignKey('source.identifier'))   
 
     # One-to-many relationships (as parent)
-    result_series = db.relationship('Series', backref='result_task', lazy='dynamic', foreign_keys='Series.originating_task')
+    result_series = db.relationship('Series', backref='result_task', lazy='dynamic', foreign_keys='Series.originating_task', cascade='all, delete-orphan')
 
     # Many-to-many relationships (as parent)
     destinations = db.relationship('Device', secondary=task_destination, backref='tasks')  
@@ -153,6 +152,10 @@ def delete_task(mapper, connection, target):
     else:
         logger.info(f"task {target.id} source series won't be deleted")
 
+    # Delete results series
+
+    
+
 class AppLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
@@ -170,12 +173,12 @@ class AppConfig(db.Model):
     min_instances_in_series = db.Column(db.Integer, default=47)
     slice_gap_tolerance = db.Column(db.Float, default=0.025)
     series_timeout = db.Column(db.Integer, default=30)
-    store_scp_port = db.Column(db.Integer, default=11113)
+    store_scp_port = db.Column(db.Integer, default=11115)
     store_scp_aet = db.Column(db.String(64), default='PETFECTIOR')
     mirror_mode = db.Column(db.Boolean, default=False)
     server_url = db.Column(db.String(64), default='10.0.0.51:5001')
-    shared_path = db.Column(db.String(128), default='//10.87.141.15/Proyectos/PETfectior')
-    shared_mount_point = db.Column(db.String(128), default='/Volumes/PETfectior')
+    shared_path = db.Column(db.String(128), default=os.getenv('SHARED_PATH') or '//10.87.141.15/Proyectos/PETfectior')
+    shared_mount_point = db.Column(db.String(128), default=os.getenv('SHARED_MOUNT_POINT') or 'shared')
     zip_dir = db.Column(db.String(128), default=os.path.join('temp','packed_series'))
     unzip_dir = db.Column(db.String(128), default=os.path.join('temp','unpacked_series'))
     download_path = db.Column(db.String(128), default=os.path.join('temp','series_to_unpack'))
