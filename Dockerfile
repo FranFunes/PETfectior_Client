@@ -10,12 +10,15 @@ RUN envPETfectiorClient/bin/pip install --upgrade pip
 RUN envPETfectiorClient/bin/pip install -r requirements.txt
 
 RUN apt-get -y update
-RUN apt-get install -y bridge-utils cifs-utils
+RUN apt-get install -y bridge-utils cifs-utils dos2unix
 RUN mkdir shared
 
 COPY app_pkg app_pkg
 COPY migrations migrations
 COPY client_side_app.py config.py start.sh ./
+RUN dos2unix < start.sh > start_bkp.sh
+RUN rm start.sh
+RUN mv start_bkp.sh start.sh
 RUN chmod +x start.sh
 RUN chown -R petfectior:petfectior ./
 
