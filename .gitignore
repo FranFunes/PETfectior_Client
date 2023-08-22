@@ -3,6 +3,7 @@ envPETfectiorClient
 .DS_Store
 **/__pycache__
 data
+<<<<<<< HEAD
 app.db
 dcm_templates
 incoming
@@ -11,3 +12,10 @@ series_to_unpack
 unpacked_series
 packed_series
 docker-compose copy.yml
+=======
+SeriesToUnpack
+unpackedSeries
+dcm_templates
+app.db
+old_handler.py
+>>>>>>> master
