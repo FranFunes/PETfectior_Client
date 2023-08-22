@@ -24,6 +24,7 @@ $(document).ready(function () {
         processing:     false,
         paging:         false,
         scrollX:        true,  
+        scrollY:        '500px',
         searching:      false,
         info:           false,
         select:         {

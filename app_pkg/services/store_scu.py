@@ -104,6 +104,7 @@ class StoreSCU(AE):
 
                     logger.info(f'sending DICOMs for task {task.id}')
                     task.status_msg = 'sending DICOMs'
+                    db.session.commit()
                     
                     # Send datasets to each destination
                     dest = {d.name: {'ae_title':d.ae_title,'address':d.address,'port':d.port} for d in task.destinations}                  

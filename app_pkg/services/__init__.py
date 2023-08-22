@@ -3,7 +3,7 @@ import queue, logging, sys
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 from app_pkg import application, db
-from app_pkg.db_models import AppConfig
+from app_pkg.db_models import AppConfig, Task
 
 from app_pkg.functions.loggers import app_logger, dicom_logger
 from app_pkg.functions.db_store_handler import db_store_handler
@@ -103,9 +103,16 @@ with application.app_context():
         logger.info("database has not been initialized properly. App config can't be initialized")
 
 
-# Start services
 if app_config_available:
     if 'db' not in sys.argv:
+        # Set all pending tasks state to failed (-1)
+        with application.app_context():
+            for task in Task.query.filter_by(step_state = 0).all():
+                task.step_state = -1
+                task.status_msg = 'aborted - app reset'
+                db.session.commit()
+
+        # Start services (except by Server Monitor)
         for name, service in services.items():
             if name != 'Server Monitor':
                 try:

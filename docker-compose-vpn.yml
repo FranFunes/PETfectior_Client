@@ -1,5 +1,18 @@
 version: "3.8"
 services:
+
+  vpn:
+    build: ./vpn/
+    container_name: vpn
+    ports:
+      - "8000:8000"
+      - "11115:11115"
+    cap_add:
+      - net_admin
+    volumes:
+      - ./vpn/config:/vpn
+    restart: unless-stopped
+
   db:
     container_name: mysql
     image: mysql:latest
@@ -15,21 +28,18 @@ services:
   app:
     build: .
     container_name: petfectior-client
-    privileged: true
+    depends_on:
+      - db
+      - vpn
+    network_mode: service:vpn
     cap_add:
       - SYS_ADMIN
       - DAC_READ_SEARCH
-    security_opt:
-      - label:disable      
-    depends_on:
-      - db
-    ports:
-      - 8000:8000
-      - 11115:11115
-    env_file:
-      - .env
     volumes:
       - app_images:/home/petfectior/incoming
+    restart: unless-stopped
+    env_file:
+      - .env
 
 volumes:
   mysql_data:

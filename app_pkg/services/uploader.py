@@ -113,6 +113,7 @@ class SeriesUploader():
                         logger.error(f"Unknown error occurred while copying {filename} to {os.path.join(config.shared_mount_point, 'to_process')}")
                         logger.error(repr(e))
                         task.status_msg = 'upload failed'
+                        task.step_state = -1
                     else:
                         # If upload was succesful, delete file and send a message to the server                    
                         logger.info(f"Upload successful for task {task.id}")
