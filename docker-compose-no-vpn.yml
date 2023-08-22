@@ -6,6 +6,7 @@ services:
     restart: unless-stopped
     volumes:
       - mysql_data:/var/lib/mysql
+    network_mode: host
     environment:
       - MYSQL_DATABASE
       - MYSQL_PASSWORD
@@ -19,6 +20,7 @@ services:
     cap_add:
       - SYS_ADMIN
       - DAC_READ_SEARCH
+    network_mode: host
     security_opt:
       - label:disable      
     depends_on:
