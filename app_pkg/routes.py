@@ -306,7 +306,7 @@ def manage_service():
 @application.route('/get_modules_names')
 def get_modules_names():
 
-    modules = ['client_side_app',
+    modules = ['petfectior_client',
                'db_store_handler',
                'routes',
                'services',

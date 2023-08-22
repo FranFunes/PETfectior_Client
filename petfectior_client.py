@@ -19,18 +19,7 @@ def terminate_processes(signalNumber, frame):
         except Exception as e:
             logger.error(f"failed when stopping {name}")            
             logger.error(repr(e))    
-    
-    # Clear temporary folders
-    to_clear = ['packed_series','series_to_unpack','unpacked_series']
-    for folder in to_clear:
-        try:
-            f = os.path.join('temp',folder)
-            logger.info(f"removing {f}")  
-            rmtree(f)
-        except Exception as e:
-            logger.error(f"failed when deleting {f}")            
-            logger.error(repr(e))
-
+            
     # Clear shared folder
     try:
         with application.app_context():

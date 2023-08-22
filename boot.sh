@@ -20,4 +20,4 @@ while true; do
     echo Upgrade command failed, retrying in 5 secs...
     sleep 5
 done
-flask run
+exec gunicorn -b :$FLASK_RUN_PORT --access-logfile - --error-logfile - petfectior_client:application
