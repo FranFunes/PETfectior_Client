@@ -24,14 +24,14 @@ $(document).ready(function () {
         processing:     false,
         paging:         false,
         scrollX:        true,  
+        scrollY:        '500px',
         searching:      false,
         info:           false,
         select:         {
-                            style: 'os',
+                            style: 'single',
                             selector: 'td',
                             info: false,
-                        },
-        scrollY:        400,
+                        }
     });
     
     // Auto refresh, keeping selected rows and scrolling position
@@ -52,18 +52,33 @@ $(document).ready(function () {
 
     // Add buttons functionality
     $('.task-action').on('click', function() {
-        selectedRows = tasks_table.rows({ selected: true })
-        task_ids = selectedRows.data().toArray().map(item => item.task_id)
+        
+        var ajax_data ={}
+        action = $(this).attr('action')
+        ajax_data["action"] = action
+        
+        if (['delete', 'restart', 'retry_last_step'].includes(action)) {
+            ajax_data["task_id"] = tasks_table.row({ selected: true }).data().task_id
+        }
         $.ajax({
-            url: "/task_action",
+            url: "/manage_tasks",
             method: "POST",
-            data: JSON.stringify({
-                'action': $(this).attr('id'),                
-                'ids': task_ids,
-            }),
-            contentType:'application/json'
-        })
-    })
+            data:   JSON.stringify(ajax_data),
+            dataType: "json",
+            contentType: "application/json",
+            success: function(response) {                    
+                // Show success message
+                alert(response.message)
+                // Update local device info
+                $("#localAET").text(ajax_data.ae_title)
+            },
+            error: function(xhr, status, error) {
+                // handle error response here
+                alert(xhr.responseJSON.message);
+            }
+            });
+        }) 
+
 });
 
 // Don't show alerts on ajax errors

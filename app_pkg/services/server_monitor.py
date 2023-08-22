@@ -1,6 +1,8 @@
 import logging, threading, requests
 from time import sleep
 from datetime import datetime
+from app_pkg import application
+from app_pkg.db_models import AppConfig
 
 
 # Configure logging
@@ -8,9 +10,9 @@ logger = logging.getLogger('__main__')
 
 class ServerMonitor():
 
-    def __init__(self, server_url: str, ping_route: str, sample_period_seconds:float = 10):
+    def __init__(self, ping_route: str, sample_period_seconds:float = 10):
         
-        self.ping_url = 'http://' + server_url + '/' + ping_route
+        self.ping_route = ping_route
         self.clock = sample_period_seconds
 
         # Initialize state variables
@@ -34,6 +36,14 @@ class ServerMonitor():
         # Set an event to stop the thread later 
         self.stop_event = threading.Event()
                     
+        try:
+            # Check if AppConfig is available
+            with application.app_context():
+                config = AppConfig.query.first()
+        except Exception as e:
+            logger.error("can't start, AppConfig not available")            
+            return "Server Monitor can't be started: database not available"
+                
         if not self.get_status() == 'Running':
             # Create and start the thread if all conditions are fullfilled
             self.main_thread = threading.Thread(target = self.main, args = ())   
@@ -75,9 +85,13 @@ class ServerMonitor():
 
     def ping(self):
         
+        with application.app_context():
+            server_url = AppConfig.query.first().server_url
+
+        ping_url = 'http://' + server_url + '/' + self.ping_route
         start = datetime.now()
         try:
-            page = requests.get(self.ping_url, timeout = 5)
+            page = requests.get(ping_url, timeout = 5)
             logger.debug(f'Connection succesful!')
             stop = datetime.now()
             etime = (stop - start).seconds

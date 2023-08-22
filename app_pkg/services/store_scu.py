@@ -3,12 +3,12 @@ from pynetdicom.sop_class import PositronEmissionTomographyImageStorage
 from pydicom import dcmread
 from pydicom.dataset import Dataset
 import os, threading, logging, json
-from logging.handlers import RotatingFileHandler
 from time import sleep
-from shutil import rmtree
 from typing import List, Union, Callable
 from pathlib import Path
 
+from app_pkg import application, db
+from app_pkg.db_models import Task
 
 # Configure logging
 logger = logging.getLogger('__main__')
@@ -36,18 +36,17 @@ class StoreSCU(AE):
     
     """
 
-    def __init__(self, input_queue, task_manager, *args, **kwargs):
+    def __init__(self, input_queue, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
 
         # Set class properties
         self.input_queue = input_queue
-        self.task_manager = task_manager
 
         # Add requested contexts
         self.add_requested_context(PositronEmissionTomographyImageStorage)
 
-    def store_datasets(self, device: dict, datasets: List[Union[Dataset, str, Path]]) -> List[dict]:
+    def send_datasets(self, device: dict, datasets: List[Union[Dataset, str, Path]]) -> List[dict]:
         
         """
 
@@ -94,42 +93,31 @@ class StoreSCU(AE):
         while not self.stop_event.is_set() or not self.input_queue.empty():
 
             if not self.input_queue.empty():
-                
-                # Read datasets and task_id from queue
-                queue_item = self.input_queue.get()
-                datasets = queue_item['datasets']
-                task_id = queue_item['task_id']
+                with application.app_context():
+                    
+                    # Read task from input queue and datasets from database
+                    task = Task.query.get(self.input_queue.get())                    
+                    datasets = []
+                    for result in task.result_series.all():
+                        for instance in result.instances.all():
+                            datasets.append(instance.filename)
 
-                # Update database
-                self.task_manager.manage_task(action = 'update', task_id = task_id, task_data = {'status': "sending dicoms"})                    
+                    logger.info(f'sending DICOMs for task {task.id}')
+                    task.status_msg = 'sending DICOMs'
+                    db.session.commit()
+                    
+                    # Send datasets to each destination
+                    dest = {d.name: {'ae_title':d.ae_title,'address':d.address,'port':d.port} for d in task.destinations}                  
+                    msg = []
+                    for name, device in dest.items():
+                        succesful = self.send_datasets(device, datasets)
+                        msg.append(f"{name}: {sum(succesful)}/{len(datasets)}")
+                    logger.info(f'sending DICOMs task {task.id} ' + ' '.join(msg))
+                    status = '<br>'.join(msg)
+                    task.status_msg = status   
+                    task.step_state = 2             
                 
-                # Get destinations from the database and config file
-                try:
-                    destinations = self.task_manager.data.loc[task_id,'destinations'].split('/')                    
-                    logger.info(f"Destinations for task {task_id}: {'|'.join(destinations)}")
-                except Exception as e: 
-                    logger.error(f"Couldn't get destinations for task {task_id}")
-                    logger.error(repr(e))
-                    self.task_manager.manage_task(action = 'update', task_id = task_id, task_data = {'status': "send dicoms failed"})    
-                else:
-                    try:
-                        with open(os.path.join("data",'peers.json'), 'r') as jsonfile:
-                            devices = json.load(jsonfile)
-                        dest = {k:v for k,v in devices.items() if k in destinations}
-                    except Exception as e:
-                        logger.error(f"Couldn't read peers file")
-                        logger.error(repr(e))
-                        self.task_manager.manage_task(action = 'update', task_id = task_id, task_data = {'status': "send dicoms failed"})    
-                    else:                        
-                        # Send datasets to each destination
-                        
-                        msg = []
-                        for name, device in dest.items():
-                            succesful = self.store_datasets(device, datasets)
-                            msg.append(f"{name}: {sum(succesful)}/{len(datasets)}")
-                        status = '<br>'.join(msg)
-                        self.task_manager.manage_task(action = 'update', task_id = task_id, task_data = {'status': status})    
-                                        
+                    db.session.commit()
             else:
                 sleep(1)
 
@@ -141,11 +129,6 @@ class StoreSCU(AE):
             Starts the process thread.            
 
         """
-
-        # Set device AE title
-        with open(os.path.join("data", "local.json"), "r") as jsonfile:         
-            ae_title = json.load(jsonfile)['ae_title']
-            self.ae_title = ae_title 
     
         # Set an event to stop the thread later 
         self.stop_event = threading.Event()

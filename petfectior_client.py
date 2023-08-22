@@ -1,35 +1,30 @@
-import signal, logging, os
-
-from app_pkg import application
-from init_services import services
+import signal, logging, os, sys
+from app_pkg import application, db
+from app_pkg.db_models import AppConfig
+from app_pkg.services import services
 from shutil import rmtree
 
 logger = logging.getLogger('__main__')
+if os.getenv('FLASK_HTTP_LOGGGING') == 'False':
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)
 
-# Handle sigterm
+# Handle sigterm if app was started with flask run command
 def terminate_processes(signalNumber, frame):
     # Stop threads
-    logger.error(f"stopping processes...")
+    logger.info(f"stopping processes...")
     for name, service in services.items():
         try:
             service.stop()
         except Exception as e:
             logger.error(f"failed when stopping {name}")            
-            logger.error(repr(e))
-    
-    # Clear temporary folders
-    to_clear = ['incoming','dcm_templates','packed','SeriesToUnpack','unpackedSeries']
-    for folder in to_clear:
-        try:
-            logger.info(f"removing {folder}")  
-            rmtree(folder)
-        except Exception as e:
-            logger.error(f"failed when deleting {folder}")            
-            logger.error(repr(e))
-
+            logger.error(repr(e))    
+            
     # Clear shared folder
     try:
-        mount_point = os.environ["SHARED_MOUNT_POINT"]
+        with application.app_context():
+            c = AppConfig.query.first()
+        mount_point = c.shared_mount_point
         filelist = os.listdir(os.path.join(mount_point,'processed'))
         for file in filelist:
             try:
@@ -42,9 +37,8 @@ def terminate_processes(signalNumber, frame):
     except Exception as e:
         logger.error(f"error while trying to clear shared folder {os.path.join(mount_point,'processed')}")                  
         logger.error(repr(e))                  
-
+    
     exit(1)
-
-signal.signal(signal.SIGINT, terminate_processes)
-
-# A new comment added here
+    
+if 'db' not in sys.argv:
+    signal.signal(signal.SIGINT, terminate_processes)

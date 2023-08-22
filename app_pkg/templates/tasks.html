@@ -43,7 +43,7 @@
     
     <div class="container-sm pt-3">               
         <div class="row">
-            <h1 class="display-6 text-center">Estado de tareas</h1>
+            <h1 class="display-6 text-center">Current tasks state</h1>
         </div>
         <hr>  
         <div class="pt-3">
@@ -54,8 +54,11 @@
 
         <div class="row pt-2">            
             <div class="col text-end">
-                <button type="button" id="delete" class="task-action btn btn-light">Clear finished</button>
-                <button type="button" id="continue" class="task-action  btn btn-light">Clear failed</button>                   
+                <button type="button" action="delete" class="task-action btn btn-light">Delete</button>
+                <button type="button" action="retry_last_step" class="task-action btn btn-light">Retry last step</button>
+                <button type="button" action="restart" class="task-action btn btn-light">Restart</button>
+                <button type="button" action="delete_finished"  class="task-action btn btn-light">Clear finished</button>
+                <button type="button" action="delete_failed" class="task-action  btn btn-light">Clear failed</button>                   
             </div>
         </div>        
     </div>

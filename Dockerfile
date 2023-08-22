@@ -1,24 +1,26 @@
 FROM python:3
 
-RUN apt-get -y update
-RUN apt-get install -y bridge-utils cifs-utils
-RUN mkdir /mnt/nas
-
+WORKDIR /home/petfectior
 
 COPY requirements.txt requirements.txt
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+RUN python -m venv envPETfectiorClient
+RUN envPETfectiorClient/bin/pip install --upgrade pip
+RUN envPETfectiorClient/bin/pip install -r requirements.txt
+RUN envPETfectiorClient/bin/pip install gunicorn
 
-WORKDIR /code
+RUN apt-get -y update
+RUN apt-get install -y bridge-utils cifs-utils openvpn iputils-ping dos2unix iproute2 net-tools traceroute
+RUN mkdir shared
 
 COPY app_pkg app_pkg
-COPY services services
-COPY client_side_app.py client_side_app.py
-COPY init_services.py init_services.py
+COPY migrations migrations
+COPY petfectior_client.py config.py boot.sh ./
+RUN dos2unix < boot.sh > boot_bkp.sh
+RUN rm boot.sh
+RUN mv boot_bkp.sh boot.sh
+RUN chmod +x boot.sh
 
 EXPOSE 8000
+EXPOSE 11115
 
-COPY start.sh /
-RUN chmod +x /start.sh
-
-CMD ["/start.sh"]
+CMD ["./boot.sh"]
