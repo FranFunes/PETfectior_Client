@@ -176,7 +176,7 @@ class AppConfig(db.Model):
     store_scp_port = db.Column(db.Integer, default=11115)
     store_scp_aet = db.Column(db.String(64), default='PETFECTIOR')
     mirror_mode = db.Column(db.Boolean, default=False)
-    server_url = db.Column(db.String(64), default='10.0.0.51:5001')
+    server_url = db.Column(db.String(64), default=os.getenv('SERVER_ADDRESS') + ':' + os.getenv('SERVER_PORT') )
     shared_path = db.Column(db.String(128), default=os.getenv('SHARED_PATH') or '//10.87.141.15/Proyectos/PETfectior')
     shared_mount_point = db.Column(db.String(128), default=os.getenv('SHARED_MOUNT_POINT') or 'shared')
     zip_dir = db.Column(db.String(128), default=os.path.join('temp','packed_series'))
