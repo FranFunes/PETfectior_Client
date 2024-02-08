@@ -5,3 +5,5 @@ data
 temp
 app.db
 incoming
+vpn/config
+docker-compose-no-vpn.yml
