@@ -154,8 +154,6 @@ def delete_task(mapper, connection, target):
 
     # Delete results series
 
-    
-
 class AppLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
@@ -175,6 +173,7 @@ class AppConfig(db.Model):
     series_timeout = db.Column(db.Integer, default=30)
     store_scp_port = db.Column(db.Integer, default=11115)
     store_scp_aet = db.Column(db.String(64), default='PETFECTIOR')
+    ip_address = db.Column(db.String(12), default = '')
     mirror_mode = db.Column(db.Boolean, default=False)
     server_url = db.Column(db.String(64), default=os.getenv('SERVER_ADDRESS') + ':' + os.getenv('SERVER_PORT') )
     shared_path = db.Column(db.String(128), default=os.getenv('SHARED_PATH') or '//10.87.141.15/Proyectos/PETfectior')

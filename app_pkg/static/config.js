@@ -115,6 +115,7 @@ $(document).ready(function () {
     // Local device manager
     $("#editLocalDevice").on('click', function () {    
         // Fill form with local device info
+        $('#localDeviceManagerIP').val($("#localIP").text())  
         $('#localDeviceManagerAET').val($("#localAET").text())  
         $('.modal-title').text('Edit local DICOM configuration')      
     })
@@ -124,7 +125,8 @@ $(document).ready(function () {
         // Prevent the form from submitting normally
         event.preventDefault();      
         var ajax_data = {
-            "ae_title":  $('#localDeviceManagerAET').val()
+            "ae_title":  $('#localDeviceManagerAET').val(),
+            "address":  $('#localDeviceManagerIP').val()
         }
         $.ajax({
             url: "/manage_local_device",
@@ -137,6 +139,7 @@ $(document).ready(function () {
                 alert(response.message)
                 // Update local device info
                 $("#localAET").text(ajax_data.ae_title)
+                $("#localIP").text(ajax_data.address)
             },
             error: function(xhr, status, error) {
                 // handle error response here
@@ -183,23 +186,25 @@ $(document).ready(function () {
 
         var ajax_data = devices_table.rows({ selected: true }).data()[0]
         ajax_data.action = "delete"
-
-        $.ajax({
-            url: "/manage_remote_devices",
-            method: "POST",
-            data:   JSON.stringify(ajax_data),
-            dataType: "json",
-            contentType: "application/json",
-            success: function(response) {                    
-                // Show success message
-                alert(response.message)
-                devices_table.ajax.reload()
-            },
-            error: function(xhr, status, error) {
-                // handle error response here
-                alert(xhr.responseJSON.message);
-            }
+        console.log(ajax_data)
+        if (confirm(`Delete device ${ajax_data.name}?`)){
+            $.ajax({
+                url: "/manage_remote_devices",
+                method: "POST",
+                data:   JSON.stringify(ajax_data),
+                dataType: "json",
+                contentType: "application/json",
+                success: function(response) {                    
+                    // Show success message
+                    alert(response.message)
+                    devices_table.ajax.reload()
+                },
+                error: function(xhr, status, error) {
+                    // handle error response here
+                    alert(xhr.responseJSON.message);
+                }
             }); 
+        }
     })
 
     // New/Edit form submit
@@ -231,6 +236,86 @@ $(document).ready(function () {
             }
             });     
     });
+
+    // Ping remote device
+    $("#pingRemoteDevice").on('click', function(event) {
+        // Prevent the form from submitting normally
+        event.preventDefault();     
+
+        $(this)[0].innerHTML = `<span class="spinner-border spinner-border-sm"></span>`
+        $(this).prop('disabled', true);
+                
+        var ajax_data = {
+            "address": $('#deviceManagerIP').val()
+        }
+        $.ajax({
+            url: "/ping_remote_device",
+            method: "POST",
+            data:   JSON.stringify(ajax_data),
+            dataType: "json",
+            contentType: "application/json",
+            success: function(response) {                    
+                // Show success message
+                $("#pingRemoteDevice")[0].innerHTML = 'Success'
+                $("#pingRemoteDevice").prop('disabled', false)
+                $("#pingRemoteDevice").addClass('btn-success')
+                $("#pingRemoteDevice").removeClass('btn-danger')
+
+            },
+            error: function(xhr, status, error) {
+                // handle error response here
+                $("#pingRemoteDevice")[0].innerHTML = 'Failed'
+                $("#pingRemoteDevice").prop('disabled', false)
+                $("#pingRemoteDevice").addClass('btn-danger')
+                $("#pingRemoteDevice").removeClass('btn-success')
+
+            }
+        });
+    });
+
+    // Echo remote device
+    $("#echoRemoteDevice").on('click', function(event) {
+        // Prevent the form from submitting normally
+        event.preventDefault();     
+
+        $(this)[0].innerHTML = `<span class="spinner-border spinner-border-sm"></span>`
+        $(this).prop('disabled', true);
+        
+        var ajax_data = {
+            "ae_title":  $('#deviceManagerAET').val(),
+            "address": $('#deviceManagerIP').val(),
+            "port": parseInt($('#deviceManagerPort').val()),
+        }
+        
+        $.ajax({
+            url: "/echo_remote_device",
+            method: "POST",
+            data:   JSON.stringify(ajax_data),
+            dataType: "json",
+            contentType: "application/json",
+            success: function(response) {                    
+                // Show success message
+                $("#echoRemoteDevice")[0].innerHTML = 'Success'
+                $("#echoRemoteDevice").prop('disabled', false)
+                $("#echoRemoteDevice").addClass('btn-success')
+                $("#echoRemoteDevice").removeClass('btn-danger')
+            },
+            error: function(xhr, status, error) {
+                // handle error response here
+                $("#echoRemoteDevice")[0].innerHTML = 'Failed'
+                $("#echoRemoteDevice").prop('disabled', false)
+                $("#echoRemoteDevice").addClass('btn-danger')
+                $("#echoRemoteDevice").removeClass('btn-suc cess')
+            }
+        });
+    });
+
+    // Reset ping/echo buttons when modal is closed
+    $('#deviceModal').on('hidden.bs.modal', function () {        
+        $('#pingRemoteDevice').removeClass('btn-danger').removeClass('btn-success').addClass('btn-primary').text('Ping')
+        $('#echoRemoteDevice').removeClass('btn-danger').removeClass('btn-success').addClass('btn-primary').text('Echo')
+    });
+
 
     
 

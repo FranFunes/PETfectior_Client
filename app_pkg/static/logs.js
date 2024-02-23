@@ -1,49 +1,49 @@
 $(document).ready(function () {
-    
+
     //Init processes list
     $.ajax({
         url: "/get_modules_names",
-        success: function(response) {                    
+        success: function (response) {
             // Show success message
-            $.each(response.data, function(key, value) {                                
+            $.each(response.data, function (key, value) {
                 $('#process-select')
-                     .append($('<option>', { value : value })
-                     .text(value));                
+                    .append($('<option>', { value: value })
+                        .text(value));
                 // Show last value selected
-                if (localStorage.getItem('process') !== null ) {                   
-                    $('#process-select').val(localStorage.getItem("process"))                    
-                }                
-           });
+                if (localStorage.getItem('process') !== null) {
+                    $('#process-select').val(localStorage.getItem("process"))
+                }
+            });
         },
-        error: function(xhr, status, error) {
+        error: function (xhr, status, error) {
             // handle error response here
             console.log(xhr.responseText);
         }
-        });    
+    });
 
-   // Init logs table
+    // Init logs table
     var ignore_post = true
     var table_logs = $('#logs').DataTable({
         ajax: {
-            url: "/get_logs",
+            url: "/get_app_logs",
             method: "POST",
-            data: function() {
-                    return JSON.stringify({
-                        'dateSelector':$("[name='datetime']:checked").val(),
-                        'startDate': $("#startDate").val(),
-                        'endDate': $("#endDate").val(),
-                        'startTime': $("#startTime").val(),
-                        'endTime': $("#endTime").val(),    
-                        'ignore': ignore_post, 
-                        'process': $("#process-select").val(),
-                        'levels': $("[name='level']:checked").map(function() {
-                            return this.value
-                        }).get(),
-                    })
-                },
+            data: function () {
+                return JSON.stringify({
+                    'dateSelector': $("[name='datetime']:checked").val(),
+                    'startDate': $("#startDate").val(),
+                    'endDate': $("#endDate").val(),
+                    'startTime': $("#startTime").val(),
+                    'endTime': $("#endTime").val(),
+                    'ignore': ignore_post,
+                    'process': $("#process-select").val(),
+                    'levels': $("[name='level']:checked").map(function () {
+                        return this.value
+                    }).get(),
+                })
+            },
             contentType: 'application/json',
             dataType: "json"
-          },              
+        },
         columns: [
             { data: 'date', title: 'Date' },
             { data: 'time', title: 'Time' },
@@ -52,37 +52,45 @@ $(document).ready(function () {
             { data: 'function', title: 'Function' },
             { data: 'message', title: 'Message' },
         ],
-        processing:     false,
-        paging:         true,
-        scrollX:        true,  
-        searching:      false,  
-        info:           false,
-        ordering:       false,
-        dom: 'plt',        
-        initComplete: function() {
+        language: {
+            emptyTable: '<br>'.repeat(10),
+            processing: '<br>',
+        },
+        processing: true,
+        paging: true,
+        scrollX: true,
+        searching: true,
+        info: false,
+        ordering: false,
+        initComplete: function () {
             // Don't ignore post from now on
             ignore_post = false
             // Initialize table with data stored locally
             if (localStorage.getItem('logsTable') !== null) {
                 data = JSON.parse(localStorage.getItem('logsTable'))
-                table_logs.rows.add(data).draw()                
+                table_logs.rows.add(data).draw()
             }
         }
-    });   
-    
+    });
+
     // Show last query values in form
+
+    // Log type
+    if (localStorage.getItem('logtype') !== null) {
+        $('#logtype-select').val(localStorage.getItem("logtype"))
+    }
     // Processes
-    if (localStorage.getItem('process') !== null ) {
+    if (localStorage.getItem('process') !== null) {
         $('#process-select').val(localStorage.getItem("process"))
     }
     // Levels
-    if (localStorage.getItem('levels') !== null ) {
-        JSON.parse(localStorage.levels).forEach(function(item) {
-            $("[name='level'][value='"+item+"']").prop('checked',true)
+    if (localStorage.getItem('levels') !== null) {
+        JSON.parse(localStorage.levels).forEach(function (item) {
+            $("[name='level'][value='" + item + "']").prop('checked', true)
         })
     }
 
-    if (localStorage.getItem('dateSelector') !== null ) {        
+    if (localStorage.getItem('dateSelector') !== null) {
         // Dates and times
         $("#startDate").val(localStorage.getItem("startDate"))
         $("#endDate").val(localStorage.getItem("endDate"))
@@ -94,20 +102,19 @@ $(document).ready(function () {
             $('#endDate').prop("disabled", false)
             $('#startTime').prop("disabled", false)
             $('#endTime').prop("disabled", false)
-        }        
-        
+        }
+
     } else {
         $("#date_any").prop("checked", true)
         document.getElementById('startDate').valueAsDate = new Date()
-        document.getElementById('endDate').valueAsDate = new Date()        
+        document.getElementById('endDate').valueAsDate = new Date()
         document.getElementById('startTime').value = "00:00:00"
         document.getElementById('endTime').value = "23:59"
-    }     
-    
-    // Enable/disable date pickers
-    $("[name='datetime']").on('click', function(){
+    }
 
-        console.log('date')
+    // Enable/disable date pickers
+    $("[name='datetime']").on('click', function () {
+
         if ($(this)[0].id == 'date_any') {
             $('#startDate').prop("disabled", true)
             $('#endDate').prop("disabled", true)
@@ -122,52 +129,99 @@ $(document).ready(function () {
         }
     })
 
+    // Show or hide according to selected logtype
+    hideShow()
+
+    // Manage log type selection
+    $('#logtype-select').change(hideShow)
+
     // Manage the logs search (form submission)
-    $("#search_logs").submit(function(event) {
+    $("#search_logs").submit(function (event) {
         // Prevent the form from submitting normally
         event.preventDefault();
-        // Reload table
-        table_logs.clear().draw()
-        //Store the query data to be shown after refreshing the page        
-        dateSelector = $("[name='datetime']:checked").prop('id')
-        startDate = $("#startDate").val()
-        endDate = $("#endDate").val()
-        startTime = $("#startTime").val()
-        endTime = $("#endTime").val()
-        process = $("#process-select").val()
-        levels = $("[name='level']:checked").map(function() {
-            return this.value
-        }).get()
 
-        table_logs.ajax.reload(function() {
-            // Store the data locally to be shown after refreshing the page    
-            localStorage.setItem("logsTable",JSON.stringify(table_logs.rows().data().toArray()))
-            localStorage.setItem("dateSelector", dateSelector)
-            localStorage.setItem("startDate", startDate)
-            localStorage.setItem("endDate", endDate)
-            localStorage.setItem("startTime", startTime)
-            localStorage.setItem("endTime", endTime)            
-            localStorage.setItem("process", process)
-            localStorage.setItem("levels", JSON.stringify(levels))
-        })
-    });   
+        var button = $('button[type=submit]')
+        console.log(button)
+        button[0].innerHTML = `<span class="spinner-border spinner-border-sm"></span>`
 
-    $("#export").on('click', function(event){
+        if ($('#logtype-select').val() == 'App'){
+            // Reload table
+            table_logs.clear().draw()
+            //Store the query data to be shown after refreshing the page        
+            dateSelector = $("[name='datetime']:checked").prop('id')
+            startDate = $("#startDate").val()
+            endDate = $("#endDate").val()
+            startTime = $("#startTime").val()
+            endTime = $("#endTime").val()
+            process = $("#process-select").val()
+            levels = $("[name='level']:checked").map(function () {
+                return this.value
+            }).get()
+            
+            table_logs.ajax.reload(function () {
+                // Store the data locally to be shown after refreshing the page    
+                localStorage.setItem("dateSelector", dateSelector)
+                localStorage.setItem("startDate", startDate)
+                localStorage.setItem("endDate", endDate)
+                localStorage.setItem("startTime", startTime)
+                localStorage.setItem("endTime", endTime)
+                localStorage.setItem("process", process)
+                localStorage.setItem("levels", JSON.stringify(levels))
+                button[0].innerHTML = 'Search'
+            })
+        } else if ($('#logtype-select').val() == 'Dicom'){
+            var ajax_data = {
+                "startDate":  $("#startDate").val(),
+                "endDate":  $("#endDate").val(),
+                'startTime': $("#startTime").val(),
+                'endTime': $("#endTime").val(),
+                'dateSelector': $("[name='datetime']:checked").val(),
+            }
+            $.ajax({
+                url: "/get_dicom_logs",
+                method: "POST",
+                data:   JSON.stringify(ajax_data),
+                dataType: "json",
+                contentType: "application/json",
+                success: function(response) {       
+                    // Update textarea                                
+                    $('#dicomLogs').text(response.data)                    
+                },
+                error: function(xhr, status, error) {
+                    // handle error response here
+                    alert("Dicom log not found");
+                },
+                complete:  function(){
+                    button[0].innerHTML = 'Search'
+                }
+                });  
+        }
+    });
+
+    $("#export").on('click', function (event) {
         event.preventDefault();
 
-        // Create a .csv from table contents
-        let data = table_logs.rows().data().toArray()
-        let text = '';
-        // Write headers
-        headers = Object.keys(data[0])  
-        text += headers.join(';')
-        text += '\n'        
-        // Write data
-        for (item of data) {
-            values = Object.values(item);
-            text += values.join(';');
-            text += '\n';
-          }          
+        $(this)[0].innerHTML = `<span class="spinner-border spinner-border-sm"></span>`
+        
+        if ($('#logtype-select').val() == 'App'){
+            // Create a .csv from table contents
+            var filename = 'petfectior_app_logs.csv'
+            var data = table_logs.rows().data().toArray()
+            var text = '';
+            // Write headers
+            headers = Object.keys(data[0])
+            text += headers.join(';')
+            text += '\n'
+            // Write data
+            for (item of data) {
+                values = Object.values(item);
+                text += values.join(';');
+                text += '\n';
+            }
+        } else if ($('#logtype-select').val() == 'Dicom') {
+            var text = $("#dicomLogs").text()
+            var filename = 'petfectior_dicom_logs.txt'
+        }
 
         // Create element with <a> tag
         const link = document.createElement("a");
@@ -179,13 +233,33 @@ $(document).ready(function () {
         link.href = URL.createObjectURL(file);
 
         // Add file name
-        link.download = "logs.csv";
+        link.download = filename;
 
         // Add click event to <a> tag to save file.
         link.click();
         URL.revokeObjectURL(link.href);
-            })
+
+        $(this)[0].innerHTML = 'Export'
+    })
+
 });
 
 // Don't show alerts on ajax errors
 $.fn.dataTable.ext.errMode = 'throw';
+
+function hideShow(){
+    if ($('#logtype-select').val() == 'App'){        
+        $("#dicomLogsContainer").hide()
+        $("#appLogsContainer").show()
+        $("#process-select").show()
+        $("label[for=process-select]").show()
+        $("div[name=level-select").show()
+
+    } else {
+        $("#dicomLogsContainer").show()
+        $("#appLogsContainer").hide()
+        $("#process-select").hide()
+        $('label[for=process-select]').hide()
+        $("div[name=level-select").hide()
+    }
+}

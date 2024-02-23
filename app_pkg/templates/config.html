@@ -102,7 +102,11 @@
             
                     <!-- Modal body -->
                     <div class="modal-body">
-                        <form id="localDeviceManagerForm">        
+                        <form id="localDeviceManagerForm">
+                            <div class="mb-3">
+                                <label for="localdeviceManagerAET" class="form-label">IP Address</label>
+                                <input type="text" class="form-control" id="localDeviceManagerIP" name="localDeviceManagerIP">
+                            </div>         
                             <div class="mb-3">
                                 <label for="localdeviceManagerAET" class="form-label">AE Title</label>
                                 <input type="text" class="form-control" id="localDeviceManagerAET" name="localDeviceManagerAET">
@@ -133,19 +137,26 @@
                             <div class="mb-3 mt-3" id="deviceNameDiv">
                                 <label for="deviceManagerName" class="form-label">Name</label>
                                 <input type="text" class="form-control" id="deviceManagerName" name="deviceManagerName">
-                            </div>
-                            <div class="mb-3">
-                                <label for="deviceManagerAET" class="form-label">AE Title</label>
-                                <input type="text" class="form-control" id="deviceManagerAET" name="deviceManagerAET">
+                                
                             </div>
                             <div class="mb-3">
                                 <label for="deviceManagerIP" class="form-label">IP Address</label>
-                                <input type="text" class="form-control" id="deviceManagerIP" name="deviceManagerIP">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="deviceManagerIP" name="deviceManagerIP">
+                                    <button class="btn btn-primary test-button" id="pingRemoteDevice">Ping </button>                                    
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label for="deviceManagerPort" class="form-label">Port</label>
                                 <input type="text" class="form-control" id="deviceManagerPort" name="deviceManagerPort">
                             </div>                   
+                            <div class="mb-3">
+                                <label for="deviceManagerAET" class="form-label">AE Title</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="deviceManagerAET" name="deviceManagerAET">
+                                    <button class="btn btn-primary test-button" id="echoRemoteDevice">Echo</button>                                    
+                                </div> 
+                            </div>
                             <div class="mb-3">
                                 <input type="checkbox" class="form-check-input" id="deviceManagerIsDest" name="deviceManagerIsDest">
                                 <label for="deviceManagerIsDest" class="form-check-label">Use as destination</label>

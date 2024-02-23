@@ -21,15 +21,9 @@ def dicom_logger():
     logger = logging.getLogger('pynetdicom')
     logger.setLevel(logging.DEBUG)
     logger.handlers = []
-    handler = RotatingFileHandler(os.path.join('data','logs','dicom_events.log'), maxBytes = 10*2**20, backupCount = 10)
+    handler = RotatingFileHandler(os.path.join('data','logs','dicom.log'), maxBytes = 10*2**20, backupCount = 10)
     handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s: %(levelname).1s: %(threadName)s: %(message)s ')    
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-
-    handler = RotatingFileHandler(os.path.join('data','logs','dicom_errors.log'), maxBytes = 10*2**20, backupCount = 1)
-    handler.setLevel(logging.ERROR)
-    formatter = logging.Formatter('%(asctime)s: %(levelname).1s: %(threadName)s: %(message)s ')    
+    formatter = logging.Formatter('%(asctime)s; %(levelname).1s; %(message)s ')    
     handler.setFormatter(formatter)
     logger.addHandler(handler)
    
@@ -37,9 +31,9 @@ def dicom_logger():
 def app_logger():
 
     # Create the folder for the output file
-    logging_fpath = os.environ.get('LOGGING_FILEPATH', default = 'output.log')
-    logging_dir = os.path.dirname(logging_fpath)
-    os.makedirs(logging_dir, exist_ok=True)
+    logging_dir = os.environ.get('LOGGING_FILEPATH', default = 'data/logs')
+    logging_fpath = os.path.join(logging_dir, 'output.log')
+    os.makedirs(logging_dir, exist_ok = True)
 
     # Configure logging for the application
     app_logger = logging.getLogger('__main__')

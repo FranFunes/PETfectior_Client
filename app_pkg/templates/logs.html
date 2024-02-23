@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -8,7 +9,7 @@
     <!-- Bootstrap 5 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- jQuery -->
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.5.1.js"></script>
 
@@ -18,36 +19,37 @@
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    
+
     <!-- Custom -->
     <link rel="stylesheet" href="static/styles.css">
     <script type="text/javascript" src="static/logs.js" type="module"></script>
-        
+
     <title>PETfectior Client </title>
 </head>
+
 <body>
 
     <!-- Navigation bar -->
     <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
         <div class="container-fluid">
             <ul class="navbar-nav">
-              <li class="nav-item">
-                <a class="nav-link" href="/tasks">Tasks</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/config">Config</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/dashboard">Processes</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link active" href="/logs">Logs</a>
-              </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/tasks">Tasks</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/config">Config</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/dashboard">Processes</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/logs">Logs</a>
+                </li>
             </ul>
-          </div>
+        </div>
     </nav>
-    
-    <div class="container-sm pt-3">    
+
+    <div class="container-sm pt-3">
 
         <div class="row">
             <h1 class="display-6 text-center">Log Viewer</h1>
@@ -55,50 +57,56 @@
 
         <!-- Search form -->
         <div class="row pt-2">
-          <form id="search_logs">  
-              <div class="form-group pt-3">
-                  <!-- Processes selection -->
-                  <label for="process-select" class="h5">Modules:</label>
-                  <select class="form-control" id="process-select">
-                      <option>ALL</option>
+            <form id="search_logs">
+                <div class="form-group pt-3">
+                    <!-- Log type selection -->
+                    <label for="type-select" class="h5">Log type:</label>
+                    <select class="form-control" id="logtype-select">
+                        <option>App</option>
+                        <option>Dicom</option>
                     </select>
-                <!-- Level selection -->
-                    <label class="h5 pt-2">Levels </label>
-                    <div class="row">
+                    <!-- Processes selection -->
+                    <label for="process-select" class="h5 pt-3">Modules:</label>
+                    <select class="form-control" id="process-select">
+                        <option>ALL</option>
+                    </select>
+                    <!-- Level selection -->
+                    <label class="h5 pt-2" for="process-select">Levels</label>
+                    <div class="row" name="level-select">
                         <div class="col-sm-2">
                             <label class="checkbox-inline">
                                 <input type="checkbox" name="level" value="CRITICAL"> CRITICAL
                             </label>
-                        </div>   
+                        </div>
                         <div class="col-sm-2">
                             <label class="checkbox-inline">
                                 <input type="checkbox" name="level" value="ERROR"> ERROR
                             </label>
-                        </div> 
+                        </div>
                         <div class="col-sm-2">
                             <label class="checkbox-inline">
                                 <input type="checkbox" name="level" value="WARNING"> WARNING
                             </label>
-                        </div> 
+                        </div>
                         <div class="col-sm-2">
                             <label class="checkbox-inline">
                                 <input type="checkbox" name="level" value="INFO"> INFO
                             </label>
-                        </div> 
+                        </div>
                         <div class="col-sm-2">
                             <label class="checkbox-inline">
                                 <input type="checkbox" name="level" value="DEBUG"> DEBUG
                             </label>
-                        </div>                 
+                        </div>
                     </div>
-                    <label for="process-select" class="h5 pt-2">Datetime</label>
+                    <label class="h5 pt-2">Datetime</label>
                     <div class="col">
                         <div class="form-check">
-                            <input type="radio" class="form-check-input" id="date_any" value="anydate" name="datetime" >
+                            <input type="radio" class="form-check-input" id="date_any" value="anydate" name="datetime">
                             <label class="form-check-label" for="date_any">All</label>
                         </div>
                         <div class="form-check">
-                            <input type="radio" class="form-check-input" id="date_range" value="range" name="datetime" >
+                            <input type="radio" class="form-check-input" id="date_range" value="range" name="datetime">
                             <label class="form-check-label" for="date_range">Range (From : To)</label>
                         </div>
                         <div class="row">
@@ -113,33 +121,42 @@
                             </div>
                             <div class="col-sm-2">
                                 <input type="time" class="form-control" id="endTime" name="startDate" disabled>
-                            </div>                        
+                            </div>
                         </div>
-                        
-                    </div>
-              </div>
-              
-              <!-- Submit -->
-              <div class="row pt-3">
-                  <div class="col">
-                      <button type="submit" class="btn btn-primary">Search</button>
-                  </div>   
-                  <div class="col text-end">
-                    <button class="btn btn-outline-dark" id="export">Export</button>
-                </div>              
-              </div>
-          </form>    
-      </div>
-              
-      <hr>
 
-        <!-- Logs table -->
-        <div class="row">
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <div class="row pt-3">
+                    <div class="col">
+                        <button type="submit" class="btn btn-primary">Search</button>
+                    </div>
+                    <div class="col text-end">
+                        <button class="btn btn-outline-dark" id="export">Export</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <hr>
+
+        <!-- App logs table -->
+        <div class="row" id="appLogsContainer">
             <table id="logs" class="display" style="width:100%">
-                
+
             </table>
         </div>
+
+        <!-- Dicom logs  -->
+        <div class="row" id="dicomLogsContainer">
+            <div class="col">
+                <textarea class="form-control" rows="20" id="dicomLogs"></textarea>
+            </div>
+        </div>
+
     </div>
     <br>
 </body>
+
 </html>

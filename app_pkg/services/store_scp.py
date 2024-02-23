@@ -41,7 +41,9 @@ class StoreSCP(AE):
         
         # Add supported contexts
         self.add_supported_context(PositronEmissionTomographyImageStorage)
-        self.add_supported_context(Verification)
+        self.add_supported_context(Verification)  
+        self.add_requested_context(Verification)
+                     
 
         # Create store directory if it does not exist.
         try:
@@ -137,3 +139,24 @@ class StoreSCP(AE):
                 logger.error("Association rejected, aborted or never connected")                                    
         
         return state
+    
+    def echo(self, device: dict) -> int:
+
+        """
+            device: dict with address, port and ae_title
+
+        """
+        try:
+            assoc = self.associate(device['address'], device['port'], ae_title = device['ae_title'])
+
+            if assoc.is_established:
+                echo_response = assoc.send_c_echo()
+                if 'Status' in echo_response: 
+                    return echo_response.Status
+            else:
+                return -1
+        except RuntimeError:
+            logger.info(f"association with {device['ae_title']}@{device['address']}:{device['port']} could not be established")
+            return -1
+        
+    

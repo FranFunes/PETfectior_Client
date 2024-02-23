@@ -1,4 +1,4 @@
-import os, logging
+import os, logging, subprocess
 from app_pkg import application, db
 from app_pkg.db_models import Task, AppConfig
 from shutil import make_archive, unpack_archive, rmtree
@@ -38,4 +38,23 @@ def process(task_id):
 
         db.session.commit()
 
+def ping(target_host, timeout = 100, count = 3):
 
+    if os.name == "nt":
+        command = ["ping", "-w", str(timeout), "-n", str(count), target_host]
+    elif os.name == "posix":
+        command = ["ping", "-W", str(timeout), "-c", str(count), target_host]
+    else:
+        return False
+
+    try:
+        completed_process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        stdout = completed_process.stdout
+        stderr = completed_process.stderr
+
+        if completed_process.returncode == 0:
+            return True
+        else:
+            return False
+    except subprocess.CalledProcessError as e:
+        return False

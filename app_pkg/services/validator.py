@@ -140,7 +140,7 @@ class Validator():
                             try:
                                 assert self.check_model(recon_settings)
                             except AssertionError:                            
-                                logger.error(f"task {task.id} completed but no model found for these recon settings:\n{json.dumps(recon_settings, indent = 3)}")
+                                logger.error(f"task {task.id} completed but no model found for these recon settings: {recon_settings.to_json()}")
                                 task.status_msg = 'failed - no model'
                                 task.step_state = -1  
                             except ConnectionError as e:                            

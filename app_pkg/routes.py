@@ -9,6 +9,7 @@ from app_pkg import application, db
 from app_pkg.db_models import Device, Task, AppConfig
 from app_pkg.services import services
 from app_pkg.functions.task_actions import delete_task, restart_task, retry_last_step, delete_finished, delete_failed
+from app_pkg.functions.helper_funcs import ping
 
 
 logger = logging.getLogger('__main__')
@@ -112,17 +113,12 @@ def get_local_device():
         c = AppConfig.query.first()
         ae_title = c.store_scp_aet
         port = c.store_scp_port
+        address = c.ip_address
     except Exception as e:
         logger.error("can't access config in database")
         logger.error(repr(e))
     
-    # Get the IP address for each network interface available
-    interfaces = psutil.net_if_addrs()
-    ips = []
-    [[ips.append(item.address) for item in interface if item.family.name == 'AF_INET' and not item.address == '127.0.0.1'] for interface in interfaces.values()]
-    address = '/'.join(ips)
     device = {'ae_title': ae_title, 'address': address, 'port':port}
-
     data = {
         "data": device
     }
@@ -148,6 +144,7 @@ def manage_local_device():
     try:
         c = AppConfig.query.first()
         c.store_scp_aet = request.json["ae_title"]
+        c.ip_address = request.json["address"]
         c.store_scp_port = request.json.get("port", c.store_scp_port)
         db.session.commit()
         # Try to restart DICOM services with the new configuration
@@ -160,7 +157,7 @@ def manage_local_device():
     except OSError as e:
         logger.error("port already in use")
         return jsonify(message = 'Error: port already in use'), 500
-    
+
 @application.route('/get_remote_devices')
 def get_remote_devices():
 
@@ -265,6 +262,23 @@ def manage_remote_devices():
             print(repr(e))
             return {"message":"Error al acceder a la base de datos"}
 
+@application.route('/ping_remote_device', methods=['GET', 'POST'])
+def ping_remote_device():   
+
+    ping_result = ping(request.json['address'], count = 2)
+    if ping_result:
+        return jsonify(message = request.json['address'] + ' is reacheable!!!'), 200
+    else:
+        return jsonify(message = request.json['address'] + ' is unreacheable!!!'), 500
+    
+@application.route('/echo_remote_device', methods=['GET', 'POST'])
+def echo_remote_device():       
+    echo_response = services['Dicom Listener'].echo(request.json)
+    if echo_response == 0:
+        return jsonify(message = f"DICOM ECHO to {request.json['ae_title']}@{request.json['address']}:{request.json['port']} succesful"), 200
+    else:
+        return jsonify(message = f"DICOM ECHO to {request.json['ae_title']}@{request.json['address']}:{request.json['port']} failed"), 500
+
 ###################################################################################
 ###########################         PROCESSES        ##############################
 ###################################################################################    
@@ -306,29 +320,30 @@ def manage_service():
 @application.route('/get_modules_names')
 def get_modules_names():
 
-    modules = ['petfectior_client',
+    modules = ['compilator',
+               'petfectior_client',
+               'db_models',
                'db_store_handler',
+               'downloader',
+               'packer',
                'routes',
                'services',
                'server_monitor',
-               'task_manager',
                'store_scp',               
-               'compilator',
-               'packer',
-               'uploader',
-               'downloader',
-               'unpacker',
                'store_scu',
-               'db_models',
-               'task_actions']
+               'task_actions',
+               'task_manager',
+               'unpacker',
+               'uploader',               
+               'validator',]
     
     return {'data': modules}
 
-@application.route('/get_logs', methods = ['GET','POST'])
-def get_logs():
+@application.route('/get_app_logs', methods = ['GET','POST'])
+def get_app_logs():
 
     if not request.json['ignore']:
-        df = pd.read_csv(os.environ['LOGGING_FILEPATH'], sep=';', names = ['datetime','level','module','function','message'])
+        df = pd.read_csv(os.path.join(os.environ['LOGGING_FILEPATH'],'output.log'), sep=';', names = ['datetime','level','module','function','message'])
         df['datetime'] = df['datetime'].map(lambda x: datetime.strptime(x,'%Y-%m-%d %H:%M:%S,%f'))
 
         # Filter by level
@@ -353,6 +368,22 @@ def get_logs():
         data = []
 
     return {"data": data}
+
+@application.route('/get_dicom_logs', methods = ['GET','POST'])
+def get_dicom_logs():
+
+    df = pd.read_csv(os.path.join(os.environ['LOGGING_FILEPATH'],'dicom.log'), sep=';', names = ['datetime','level','message'])
+    df['timestamp'] = df['datetime'].map(lambda x: datetime.strptime(x,'%Y-%m-%d %H:%M:%S,%f'))
+
+    # Filter by date
+    if request.json['dateSelector'] == 'range':
+        start_date = pd.Timestamp(request.json['startDate'] + " " + request.json['startTime'])
+        end_date = pd.Timestamp(request.json['endDate'] + " " + request.json['endTime'])
+        df = df[(df['timestamp'] >= start_date) & (df['timestamp'] <= end_date)]  
+    
+    log = df.drop(['timestamp','level'], axis = 1).to_csv(index = False, header = False, sep = ';')
+
+    return {"data": log}
 
 ###################################################################################
 ######################          SERVER INTERACTION           ######################
