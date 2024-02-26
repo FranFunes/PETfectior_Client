@@ -1,5 +1,6 @@
-from pynetdicom import AE, evt
-from pynetdicom.sop_class import PositronEmissionTomographyImageStorage, Verification
+from pynetdicom import AE, evt, AllStoragePresentationContexts, VerificationPresentationContexts
+from pynetdicom._globals import ALL_TRANSFER_SYNTAXES
+
 import pydicom
 import logging, os
 
@@ -38,12 +39,14 @@ class StoreSCP(AE):
         self.queue = input_queue
         self.store_dest =  store_dest   
         self.handle_store = c_store_handler     
-        
-        # Add supported contexts
-        self.add_supported_context(PositronEmissionTomographyImageStorage)
-        self.add_supported_context(Verification)  
-        self.add_requested_context(Verification)
-                     
+
+        # Add presentation contexts with specified transfer syntaxes
+        for context in AllStoragePresentationContexts:
+            self.add_supported_context(context.abstract_syntax, ALL_TRANSFER_SYNTAXES)
+
+        for context in VerificationPresentationContexts:
+            self.add_supported_context(context.abstract_syntax, ALL_TRANSFER_SYNTAXES)
+            self.add_requested_context(context.abstract_syntax, ALL_TRANSFER_SYNTAXES)                     
 
         # Create store directory if it does not exist.
         try:
@@ -116,7 +119,10 @@ class StoreSCP(AE):
             state = 'Stopped'
             # Create an AE and send a C - ECHO to ourselves            
             ae = AE()            
-            ae.add_requested_context(Verification)
+            
+            for context in VerificationPresentationContexts:                
+                ae.add_requested_context(context.abstract_syntax, ALL_TRANSFER_SYNTAXES)   
+
             with application.app_context():
                 config = AppConfig.query.first()                
             port = config.store_scp_port
@@ -152,6 +158,7 @@ class StoreSCP(AE):
             if assoc.is_established:
                 echo_response = assoc.send_c_echo()
                 if 'Status' in echo_response: 
+                    assoc.release()
                     return echo_response.Status
             else:
                 return -1

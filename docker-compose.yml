@@ -7,6 +7,8 @@ services:
     ports:
       - "8000:8000"
       - "11115:11115"
+    environment:
+      - SERVER_ADDRESS
     cap_add:
       - net_admin
     volumes:

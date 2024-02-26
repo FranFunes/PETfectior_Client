@@ -6,4 +6,4 @@ mknod /dev/net/tun c 10 200
 chmod 600 /dev/net/tun
 
 echo Starting VPN connection...
-openvpn --config /vpn/PETfectior_client1.ovpn --route 10.0.0.0 255.0.0.0
+openvpn --config /vpn/PETfectior_client1.ovpn --route $SERVER_ADDRESS 255.255.255.255
