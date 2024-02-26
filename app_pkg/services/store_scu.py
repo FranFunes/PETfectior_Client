@@ -8,7 +8,7 @@ from typing import List, Union, Callable
 from pathlib import Path
 
 from app_pkg import application, db
-from app_pkg.db_models import Task
+from app_pkg.db_models import Task, AppConfig
 
 # Configure logging
 logger = logging.getLogger('__main__')
@@ -129,6 +129,9 @@ class StoreSCU(AE):
             Starts the process thread.            
 
         """
+
+        with application.app_context():
+            self.ae_title  = AppConfig.query.first().store_scp_aet
     
         # Set an event to stop the thread later 
         self.stop_event = threading.Event()
@@ -137,7 +140,7 @@ class StoreSCU(AE):
             # Create and start the thread
             self.main_thread = threading.Thread(target = self.main, args = ())        
             self.main_thread.start()        
-            logger.info('StoreSCU started')
+            logger.info(f'StoreSCU started with ae_title {self.ae_title}')
             return "Dicom send started successfully"
         else:
             return "Dicom send is already running"

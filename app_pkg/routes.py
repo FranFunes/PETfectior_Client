@@ -149,7 +149,7 @@ def manage_local_device():
         db.session.commit()
         # Try to restart DICOM services with the new configuration
         services['Dicom Listener'].restart()
-        services['StoreSCU'].ae_title = request.json["ae_title"]   
+        services['StoreSCU'].restart()
         return {"message":"Local device was updated successfully"}        
     except OperationalError as e:
         logger.error("can't access config in database")
