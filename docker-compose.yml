@@ -26,6 +26,7 @@ services:
       - MYSQL_PASSWORD
       - MYSQL_USER
       - MYSQL_RANDOM_ROOT_PASSWORD
+      - TZ
     
   app:
     build: .

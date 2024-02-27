@@ -122,7 +122,7 @@ class Compilator():
                     recon_settings = queue_element['recon_ds']
                     ip = queue_element['address']
                     ae_title = queue_element['ae_title']
-                    timing = datetime.utcnow()
+                    timing = datetime.now()
 
                     # Record this source in the database if it doesn't exist
                     src_id = f"{ae_title}@{ip}"
@@ -229,7 +229,7 @@ class Compilator():
         config = AppConfig.query.first()
         min_instances = config.min_instances_in_series
         timeout = config.series_timeout
-        series_timed_out = (datetime.utcnow() - last_received).total_seconds() > timeout
+        series_timed_out = (datetime.now() - last_received).total_seconds() > timeout
 
                 
         if n_imgs and n_imgs == len(datasets):

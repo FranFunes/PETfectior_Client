@@ -111,7 +111,7 @@ class Source(db.Model):
     
 class Task(db.Model):
     id = db.Column(db.String(18), primary_key=True)
-    started = db.Column(db.DateTime, default=datetime.utcnow)
+    started = db.Column(db.DateTime, default=datetime.now)
     updated = db.Column(db.DateTime)
     current_step = db.Column(db.String(32))
     recon_settings = db.Column(db.Text()) # JSON
@@ -137,7 +137,7 @@ class Task(db.Model):
 def update_task_modified_timestamp(mapper, connection, target):
     # Perform actions before a Task instance is modified
     logger.debug(f"updating task {target.id}")
-    target.updated = datetime.utcnow()
+    target.updated = datetime.now()
     
 @event.listens_for(Task, 'before_delete')
 def delete_task(mapper, connection, target):
@@ -156,7 +156,7 @@ def delete_task(mapper, connection, target):
 
 class AppLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.now)
     level = db.Column(db.String(64), index=True)
     module = db.Column(db.String(64), index=True)
     function = db.Column(db.String(64), index=True)

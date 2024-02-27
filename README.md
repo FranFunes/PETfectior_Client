@@ -35,10 +35,11 @@ This message shows that your installation appears to be working correctly.
 1. Descargar el contenido de este repositorio desde la página de Github del mismo (Code -> Download ZIP).
 2. Extraer el archivo comprimido en una carpeta.
 3. En la carpeta donde se extrajeron los contenidos, existe un directorio *vpn*. Se debe crear el subdirectorio *config* dentro de *vpn*, y pegar dentro de ese directorio los archivos de autenticación solicitados al proveedor.
-4. Desde un línea de comandos, navegar hasta la carpeta donde se extrajeron los contenidos (aquella con el archivo *docker-compose.yml*) y
+4. En la carpeta donde se extrajeron los contenidos, existe un archivo .env con una lista de declaraciones de variables de entorno. Se debe modificar la variable TZ para que refleje la zona horaria local. Ver una lista de identificadores de zonas horarias [aquí](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).
+5. Desde un línea de comandos, navegar hasta la carpeta donde se extrajeron los contenidos (aquella con el archivo *docker-compose.yml*) y
 correr el siguiente comando:<br>
 *docker compose up*
-5. Se mostrarán múltiples mensajes de inicialización de los diferentes módulos que componen la aplicación. Al final, deberían verse las siguientes líneas que indican que la inicialización fue correcta:<br>
+6. Se mostrarán múltiples mensajes de inicialización de los diferentes módulos que componen la aplicación. Al final, deberían verse las siguientes líneas que indican que la inicialización fue correcta:<br>
 petfectior-client  | 2024-02-07 18:08:01,980 - INFO in __init__ @ <module>: App config found in the database<br>
 petfectior-client  | INFO  [alembic.runtime.migration] Context impl MySQLImpl.<br>
 petfectior-client  | INFO  [alembic.runtime.migration] Will assume non-transactional DDL.<br>
