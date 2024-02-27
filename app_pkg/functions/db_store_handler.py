@@ -196,10 +196,22 @@ def store_dataset(ds, root_dir):
 
 # Create a handler for the store request event
 def db_store_handler(event: Event, output_queue:Queue, root_dir:str) -> int:
+            
+    # Allow Positron Emission Tomography Image Storage SOPClassUID and ignore the rest
+    try:
+        ds = event.dataset
+        ds.file_meta = event.file_meta    
+        assert ds.SOPClassUID == '1.2.840.10008.5.1.4.1.1.128'
+    except AssertionError:
+        logger.debug(f"Ignoring new dataset with SOPClassUID {ds.SOPClassUID}")
+        return 0x0000
+    except AttributeError:
+        logger.error(f"SOPClassUID not found for dataset {ds}")
+        return 0xC210
+    except Exception as exc:
+        logger.error(f"Can't decode dataset")
+        return 0xC210
     
-    ds = event.dataset
-    ds.file_meta = event.file_meta    
-
     # Check if dataset has all mandatory information
     try:
         new_ds, recon_ds = extract_from_dataset(ds)
