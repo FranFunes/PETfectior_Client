@@ -9,6 +9,7 @@ services:
       - "11115:11115"
     environment:
       - SERVER_ADDRESS
+      - TZ
     cap_add:
       - net_admin
     volumes:
@@ -26,6 +27,7 @@ services:
       - MYSQL_PASSWORD
       - MYSQL_USER
       - MYSQL_RANDOM_ROOT_PASSWORD
+      - TZ
     
   app:
     build: .

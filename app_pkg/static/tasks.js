@@ -3,14 +3,14 @@ $(document).ready(function () {
     var tasks_table = $('#tasks').DataTable({
         ajax: "/get_tasks_table", 
         columns: [            
-            { data: 'source', title: 'Source' },
-            { data: 'destinations', title: 'Destinations' },
             { data: 'PatientName', title: 'Patient' }, 
             { data: 'StudyDate', title: 'Date', type: 'date' }, 
+            { data: 'status', title: 'State' },
+            { data: 'source', title: 'Source' },
+            { data: 'destinations', title: 'Destinations' },
             { data: 'description', title: 'Series' },
             { data: 'imgs', title: 'Imgs' },
             { data: 'started', title: 'Started' },
-            { data: 'status', title: 'State' },
             { data: 'updated', title: 'Last update' },         
             { data: 'task_id', title: 'Task ID' }
         ],
