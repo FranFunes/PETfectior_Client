@@ -3,6 +3,7 @@ from app_pkg import application, db
 from app_pkg.db_models import Task, AppConfig
 from shutil import make_archive, unpack_archive, rmtree
 import numpy as np
+from scipy.ndimage import gaussian_filter
 
 # Configure logging
 logger = logging.getLogger('__main__')
@@ -58,3 +59,48 @@ def ping(target_host, timeout = 100, count = 3):
             return False
     except subprocess.CalledProcessError as e:
         return False
+    
+
+def filter_3D(img3d, FWHM, pixel_sizes):    
+    """Aplica un filtro Gaussiano 3D a una imagen 3D 
+   
+    Esta función toma un arreglo de voxels 3D (img3d), y los 
+    filtra con un kernel Gaussiano con FWHM (el tamaño del kernel Gaussiano en XYZ en mm)
+    
+    Devuelve una imagen filtrada.
+        
+    Args:
+        img3d (np.ndarray): arreglo 3D de voxels de la imagen PET 
+        FWHM (float): tamaño del kernel Gaussiano en XYZ (mm)        
+        pixel_sizes (np.ndarray): arreglo detres elementos con los tamaños de voxel en mm 
+            
+    Salidas:
+        img3d (np.ndarray): imagen filtrada con un kernel Gaussiano 
+                          
+    Ejemplo:
+        >>> filtered = filtra_3D(img3d, FWHM = 5.1, pixel_sizes = [3.64583325, 3.64583325, 3.2699999 ])
+                                         
+        Resultado esperado: img3d será un arreglo voxels 3D que representa a 
+        la imagen PET filtrada con un kernel Gaussiano con FWHM = 5.1 mm 
+   
+    Autor:
+        Mauro Namías (mnamias@fcdn.org.ar)
+   
+    Versiones:
+    - 1.0.0 (5 de Julio de 2023): Versión inicial de la función.
+    """
+    
+    if FWHM == 0:
+        return img3d
+    
+    pad = 21
+    padded  = np.pad(img3d, pad_width=pad, mode='linear_ramp')    
+    
+    FWHMss = np.array([FWHM, FWHM, FWHM])
+    FWHMs_vox = np.divide(FWHMss, pixel_sizes)
+    sigmas = FWHMs_vox/2.35
+    
+    filtered = gaussian_filter(padded, sigmas)               
+    filtered = filtered[pad:-pad,pad:-pad,pad:-pad]            
+                
+    return filtered

@@ -7,9 +7,11 @@ from pydicom import dcmread
 from pydicom.uid import generate_uid
 from datetime import datetime
 from app_pkg.functions.db_store_handler import store_dataset
+from app_pkg.functions.helper_funcs import filter_3D
+
 
 from app_pkg import application, db
-from app_pkg.db_models import AppConfig, Task, Series
+from app_pkg.db_models import AppConfig, Task, Series, FilterSettings
 
 # Configure logging
 logger = logging.getLogger('__main__')
@@ -119,71 +121,109 @@ class SeriesUnpacker():
                     except Exception as e:
                         logger.error(f"Could not decompress file {filename}")
                         logger.error(repr(e))
-                        task.status_msg = 'decompression failed'                        
-                    else:
-                        
+                        task.status_msg = 'decompression failed'     
+                        task.step_state = -1                   
+                    else:                        
                         # List decompressed files
                         filelist = os.listdir(extract_dir)
 
                         # Keep .npy files only
-                        npy_files = [file for file in filelist if os.path.splitext(file)[1] == '.npy']
-                        task.status_msg = 'building dicoms'
-                        db.session.commit()
-                        
-                        success = 0
-                        stored_ok = 0
-                        for idx, npy_file in enumerate(npy_files):                        
-                            # Build dicom files
-                            try:
-                                series_uid, datasets = self.build_dicom_files(os.path.join(extract_dir, npy_file), templates, idx)
-                                # Add datasets to the database 
-                                for ds in datasets:
-                                    stored_ok += store_dataset(ds, 'incoming') == 0
-                                # Link this series as a result for this task
-                                s = Series.query.get(series_uid)
-                                task.result_series.append(s)
-                                success += 1
-                                logger.info(f"Building dicoms for {npy_file} successful")
-                            except Exception as e:
-                                logger.error(f"Failed when building dicoms for {npy_file}")
-                                logger.error(repr(e))
+                        npy_file = [file for file in filelist if os.path.splitext(file)[1] == '.npy'][0]
 
-                        logger.info(f"{stored_ok} dicom stored succesfully")                        
-                        task.status_msg = f"building dicoms {success}/{len(npy_files)}" 
-                        db.session.commit()
-
-                        # Check if all the expected instances have been correctly stored
-                        # in the database
-                        if stored_ok == len(npy_files) * len(task.instances):
-                            # Flag step as completed
-                            logger.info(f"{task.id}: all expected instances succesfully stored in database")                              
-                            task.current_step = self.next_step
-                            task.step_state = 1    
-                            task.status_msg = f"storing results ok"
-
-                            # Delete temporary files
-                            os.remove(filename)
-                            rmtree(extract_dir)
+                        # Apply postfilters
+                        task.status_msg = 'applying postfilters'
+                        db.session.commit()                        
+                        try:
+                            voxel_size = np.array([templates[0].PixelSpacing[0],templates[0].PixelSpacing[1],templates[0].SliceThickness])
+                            series = self.apply_postfilter(os.path.join(extract_dir, npy_file), templates[0].SeriesDescription, voxel_size)
+                        except FileNotFoundError as e:
+                            logger.error(f"Failed when reading {npy_file}")
+                            logger.error(repr(e))                                                        
+                            task.status_msg = f"failed - .npy not found"
+                            task.step_state = -1 
+                        except Exception as e:
+                            logger.error(f"Failed when filtering {npy_file}")
+                            logger.error(repr(e))                                                        
+                            task.status_msg = f"failed - postfilter" 
+                            task.step_state = -1
                         else:
-                            # Flag step as failed
-                            logger.info(f"{task.id}: not all expected instances stored")
-                            logger.info(f"{task.id}: expected {len(npy_files) * len(task.instances)} stored {stored_ok}")                            
-                            task.step_state = -1    
+                            task.status_msg = 'building dicoms' 
+                            db.session.commit()
+                            
+                            success = 0
+                            stored_ok = 0
+                            for ss in series:
+                                # Build dicom files
+                                try:
+                                    series_uid, datasets = self.build_dicom_files(ss, templates)
+                                    # Add datasets to the database 
+                                    for ds in datasets:
+                                        stored_ok += store_dataset(ds, 'incoming') == 0
+                                    # Link this series as a result for this task
+                                    s = Series.query.get(series_uid)
+                                    task.result_series.append(s)
+                                    success += 1
+                                    logger.info(f"Building dicoms for {npy_file} successful")
+                                except Exception as e:
+                                    logger.error(f"Failed when building dicoms for {npy_file}")
+                                    logger.error(repr(e))
+
+                            logger.info(f"{stored_ok} dicoms stored succesfully")                        
+                            task.status_msg = f"building dicoms {success}/{len(series)}" 
+                            db.session.commit()
+
+                            # Check if all the expected instances have been correctly stored
+                            # in the database
+                            if stored_ok == len(series) * len(task.instances):
+                                # Flag step as completed
+                                logger.info(f"{task.id}: all expected instances succesfully stored in database")                              
+                                task.current_step = self.next_step
+                                task.step_state = 1    
+                                task.status_msg = f"storing results ok"
+
+                                # Delete temporary files
+                                os.remove(filename)
+                                rmtree(extract_dir)
+                            else:
+                                # Flag step as failed
+                                logger.info(f"{task.id}: not all expected instances stored")
+                                logger.info(f"{task.id}: expected {len(series) * len(task.instances)}, stored {stored_ok}")
+                                task.status_msg = f"failed - dicom storage failed"                             
+                                task.step_state = -1    
 
                     db.session.commit()
                 else:
                     sleep(1)
 
-    def build_dicom_files(self, npy_file_path, templates, series_number_addition):
+    def apply_postfilter(self, npy_file_path, series_description, voxel_size):
 
-        # Create new deep copy of templates
-        datasets = [deepcopy(ds) for ds in templates]
         # Load and process voxels
         try:
             v = np.load(npy_file_path)            
         except:
             logger.error(f"Failed when loading voxels from {npy_file_path}")
             raise FileNotFoundError
+        
+        try:
+            with application.app_context():
+                recons = [r for r in FilterSettings.query.all() if r.enabled]            
+            assert recons
+        except: 
+            return [{'voxels': v,
+                     'series_description':'PETFECTIOR',
+                     'series_number':1001}]
+        
+        return [ {'voxels':filter_3D(v, r.fwhm, voxel_size),
+                'series_description': series_description + '_' + r.description if r.mode=='append' else r.description,
+                'series_number':r.series_number
+                } for r in recons ]
+
+    def build_dicom_files(self, input_dict, templates):
+
+        v = input_dict['voxels']
+
+        # Create new deep copy of templates
+        datasets = [deepcopy(ds) for ds in templates]
 
         # Transpose to make for loops easier
         v = np.array(v).transpose([2,1,0])
@@ -203,18 +243,15 @@ class SeriesUnpacker():
             ds.RescaleSlope = slopes[idx]
 
         # Use .npy file as SeriesDescription
-        sufix = '_'.join(os.path.splitext(os.path.basename(npy_file_path))[0].split('_')[1:])
-        series_description = datasets[0].SeriesDescription + '_' + sufix
         series_uid = generate_uid()
-        series_number = 1101 + series_number_addition
         timenow = datetime.now().strftime('%H%M%S')
         for ds in datasets:            
             ds.InstanceCreationTime = timenow
             ds.SOPInstanceUID = generate_uid()
             ds.ContentTime = timenow
             ds.SeriesInstanceUID = series_uid
-            ds.SeriesNumber = series_number
-            ds.SeriesDescription = series_description
+            ds.SeriesNumber = input_dict['series_number']
+            ds.SeriesDescription = input_dict['series_description']
 
         return [series_uid, datasets]
 
