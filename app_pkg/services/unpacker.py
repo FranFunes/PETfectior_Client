@@ -152,10 +152,10 @@ class SeriesUnpacker():
                             
                             success = 0
                             stored_ok = 0
-                            for idx, (voxels, series_description) in enumerate(series):                        
+                            for ss in series:
                                 # Build dicom files
                                 try:
-                                    series_uid, datasets = self.build_dicom_files(voxels, templates, idx, series_description)
+                                    series_uid, datasets = self.build_dicom_files(ss, templates)
                                     # Add datasets to the database 
                                     for ds in datasets:
                                         stored_ok += store_dataset(ds, 'incoming') == 0
@@ -209,13 +209,18 @@ class SeriesUnpacker():
                 recons = [r for r in FilterSettings.query.all() if r.enabled]            
             assert recons
         except: 
-            return [(v, 'PETFECTIOR')]
+            return [{'voxels': v,
+                     'series_description':'PETFECTIOR',
+                     'series_number':1001}]
         
-        return [(filter_3D(v, r.fwhm, voxel_size), 
-                 series_description + '_' + r.description if r.mode=='append' else r.description)
-                 for r in recons]
+        return [ {'voxels':filter_3D(v, r.fwhm, voxel_size),
+                'series_description': series_description + '_' + r.description if r.mode=='append' else r.description,
+                'series_number':r.series_number
+                } for r in recons ]
 
-    def build_dicom_files(self, v, templates, series_number_addition, series_description):
+    def build_dicom_files(self, input_dict, templates):
+
+        v = input_dict['voxels']
 
         # Create new deep copy of templates
         datasets = [deepcopy(ds) for ds in templates]
@@ -239,15 +244,14 @@ class SeriesUnpacker():
 
         # Use .npy file as SeriesDescription
         series_uid = generate_uid()
-        series_number = 1101 + series_number_addition
         timenow = datetime.now().strftime('%H%M%S')
         for ds in datasets:            
             ds.InstanceCreationTime = timenow
             ds.SOPInstanceUID = generate_uid()
             ds.ContentTime = timenow
             ds.SeriesInstanceUID = series_uid
-            ds.SeriesNumber = series_number
-            ds.SeriesDescription = series_description
+            ds.SeriesNumber = input_dict['series_number']
+            ds.SeriesDescription = input_dict['series_description']
 
         return [series_uid, datasets]
 

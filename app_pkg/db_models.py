@@ -190,6 +190,7 @@ class FilterSettings(db.Model):
     fwhm = db.Column(db.Float, default = 0)
     description = db.Column(db.String(128), default = '')
     mode = db.Column(db.String(32), default = 'append')
+    series_number = db.Column(db.Integer, default = '1001')
     enabled = db.Column(db.Boolean, default = True)
 
     def __repr__(self):

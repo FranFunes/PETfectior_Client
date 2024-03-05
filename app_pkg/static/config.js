@@ -61,6 +61,7 @@ $(document).ready(function () {
             { data: 'id', visible: false },
             { data: 'description', title:'Series description' },
             { data: 'mode', title:'Naming mode'},
+            { data: 'series_number', title:'Series number', name: "series_number"},
             { data: 'fwhm', title: 'FWHM' },
             { data: 'enabled', title: 'Enabled' },            
         ],
@@ -350,9 +351,11 @@ $(document).ready(function () {
     // Adapt modal contents depending on selected action
     $("#newPostfilter").on('click', function () {
         postfilterAction = "add"
+        var sn = Math.max(...postFilter_table.column('series_number:name').data().toArray()) + 1 ?? 1001
         // Reset form
         $("#postfilterManagerForm")[0].reset()
-        $('.modal-title').text('Add new postfilter')   
+        $('.modal-title').text('Add new postfilter')           
+        $('#postfilterSeriesNumber').val(sn)
     })
     
     $("#editPostfilter").on('click', function () {                
@@ -366,6 +369,7 @@ $(document).ready(function () {
 
             data = selectedRows.data()[0]            
             $('#postfilterDescription').val(data.description)
+            $('#postfilterSeriesNumber').val(data.series_number)
             $('#postfilterFWHM').val(data.fwhm)
             $( "#postfilterEnabled" ).prop( "checked", data.enabled) 
             $("#postfilterMode").val(data.mode)
@@ -407,6 +411,7 @@ $(document).ready(function () {
             "action": postfilterAction,
             "id": postfilterAction == "add" ? "" : postFilter_table.rows({ selected: true }).data()[0].id,
             "description": $('#postfilterDescription').val(),
+            "series_number": $('#postfilterSeriesNumber').val()|1000,
             "mode": $("#postfilterMode").val(),
             "fwhm":  $('#postfilterFWHM').val(),
             "enabled": $('#postfilterEnabled').prop("checked")

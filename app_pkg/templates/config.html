@@ -177,7 +177,7 @@
             
                     <!-- Modal Header -->
                     <div class="modal-header">
-                    <h4 class="modal-title">New Postfilter Settings</h4>
+                    <h4 class="modal-title">New postprocessing Settings</h4>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
             
@@ -192,8 +192,11 @@
                                         <option value="append">Append to original</option>
                                         <option value="replace">Replace original</option>
                                     </select>                                    
-                                </div>
-                                
+                                </div>                                
+                            </div>
+                            <div class="mb-3">
+                                <label for="postfilterSeriesNumber" class="form-label">Series number:</label>
+                                <input type="number" step="1" class="form-control" id="postfilterSeriesNumber" name="postfilterSeriesNumber">                                
                             </div>
                             <div class="mb-3">
                                 <label for="postfilterFWHM" class="form-label">FWHM[mm]:</label>
@@ -294,7 +297,7 @@
             <div class="col">
                 <div class="card">   
                     <div class="card-header">
-                        Postfilter configuration
+                        Post-processing configuration
                       </div>
                     <div class="card-body">
                         <table id="postfilterSettings" class="display compact" style="width:100%">
