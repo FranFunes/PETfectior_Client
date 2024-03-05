@@ -188,11 +188,12 @@ class AppConfig(db.Model):
 class FilterSettings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     fwhm = db.Column(db.Float, default = 0)
-    suffix = db.Column(db.String(128), default = '')
+    description = db.Column(db.String(128), default = '')
+    mode = db.Column(db.String(32), default = 'append')
     enabled = db.Column(db.Boolean, default = True)
 
     def __repr__(self):
-        return f"Recon '{self.suffix}' | {self.fwhm}mm | {'Enabled' if self.enabled else 'Disabled'}"
+        return f"Recon '{self.description}' | {self.fwhm}mm | {'Enabled' if self.enabled else 'Disabled'}"
 
 
 def delete_db(tables = [], all = False):

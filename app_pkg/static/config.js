@@ -59,7 +59,8 @@ $(document).ready(function () {
         ajax: "/recon_settings",
         columns: [            
             { data: 'id', visible: false },
-            { data: 'suffix', title:'Suffix' },
+            { data: 'description', title:'Series description' },
+            { data: 'mode', title:'Naming mode'},
             { data: 'fwhm', title: 'FWHM' },
             { data: 'enabled', title: 'Enabled' },            
         ],
@@ -364,9 +365,10 @@ $(document).ready(function () {
             $('.modal-title').text('Edit postfilter settings')            
 
             data = selectedRows.data()[0]            
-            $('#postfilterSuffix').val(data.suffix)
+            $('#postfilterDescription').val(data.description)
             $('#postfilterFWHM').val(data.fwhm)
-            $( "#postfilterEnabled" ).prop( "checked", data.enabled ) 
+            $( "#postfilterEnabled" ).prop( "checked", data.enabled) 
+            $("#postfilterMode").val(data.mode)
 
             postfilterAction = "edit"        
         }                
@@ -377,7 +379,7 @@ $(document).ready(function () {
 
         var ajax_data = postFilter_table.rows({ selected: true }).data()[0]
         ajax_data.action = "delete"
-        if (confirm(`Delete recon "${ajax_data.suffix}"?`)){
+        if (confirm(`Delete recon "${ajax_data.description}"?`)){
             $.ajax({
                 url: "/recon_settings",
                 method: "POST",
@@ -404,7 +406,8 @@ $(document).ready(function () {
         var ajax_data = {
             "action": postfilterAction,
             "id": postfilterAction == "add" ? "" : postFilter_table.rows({ selected: true }).data()[0].id,
-            "suffix": $('#postfilterSuffix').val(),
+            "description": $('#postfilterDescription').val(),
+            "mode": $("#postfilterMode").val(),
             "fwhm":  $('#postfilterFWHM').val(),
             "enabled": $('#postfilterEnabled').prop("checked")
         }

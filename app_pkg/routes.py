@@ -286,7 +286,7 @@ def recon_settings():
         try:
             # Send recon information
             recons = FilterSettings.query.all()
-            recons = [{'id':r.id, 'fwhm':r.fwhm, 'suffix':r.suffix,'enabled':r.enabled} for r in recons]
+            recons = [{'id':r.id, 'fwhm':r.fwhm, 'description':r.description,'enabled':r.enabled, 'mode':r.mode} for r in recons]
             return jsonify(data = recons), 200
         except Exception as e:
             logger.error(repr(e))
@@ -297,7 +297,8 @@ def recon_settings():
         action = request.json["action"]
         if action == "add":
             try:
-                new_rs = FilterSettings(fwhm = request.json['fwhm'], suffix = request.json['suffix'], enabled = request.json['enabled'])
+                new_rs = FilterSettings(fwhm = request.json['fwhm'], description = request.json['description'], 
+                                        enabled = request.json['enabled'], mode = request.json['mode'])
                 db.session.add(new_rs)
                 db.session.commit()
                 logger.info(f'new post filter settings {repr(new_rs)} created.') 
@@ -333,8 +334,9 @@ def recon_settings():
         if action == 'edit':
             try:                
                 rs.fwhm = request.json['fwhm']
-                rs.suffix = request.json['suffix']
-                rs.enabled = request.json['enabled']   
+                rs.description = request.json['description']
+                rs.enabled = request.json['enabled']  
+                rs.mode = request.json['mode'] 
                 db.session.commit()
                 logger.info(f'{rs} edited')
                 return jsonify(message = "Se modificó la configuración correctamente"), 200
@@ -345,8 +347,6 @@ def recon_settings():
         
         else:
             return jsonify(message = "Acción desconocida"), 500
-           
-        
 
 
 ###################################################################################

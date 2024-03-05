@@ -135,7 +135,7 @@ class SeriesUnpacker():
                         db.session.commit()                        
                         try:
                             voxel_size = np.array([templates[0].PixelSpacing[0],templates[0].PixelSpacing[1],templates[0].SliceThickness])
-                            series = self.apply_postfilter(os.path.join(extract_dir, npy_file), voxel_size)
+                            series = self.apply_postfilter(os.path.join(extract_dir, npy_file), templates[0].SeriesDescription, voxel_size)
                         except FileNotFoundError as e:
                             logger.error(f"Failed when reading {npy_file}")
                             logger.error(repr(e))                                                        
@@ -195,7 +195,7 @@ class SeriesUnpacker():
                 else:
                     sleep(1)
 
-    def apply_postfilter(self, npy_file_path, voxel_size):
+    def apply_postfilter(self, npy_file_path, series_description, voxel_size):
 
         # Load and process voxels
         try:
@@ -211,9 +211,11 @@ class SeriesUnpacker():
         except: 
             return [(v, 'PETFECTIOR')]
         
-        return [(filter_3D(v, r.fwhm, voxel_size), r.suffix) for r in recons]
+        return [(filter_3D(v, r.fwhm, voxel_size), 
+                 series_description + '_' + r.description if r.mode=='append' else r.description)
+                 for r in recons]
 
-    def build_dicom_files(self, v, templates, series_number_addition, suffix):
+    def build_dicom_files(self, v, templates, series_number_addition, series_description):
 
         # Create new deep copy of templates
         datasets = [deepcopy(ds) for ds in templates]
@@ -236,7 +238,6 @@ class SeriesUnpacker():
             ds.RescaleSlope = slopes[idx]
 
         # Use .npy file as SeriesDescription
-        series_description = datasets[0].SeriesDescription + '_' + suffix
         series_uid = generate_uid()
         series_number = 1101 + series_number_addition
         timenow = datetime.now().strftime('%H%M%S')

@@ -184,13 +184,19 @@
                     <!-- Modal body -->
                     <div class="modal-body">
                         <form id="postfilterManagerForm">
-                            <div class="mb-3 mt-3" id="suffixDiv">
-                                <label for="postfilterSuffix" class="form-label">Suffix</label>
-                                <input type="text" class="form-control" id="postfilterSuffix" name="postfilterSuffix">
+                            <div class="mb-3" id="seriesdescriptionDiv">
+                                <label for="postfilterDescription" class="form-label">Series description:</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="postfilterDescription" name="postfilterDescription">                                    
+                                    <select class="form-control" id="postfilterMode">
+                                        <option value="append">Append to original</option>
+                                        <option value="replace">Replace original</option>
+                                    </select>                                    
+                                </div>
                                 
                             </div>
                             <div class="mb-3">
-                                <label for="postfilterFWHM" class="form-label">FWHM[mm]</label>
+                                <label for="postfilterFWHM" class="form-label">FWHM[mm]:</label>
                                 <input type="number" step="0.1" class="form-control" id="postfilterFWHM" name="postfilterFWHM">                                
                             </div>
                             <div class="mb-3">
