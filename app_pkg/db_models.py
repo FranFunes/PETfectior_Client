@@ -185,6 +185,15 @@ class AppConfig(db.Model):
     def __repr__(self):
         return f"<AppConfig for client {self.client_id}>"    
 
+class FilterSettings(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    fwhm = db.Column(db.Float, default = 0)
+    suffix = db.Column(db.String(128), default = '')
+    enabled = db.Column(db.Boolean, default = True)
+
+    def __repr__(self):
+        return f"Recon '{self.suffix}' | {self.fwhm}mm | {'Enabled' if self.enabled else 'Disabled'}"
+
 
 def delete_db(tables = [], all = False):
 

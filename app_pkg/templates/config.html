@@ -170,6 +170,42 @@
             </div>
         </div>        
         
+        <!-- Modal for post filter settings CRUD -->
+        <div class="modal fade" id="postfilterModal">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+            
+                    <!-- Modal Header -->
+                    <div class="modal-header">
+                    <h4 class="modal-title">New Postfilter Settings</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+            
+                    <!-- Modal body -->
+                    <div class="modal-body">
+                        <form id="postfilterManagerForm">
+                            <div class="mb-3 mt-3" id="suffixDiv">
+                                <label for="postfilterSuffix" class="form-label">Suffix</label>
+                                <input type="text" class="form-control" id="postfilterSuffix" name="postfilterSuffix">
+                                
+                            </div>
+                            <div class="mb-3">
+                                <label for="postfilterFWHM" class="form-label">FWHM[mm]</label>
+                                <input type="number" step="0.1" class="form-control" id="postfilterFWHM" name="postfilterFWHM">                                
+                            </div>
+                            <div class="mb-3">
+                                <input type="checkbox" class="form-check-input" id="postfilterEnabled" name="postfilterEnabled">
+                                <label for="postfilterEnabled" class="form-check-label">Enabled</label>
+                            </div>                   
+                            <div class="modal-footer">
+                                <button type="submit" id="deviceManagerSubmit" class="btn btn-danger" data-bs-dismiss="modal">Send</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Title -->
         <div class="row">
             <h1 class="display-6 text-center">Configuration</h1>
@@ -240,6 +276,29 @@
                                 <button type="button" id="newDevice" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#deviceModal">New</button>
                                 <button type="button" id="editDevice" class="btn btn-outline-dark">Edit</button>
                                 <button type="button" id="deleteDevice" class="btn btn-outline-dark">Delete</button>                  
+                            </div>
+                        </div>
+                    </div>                    
+                </div>
+            </div>
+        </div>
+
+        <!-- Recon filter configuration -->
+        <div class="row pt-3 pb-3">
+            <div class="col">
+                <div class="card">   
+                    <div class="card-header">
+                        Postfilter configuration
+                      </div>
+                    <div class="card-body">
+                        <table id="postfilterSettings" class="display compact" style="width:100%">
+                        
+                        </table>
+                        <div class="row pt-2">            
+                            <div class="col text-end">
+                                <button type="button" id="newPostfilter" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#postfilterModal">New</button>
+                                <button type="button" id="editPostfilter" class="btn btn-outline-dark">Edit</button>
+                                <button type="button" id="deletePostfilter" class="btn btn-outline-dark">Delete</button>                  
                             </div>
                         </div>
                     </div>                    

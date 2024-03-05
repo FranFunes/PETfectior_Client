@@ -51,12 +51,30 @@ $(document).ready(function () {
         info: false,
         language: {
             "emptyTable": "No peer devices configured"
-          }
-
-            
+          } 
     });
 
-    // Enable select behaviour for device table
+    // Initialize filterSettings table
+    var postFilter_table = $('#postfilterSettings').DataTable({
+        ajax: "/recon_settings",
+        columns: [            
+            { data: 'id', visible: false },
+            { data: 'suffix', title:'Suffix' },
+            { data: 'fwhm', title: 'FWHM' },
+            { data: 'enabled', title: 'Enabled' },            
+        ],
+        searching: false,
+        paging: false,
+        ordering: false,
+        info: false,
+        language: {
+            "emptyTable": `No filter settings configured.
+            Processed images will be sent as they are, without any post-filter.
+            Use "New" button to configure one or more custom 3D isotropic gaussian filters.`
+          }
+    });
+
+    // Enable select behaviour for tables
     $('#devices tbody').on('click', 'tr', function () {                
         if (!$(this).hasClass('selected')) {                  
             devices_table.rows().deselect()
@@ -64,6 +82,15 @@ $(document).ready(function () {
         }
         else {
             devices_table.rows().deselect()
+        }
+    });
+    $('#postfilterSettings tbody').on('click', 'tr', function () {                
+        if (!$(this).hasClass('selected')) {                  
+            postFilter_table.rows().deselect()
+            postFilter_table.row($(this)).select()
+        }
+        else {
+            postFilter_table.rows().deselect()
         }
     });
 
@@ -314,6 +341,89 @@ $(document).ready(function () {
     $('#deviceModal').on('hidden.bs.modal', function () {        
         $('#pingRemoteDevice').removeClass('btn-danger').removeClass('btn-success').addClass('btn-primary').text('Ping')
         $('#echoRemoteDevice').removeClass('btn-danger').removeClass('btn-success').addClass('btn-primary').text('Echo')
+    });
+
+    // Post filter settings manager
+    var postfilterAction
+
+    // Adapt modal contents depending on selected action
+    $("#newPostfilter").on('click', function () {
+        postfilterAction = "add"
+        // Reset form
+        $("#postfilterManagerForm")[0].reset()
+        $('.modal-title').text('Add new postfilter')   
+    })
+    
+    $("#editPostfilter").on('click', function () {                
+        // If there are any selected rows, show modal
+        var selectedRows = postFilter_table.rows({ selected: true })
+        
+        if (selectedRows.count() > 0) {         
+            $('#postfilterModal').modal('show');   
+            // Fill form with selected device info
+            $('.modal-title').text('Edit postfilter settings')            
+
+            data = selectedRows.data()[0]            
+            $('#postfilterSuffix').val(data.suffix)
+            $('#postfilterFWHM').val(data.fwhm)
+            $( "#postfilterEnabled" ).prop( "checked", data.enabled ) 
+
+            postfilterAction = "edit"        
+        }                
+    })    
+
+    // Delete postfilter settings
+    $("#deletePostfilter").on('click', function () {
+
+        var ajax_data = postFilter_table.rows({ selected: true }).data()[0]
+        ajax_data.action = "delete"
+        if (confirm(`Delete recon "${ajax_data.suffix}"?`)){
+            $.ajax({
+                url: "/recon_settings",
+                method: "POST",
+                data:   JSON.stringify(ajax_data),
+                dataType: "json",
+                contentType: "application/json",
+                success: function(response) {                    
+                    // Show success message
+                    alert(response.message)
+                    postFilter_table.ajax.reload()
+                },
+                error: function(xhr, status, error) {
+                    // handle error response here
+                    alert(xhr.responseJSON.message);
+                }
+            }); 
+        }
+    })
+
+    // New/Edit form submit
+    $("#postfilterManagerForm").submit(function(event) {
+        // Prevent the form from submitting normally
+        event.preventDefault();      
+        var ajax_data = {
+            "action": postfilterAction,
+            "id": postfilterAction == "add" ? "" : postFilter_table.rows({ selected: true }).data()[0].id,
+            "suffix": $('#postfilterSuffix').val(),
+            "fwhm":  $('#postfilterFWHM').val(),
+            "enabled": $('#postfilterEnabled').prop("checked")
+        }
+        $.ajax({
+            url: "/recon_settings",
+            method: "POST",
+            data:   JSON.stringify(ajax_data),
+            dataType: "json",
+            contentType: "application/json",
+            success: function(response) {                    
+                // Show success message
+                alert(response.message)
+                postFilter_table.ajax.reload()
+            },
+            error: function(xhr, status, error) {
+                // handle error response here
+                alert(xhr.responseJSON.message);
+            }
+            });     
     });
 
 

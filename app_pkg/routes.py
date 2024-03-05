@@ -6,7 +6,7 @@ from sqlalchemy.exc import OperationalError
 
 
 from app_pkg import application, db
-from app_pkg.db_models import Device, Task, AppConfig
+from app_pkg.db_models import Device, Task, AppConfig, FilterSettings
 from app_pkg.services import services
 from app_pkg.functions.task_actions import delete_task, restart_task, retry_last_step, delete_finished, delete_failed
 from app_pkg.functions.helper_funcs import ping
@@ -278,6 +278,76 @@ def echo_remote_device():
         return jsonify(message = f"DICOM ECHO to {request.json['ae_title']}@{request.json['address']}:{request.json['port']} succesful"), 200
     else:
         return jsonify(message = f"DICOM ECHO to {request.json['ae_title']}@{request.json['address']}:{request.json['port']} failed"), 500
+
+@application.route('/recon_settings', methods=['GET', 'POST'])
+def recon_settings():
+
+    if request.method == 'GET':
+        try:
+            # Send recon information
+            recons = FilterSettings.query.all()
+            recons = [{'id':r.id, 'fwhm':r.fwhm, 'suffix':r.suffix,'enabled':r.enabled} for r in recons]
+            return jsonify(data = recons), 200
+        except Exception as e:
+            logger.error(repr(e))
+            return jsonify(message = "Error while querying recon settings"), 500
+
+    elif request.method == 'POST':
+                
+        action = request.json["action"]
+        if action == "add":
+            try:
+                new_rs = FilterSettings(fwhm = request.json['fwhm'], suffix = request.json['suffix'], enabled = request.json['enabled'])
+                db.session.add(new_rs)
+                db.session.commit()
+                logger.info(f'new post filter settings {repr(new_rs)} created.') 
+                return jsonify(message = "Configuración modificada exitosamente"), 200   
+            except:
+                logger.error('uknown error when creating new post filter settings')
+                logger.error(repr(e))
+                return jsonify(message = "Error al modificar la configuración"), 500
+        
+        # Query database for instance
+        try:
+            rs = FilterSettings.query.get(request.json['id'])
+            assert rs
+        except OperationalError as e:
+            logger.error('SQL OperationalError')
+            logger.error(repr(e))
+            return jsonify(message = "Error al leer la base de datos"), 500    
+        except AssertionError:
+            logger.error('trying to delete unexistent post filter settings')
+            return jsonify(message = "Error: la configuración no existe"), 500  
+            
+        if action == "delete":       
+            try:   
+                db.session.delete(rs)
+                db.session.commit()
+                logger.info(f'{rs} deleted')
+                return jsonify(message = "Configuración modificada correctamente"), 200
+            except Exception as e:
+                logger.error('uknown error when searching database')
+                logger.error(repr(e))
+                return jsonify(message = "Error al leer la base de datos"), 500   
+        
+        if action == 'edit':
+            try:                
+                rs.fwhm = request.json['fwhm']
+                rs.suffix = request.json['suffix']
+                rs.enabled = request.json['enabled']   
+                db.session.commit()
+                logger.info(f'{rs} edited')
+                return jsonify(message = "Se modificó la configuración correctamente"), 200
+            except Exception as e:
+                logger.error('uknown error when searching database')
+                logger.error(repr(e))
+                return jsonify(message = "Error al leer la base de datos"), 500
+        
+        else:
+            return jsonify(message = "Acción desconocida"), 500
+           
+        
+
 
 ###################################################################################
 ###########################         PROCESSES        ##############################
