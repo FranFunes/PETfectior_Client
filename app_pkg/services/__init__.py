@@ -104,7 +104,7 @@ with application.app_context():
 
 
 if app_config_available:
-    if 'db' not in sys.argv:
+    if 'db' not in sys.argv and 'shell' not in sys.argv:
         # Set all pending tasks state to failed (-1)
         with application.app_context():
             for task in Task.query.filter_by(step_state = 0).all():

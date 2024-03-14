@@ -127,22 +127,19 @@ class SeriesUnpacker():
                         # List decompressed files
                         filelist = os.listdir(extract_dir)
 
-                        # Keep .npy files only
-                        npy_file = [file for file in filelist if os.path.splitext(file)[1] == '.npy'][0]
-
                         # Apply postfilters
                         task.status_msg = 'applying postfilters'
                         db.session.commit()                        
                         try:
                             voxel_size = np.array([templates[0].PixelSpacing[0],templates[0].PixelSpacing[1],templates[0].SliceThickness])
-                            series = self.apply_postfilter(os.path.join(extract_dir, npy_file), templates[0].SeriesDescription, voxel_size)
+                            series = self.apply_postfilter(extract_dir, templates[0].SeriesDescription, voxel_size)
                         except FileNotFoundError as e:
-                            logger.error(f"Failed when reading {npy_file}")
+                            logger.error(f"Failed when reading {extract_dir}")
                             logger.error(repr(e))                                                        
                             task.status_msg = f"failed - .npy not found"
                             task.step_state = -1 
                         except Exception as e:
-                            logger.error(f"Failed when filtering {npy_file}")
+                            logger.error(f"Failed when filtering {extract_dir}")
                             logger.error(repr(e))                                                        
                             task.status_msg = f"failed - postfilter" 
                             task.step_state = -1
@@ -163,9 +160,9 @@ class SeriesUnpacker():
                                     s = Series.query.get(series_uid)
                                     task.result_series.append(s)
                                     success += 1
-                                    logger.info(f"Building dicoms for {npy_file} successful")
+                                    logger.info(f"Building dicoms for {extract_dir} successful")
                                 except Exception as e:
-                                    logger.error(f"Failed when building dicoms for {npy_file}")
+                                    logger.error(f"Failed when building dicoms for {extract_dir}")
                                     logger.error(repr(e))
 
                             logger.info(f"{stored_ok} dicoms stored succesfully")                        
@@ -195,13 +192,15 @@ class SeriesUnpacker():
                 else:
                     sleep(1)
 
-    def apply_postfilter(self, npy_file_path, series_description, voxel_size):
+    def apply_postfilter(self, extract_dir, series_description, voxel_size):
 
         # Load and process voxels
         try:
-            v = np.load(npy_file_path)            
-        except:
-            logger.error(f"Failed when loading voxels from {npy_file_path}")
+            v = np.load(os.path.join(extract_dir, 'image.npy'))            
+            noise = np.load(os.path.join(extract_dir, 'noise.npy'))            
+        except Exception as e:
+            logger.error(f"Failed when loading voxels from {extract_dir}")
+            logger.error(repr(e))
             raise FileNotFoundError
         
         try:
@@ -212,11 +211,16 @@ class SeriesUnpacker():
             return [{'voxels': v,
                      'series_description':'PETFECTIOR',
                      'series_number':1001}]
-        
-        return [ {'voxels':filter_3D(v, r.fwhm, voxel_size),
+        series = []
+        for r in recons:
+            voxels = v + r.noise/100 * noise
+            voxels = filter_3D(voxels, r.fwhm, voxel_size)
+            series.append({
+                'voxels': voxels,
                 'series_description': series_description + '_' + r.description if r.mode=='append' else r.description,
                 'series_number':r.series_number
-                } for r in recons ]
+            })
+        return series
 
     def build_dicom_files(self, input_dict, templates):
 

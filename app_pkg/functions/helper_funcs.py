@@ -1,7 +1,7 @@
 import os, logging, subprocess
 from app_pkg import application, db
 from app_pkg.db_models import Task, AppConfig
-from shutil import make_archive, unpack_archive, rmtree
+from shutil import make_archive, unpack_archive, rmtree, copy
 import numpy as np
 from scipy.ndimage import gaussian_filter
 
@@ -22,10 +22,13 @@ def process(task_id):
         voxels_file = os.path.join(unzip_folder, 'voxels.npy')
 
         array = np.load(voxels_file)
-        shape = array.shape
-        array[64:96,64:96,20:30] = 0
+        noise = np.zeros_like(array)
+        noise[64:96,64:96,60:70] = array[64:96,64:96,60:70]
+        array[64:96,64:96,60:70] = 0
         
-        np.save(os.path.join(unzip_folder, 'processed.npy'), array)
+        np.save(os.path.join(unzip_folder, 'image.npy'), array)
+        np.save(os.path.join(unzip_folder, 'noise.npy'), noise)
+
         os.remove(voxels_file)
         archive_name = os.path.join(config.shared_mount_point,'processed',task.id + '_' + config.client_id)        
         make_archive(archive_name, 'zip', unzip_folder)
@@ -36,7 +39,6 @@ def process(task_id):
         # Flag step as completed     
         task.current_step = 'downloader'
         task.step_state = 1
-
         db.session.commit()
 
 def ping(target_host, timeout = 100, count = 3):

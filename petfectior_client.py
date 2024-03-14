@@ -40,5 +40,5 @@ def terminate_processes(signalNumber, frame):
     
     exit(1)
     
-if 'db' not in sys.argv:
+if 'db' not in sys.argv and 'shell' not in sys.argv:
     signal.signal(signal.SIGINT, terminate_processes)
