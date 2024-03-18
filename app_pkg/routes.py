@@ -6,7 +6,7 @@ from sqlalchemy.exc import OperationalError
 
 
 from app_pkg import application, db
-from app_pkg.db_models import Device, Task, AppConfig, FilterSettings
+from app_pkg.db_models import Device, Task, AppConfig, FilterSettings, PetModel
 from app_pkg.services import services
 from app_pkg.functions.task_actions import delete_task, restart_task, retry_last_step, delete_finished, delete_failed
 from app_pkg.functions.helper_funcs import ping
@@ -124,6 +124,17 @@ def get_local_device():
     }
 
     return data
+
+@application.route('/get_pet_models')
+def get_pet_models():
+
+    try:
+        models = [m.name for m in PetModel.query.all()]
+        return models, 200
+    except Exception as e:
+        logger.error("can't access pet models in database")
+        logger.error(repr(e))
+        return {'message': "can't access pet models in database"}, 500    
 
 @application.route('/manage_app_config', methods=['GET', 'POST'])
 def manage_app_config():   
@@ -287,7 +298,7 @@ def recon_settings():
             # Send recon information
             recons = FilterSettings.query.all()
             recons = [{'id':r.id, 'fwhm':r.fwhm, 'description':r.description, 'series_number':r.series_number,
-                       'enabled':r.enabled, 'mode':r.mode, 'noise': r.noise} for r in recons]
+                       'enabled':r.enabled, 'mode':r.mode, 'model': r.model, 'noise': r.noise} for r in recons]
             return jsonify(data = recons), 200
         except Exception as e:
             logger.error(repr(e))
@@ -300,7 +311,7 @@ def recon_settings():
             try:
                 new_rs = FilterSettings(fwhm = request.json['fwhm'], description = request.json['description'],
                                         series_number = request.json['series_number'], enabled = request.json['enabled'],
-                                        mode = request.json['mode'], noise = request.json['noise'])
+                                        mode = request.json['mode'], model = request.json['model'], noise = request.json['noise'])
                 db.session.add(new_rs)
                 db.session.commit()
                 logger.info(f'new post filter settings {repr(new_rs)} created.') 
@@ -341,6 +352,7 @@ def recon_settings():
                 rs.mode = request.json['mode']
                 rs.series_number = request.json['series_number']
                 rs.noise = request.json['noise']
+                rs.model = request.json['model']
                 db.session.commit()
                 logger.info(f'{rs} edited')
                 return jsonify(message = "Se modificó la configuración correctamente"), 200

@@ -132,7 +132,7 @@ class SeriesUnpacker():
                         db.session.commit()                        
                         try:
                             voxel_size = np.array([templates[0].PixelSpacing[0],templates[0].PixelSpacing[1],templates[0].SliceThickness])
-                            series = self.apply_postfilter(extract_dir, templates[0].SeriesDescription, voxel_size)
+                            series = self.apply_postfilter(extract_dir, templates[0], voxel_size)
                         except FileNotFoundError as e:
                             logger.error(f"Failed when reading {extract_dir}")
                             logger.error(repr(e))                                                        
@@ -145,8 +145,7 @@ class SeriesUnpacker():
                             task.step_state = -1
                         else:
                             task.status_msg = 'building dicoms' 
-                            db.session.commit()
-                            
+                            db.session.commit()                            
                             success = 0
                             stored_ok = 0
                             for ss in series:
@@ -192,7 +191,7 @@ class SeriesUnpacker():
                 else:
                     sleep(1)
 
-    def apply_postfilter(self, extract_dir, series_description, voxel_size):
+    def apply_postfilter(self, extract_dir, original_series, voxel_size):
 
         # Load and process voxels
         try:
@@ -217,7 +216,13 @@ class SeriesUnpacker():
             return [{'voxels': v,
                      'series_description':'PETFECTIOR',
                      'series_number':1001}]
+        # Only apply filter settings valid for this pet model
+        recons = [r for r in recons if r.model == 'all' or r.model == original_series.ManufacturerModelName]
+        if not recons:
+            raise ValueError(f'No postfilter settings found for pet model {original_series.ManufacturerModelName}')
         series = []
+
+        series_description = original_series.SeriesDescription
         for r in recons:
             voxels = v + r.noise/100 * noise
             voxels = filter_3D(voxels, r.fwhm, voxel_size)

@@ -36,6 +36,23 @@ $(document).ready(function () {
         }
         }); 
 
+    // Initialize PET models names in filter settings modal
+    $.ajax({
+        url: "/get_pet_models",   
+        contentType: "application/json",
+        success: function(response) {                    
+            // Update local device info         
+            for (let model of response) {
+                var option = $(`<option value="${model}">${model}</option>`)
+                $("#postfilterModelName").append(option)        
+            }
+        },
+        error: function(xhr, status, error) {
+            // handle error response here
+            console.log(xhr.responseText);
+        }
+        });
+
     // Initialize devices table
     var devices_table = $('#devices').DataTable({
         ajax: "/get_remote_devices",

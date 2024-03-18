@@ -1,4 +1,4 @@
-import json, threading, logging, os, requests, pickle
+import json, threading, logging, os, requests
 from requests import ConnectionError
 from time import sleep
 from datetime import datetime
@@ -8,7 +8,7 @@ from pydicom import Dataset
 from typing import List
 
 from app_pkg import application, db
-from app_pkg.db_models import Device, Task, Source, AppConfig
+from app_pkg.db_models import Device, Task, PetModel, AppConfig
 
 # Configure logging
 logger = logging.getLogger('__main__')
@@ -154,6 +154,12 @@ class Validator():
                                 task.status_msg = 'failed - missing info'
                                 task.step_state = -1                  
                             else:
+                                # Add this PET device name to the database
+                                names = [m.name for m in PetModel.query.all()]
+                                if not recon_settings.ManufacturerModelName in names:
+                                    model = PetModel(name = recon_settings.ManufacturerModelName)
+                                    db.session.add(model)                          
+
                                 # Flag step as completed                                
                                 task.current_step = self.next_step
                                 task.status_msg = 'validated'
@@ -161,7 +167,7 @@ class Validator():
                                 logger.info(f"Task {task.id} validated.")
                                 
                     db.session.commit()
-                        
+                                            
                 else:
                     sleep(1)
 

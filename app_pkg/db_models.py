@@ -192,12 +192,18 @@ class FilterSettings(db.Model):
     mode = db.Column(db.String(32), default = 'append')
     series_number = db.Column(db.Integer, default = '1001')
     noise = db.Column(db.Float, default = 0)
+    model = db.Column(db.String(64), default = 'all')
     enabled = db.Column(db.Boolean, default = True)
 
     def __repr__(self):
         return f"Recon '{self.description}' | {self.fwhm}mm | {'Enabled' if self.enabled else 'Disabled'}"
 
+class PetModel(db.Model):
+    name = db.Column(db.String(64), primary_key = True)
 
+    def __repr__(self):
+        return f"PET Model {self.name}"
+    
 def delete_db(tables = [], all = False):
 
     if not tables and all:
