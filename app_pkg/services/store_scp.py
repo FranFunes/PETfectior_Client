@@ -1,5 +1,5 @@
 from pynetdicom import AE, evt, AllStoragePresentationContexts, VerificationPresentationContexts
-from pynetdicom._globals import ALL_TRANSFER_SYNTAXES
+from pynetdicom._globals import DEFAULT_TRANSFER_SYNTAXES
 
 import pydicom
 import logging, os
@@ -42,11 +42,11 @@ class StoreSCP(AE):
 
         # Add presentation contexts with specified transfer syntaxes
         for context in AllStoragePresentationContexts:
-            self.add_supported_context(context.abstract_syntax, ALL_TRANSFER_SYNTAXES)
+            self.add_supported_context(context.abstract_syntax, DEFAULT_TRANSFER_SYNTAXES)
 
         for context in VerificationPresentationContexts:
-            self.add_supported_context(context.abstract_syntax, ALL_TRANSFER_SYNTAXES)
-            self.add_requested_context(context.abstract_syntax, ALL_TRANSFER_SYNTAXES)                     
+            self.add_supported_context(context.abstract_syntax, DEFAULT_TRANSFER_SYNTAXES)
+            self.add_requested_context(context.abstract_syntax, DEFAULT_TRANSFER_SYNTAXES)                     
 
         # Create store directory if it does not exist.
         try:
@@ -121,7 +121,7 @@ class StoreSCP(AE):
             ae = AE()            
             
             for context in VerificationPresentationContexts:                
-                ae.add_requested_context(context.abstract_syntax, ALL_TRANSFER_SYNTAXES)   
+                ae.add_requested_context(context.abstract_syntax, DEFAULT_TRANSFER_SYNTAXES)   
 
             with application.app_context():
                 config = AppConfig.query.first()                
