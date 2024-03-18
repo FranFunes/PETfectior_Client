@@ -78,6 +78,7 @@ $(document).ready(function () {
             { data: 'id', visible: false },
             { data: 'description', title:'Series description' },
             { data: 'mode', title:'Naming mode'},
+            { data: 'model', title:'PET models'},
             { data: 'series_number', title:'Series number', name: "series_number"},
             { data: 'fwhm', title: 'FWHM' },
             { data: 'noise', title: 'Noise %' },
@@ -387,6 +388,7 @@ $(document).ready(function () {
 
             data = selectedRows.data()[0]            
             $('#postfilterDescription').val(data.description)
+            $('#postfilterModelName').val(data.model)
             $('#postfilterSeriesNumber').val(data.series_number)
             $('#postfilterFWHM').val(data.fwhm)
             $( "#postfilterEnabled" ).prop( "checked", data.enabled) 
@@ -431,6 +433,7 @@ $(document).ready(function () {
             "action": postfilterAction,
             "id": postfilterAction == "add" ? "" : postFilter_table.rows({ selected: true }).data()[0].id,
             "description": $('#postfilterDescription').val(),
+            "model": $('#postfilterModelName').val(),
             "series_number": $('#postfilterSeriesNumber').val()|1000,
             "mode": $("#postfilterMode").val(),
             "fwhm":  $('#postfilterFWHM').val(),

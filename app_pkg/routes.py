@@ -316,7 +316,7 @@ def recon_settings():
                 db.session.commit()
                 logger.info(f'new post filter settings {repr(new_rs)} created.') 
                 return jsonify(message = "Configuración modificada exitosamente"), 200   
-            except:
+            except Exception as e:
                 logger.error('uknown error when creating new post filter settings')
                 logger.error(repr(e))
                 return jsonify(message = "Error al modificar la configuración"), 500
