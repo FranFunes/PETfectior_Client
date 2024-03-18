@@ -196,10 +196,16 @@ class SeriesUnpacker():
 
         # Load and process voxels
         try:
-            v = np.load(os.path.join(extract_dir, 'image.npy'))            
+            v = np.load(os.path.join(extract_dir, 'denoised.npy'))
+        except Exception as e:
+            logger.error(f"Failed when loading voxels from {os.path.join(extract_dir, 'denoised.npy')}")
+            logger.error(repr(e))
+            raise FileNotFoundError
+        
+        try:            
             noise = np.load(os.path.join(extract_dir, 'noise.npy'))            
         except Exception as e:
-            logger.error(f"Failed when loading voxels from {extract_dir}")
+            logger.error(f"Failed when loading noise from {os.path.join(extract_dir, 'noise.npy')}")
             logger.error(repr(e))
             raise FileNotFoundError
         
