@@ -63,6 +63,7 @@ $(document).ready(function () {
             { data: 'mode', title:'Naming mode'},
             { data: 'series_number', title:'Series number', name: "series_number"},
             { data: 'fwhm', title: 'FWHM' },
+            { data: 'noise', title: 'Noise %' },
             { data: 'enabled', title: 'Enabled' },            
         ],
         searching: false,
@@ -355,7 +356,7 @@ $(document).ready(function () {
         // Reset form
         $("#postfilterManagerForm")[0].reset()
         $('.modal-title').text('Add new postfilter')           
-        $('#postfilterSeriesNumber').val(sn)
+        $('#postfilterSeriesNumber').val(sn)        
     })
     
     $("#editPostfilter").on('click', function () {                
@@ -373,6 +374,8 @@ $(document).ready(function () {
             $('#postfilterFWHM').val(data.fwhm)
             $( "#postfilterEnabled" ).prop( "checked", data.enabled) 
             $("#postfilterMode").val(data.mode)
+            $("#postfilterNoise").val(data.noise)
+            
 
             postfilterAction = "edit"        
         }                
@@ -414,6 +417,7 @@ $(document).ready(function () {
             "series_number": $('#postfilterSeriesNumber').val()|1000,
             "mode": $("#postfilterMode").val(),
             "fwhm":  $('#postfilterFWHM').val(),
+            "noise":  $('#postfilterNoise').val(),
             "enabled": $('#postfilterEnabled').prop("checked")
         }
         $.ajax({
@@ -432,10 +436,7 @@ $(document).ready(function () {
                 alert(xhr.responseJSON.message);
             }
             });     
-    });
-
-
-    
+    });    
 
 });
 

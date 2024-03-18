@@ -191,6 +191,7 @@ class FilterSettings(db.Model):
     description = db.Column(db.String(128), default = '')
     mode = db.Column(db.String(32), default = 'append')
     series_number = db.Column(db.Integer, default = '1001')
+    noise = db.Column(db.Float, default = 0)
     enabled = db.Column(db.Boolean, default = True)
 
     def __repr__(self):

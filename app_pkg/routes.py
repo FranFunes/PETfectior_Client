@@ -287,7 +287,7 @@ def recon_settings():
             # Send recon information
             recons = FilterSettings.query.all()
             recons = [{'id':r.id, 'fwhm':r.fwhm, 'description':r.description, 'series_number':r.series_number,
-                       'enabled':r.enabled, 'mode':r.mode} for r in recons]
+                       'enabled':r.enabled, 'mode':r.mode, 'noise': r.noise} for r in recons]
             return jsonify(data = recons), 200
         except Exception as e:
             logger.error(repr(e))
@@ -300,7 +300,7 @@ def recon_settings():
             try:
                 new_rs = FilterSettings(fwhm = request.json['fwhm'], description = request.json['description'],
                                         series_number = request.json['series_number'], enabled = request.json['enabled'],
-                                        mode = request.json['mode'])
+                                        mode = request.json['mode'], noise = request.json['noise'])
                 db.session.add(new_rs)
                 db.session.commit()
                 logger.info(f'new post filter settings {repr(new_rs)} created.') 
@@ -340,6 +340,7 @@ def recon_settings():
                 rs.enabled = request.json['enabled']  
                 rs.mode = request.json['mode']
                 rs.series_number = request.json['series_number']
+                rs.noise = request.json['noise']
                 db.session.commit()
                 logger.info(f'{rs} edited')
                 return jsonify(message = "Se modificó la configuración correctamente"), 200
