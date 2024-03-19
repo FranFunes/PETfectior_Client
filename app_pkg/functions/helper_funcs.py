@@ -26,7 +26,7 @@ def process(task_id):
         noise[64:96,64:96,60:70] = array[64:96,64:96,60:70]
         array[64:96,64:96,60:70] = 0
         
-        np.save(os.path.join(unzip_folder, 'image.npy'), array)
+        np.save(os.path.join(unzip_folder, 'denoised.npy'), array)
         np.save(os.path.join(unzip_folder, 'noise.npy'), noise)
 
         os.remove(voxels_file)

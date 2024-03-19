@@ -7,3 +7,5 @@ app.db
 incoming
 vpn/config
 docker-compose-no-vpn.yml
+series_to_unpack/
+unpacked_series/

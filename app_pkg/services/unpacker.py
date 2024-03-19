@@ -225,6 +225,7 @@ class SeriesUnpacker():
         series_description = original_series.SeriesDescription
         for r in recons:
             voxels = v + r.noise/100 * noise
+            voxels = np.abs(voxels)
             voxels = filter_3D(voxels, r.fwhm, voxel_size)
             series.append({
                 'voxels': voxels,

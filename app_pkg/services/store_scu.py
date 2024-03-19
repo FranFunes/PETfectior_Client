@@ -86,6 +86,7 @@ class StoreSCU(AE):
                 logger.error(f"c-store failed")     
                 logger.error(repr(e))     
 
+        association.release()
         return results
     
     def main(self):
