@@ -20,4 +20,7 @@ while true; do
     echo Upgrade command failed, retrying in 5 secs...
     sleep 5
 done
+
+# Create the admin user if it doesn't exist
+python init_db.py
 exec gunicorn -b :$FLASK_RUN_PORT --access-logfile - --error-logfile - petfectior_client:application
