@@ -8,6 +8,8 @@ $(document).ready(function () {
             $("#clientID").text(response.client_id)  
             $("#serverURL").text(response.server_url)
             $( "#mirrorMode" ).prop( "checked", response.mirror_mode )  
+            $('#localConfigAdminUser').val(response.username)
+            $('#localConfigAdminPass').val(response.password)
             localStorage.setItem("sharedPath", response.shared_path)
         },
         error: function(xhr, status, error) {
@@ -136,7 +138,9 @@ $(document).ready(function () {
             "client_id":  $('#localConfigClientID').val(),
             "server_url":  $('#localConfigServerURL').val(),
             "shared_path":  $('#localConfigSharedPath').val(),
-            "mirror_mode": $("#localConfigMirrorMode").prop("checked")
+            "mirror_mode": $("#localConfigMirrorMode").prop("checked"),
+            "username": $('#localConfigAdminUser').val(),
+            "password": $('#localConfigAdminPass').val()
         }
         $.ajax({
             url: "/manage_app_config",

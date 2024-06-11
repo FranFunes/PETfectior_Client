@@ -14,7 +14,7 @@ RUN mkdir shared
 
 COPY app_pkg app_pkg
 COPY migrations migrations
-COPY petfectior_client.py config.py boot.sh ./
+COPY petfectior_client.py config.py boot.sh init_db.py ./
 RUN dos2unix < boot.sh > boot_bkp.sh
 RUN rm boot.sh
 RUN mv boot_bkp.sh boot.sh

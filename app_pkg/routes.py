@@ -1,18 +1,39 @@
-from flask import render_template, request, jsonify
-import ipaddress, os, logging, psutil
+from flask import render_template, request, jsonify, redirect, flash, url_for
+from flask_login import login_user, logout_user, current_user, login_required
+import ipaddress, os, logging
 import pandas as pd
 from datetime import datetime
 from sqlalchemy.exc import OperationalError
 
 
 from app_pkg import application, db
-from app_pkg.db_models import Device, Task, AppConfig, FilterSettings, PetModel
+from app_pkg.db_models import Device, Task, AppConfig, FilterSettings, PetModel, User
 from app_pkg.services import services
 from app_pkg.functions.task_actions import delete_task, restart_task, retry_last_step, delete_finished, delete_failed
 from app_pkg.functions.helper_funcs import ping
 
 
 logger = logging.getLogger('__main__')
+
+@application.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('tasks'))
+    
+    if request.method == 'POST':
+        user = User.query.filter_by(username = request.form['username']).first()
+        if user is None or not user.password == request.form['password']:
+            flash('Incorrect user or password')            
+            return redirect(url_for('login'))        
+        login_user(user, remember = False)
+        return redirect('tasks')
+    
+    return render_template('login.html')
+
+@application.route('/logout')
+def logout():
+    logout_user()
+    return redirect('/index')
 
 @application.route('/')
 @application.route('/index')
@@ -21,11 +42,13 @@ def tasks():
     return render_template('tasks.html')
 
 @application.route('/config')
+@login_required
 def config():
 
     return render_template('config.html')
 
 @application.route('/dashboard')
+@login_required
 def dashboard():
 
     return render_template('dashboard.html')
@@ -85,6 +108,7 @@ def manage_tasks():
 ###################################################################################
 
 @application.route('/get_app_config')
+@login_required
 def get_app_config():
 
     try:
@@ -92,21 +116,26 @@ def get_app_config():
         client_id = c.client_id
         server_url = c.server_url
         mirror_mode = c.mirror_mode
-        shared_path = c.shared_path        
+        shared_path = c.shared_path     
+        username = current_user.username
+        password = current_user.password
     except Exception as e:
         logger.error("can't access config in database")
         logger.error(repr(e))     
-        
+                
     data = {
         "mirror_mode": mirror_mode,
         "server_url": server_url,
         "shared_path": shared_path,
         "client_id": client_id,
+        "username": username,
+        "password": password
     }
 
     return data
 
 @application.route('/get_local_device')
+@login_required
 def get_local_device():
 
     try:
@@ -126,6 +155,7 @@ def get_local_device():
     return data
 
 @application.route('/get_pet_models')
+@login_required
 def get_pet_models():
 
     try:
@@ -137,13 +167,16 @@ def get_pet_models():
         return {'message': "can't access pet models in database"}, 500    
 
 @application.route('/manage_app_config', methods=['GET', 'POST'])
+@login_required
 def manage_app_config():   
     try:
         c = AppConfig.query.first()
         c.client_id = request.json["client_id"]
         c.server_url = request.json["server_url"]
         c.shared_path = request.json["shared_path"]
-        c.mirror_mode = request.json["mirror_mode"]
+        c.mirror_mode = request.json["mirror_mode"]        
+        current_user.username = request.json["username"]
+        current_user.password = request.json["password"]
         db.session.commit()
         return {"message":"App config was updated successfully"}        
     except OperationalError as e:
@@ -151,6 +184,7 @@ def manage_app_config():
         return jsonify(message = 'Error: database is not available'), 500     
 
 @application.route('/manage_local_device', methods=['GET', 'POST'])
+@login_required
 def manage_local_device():   
     try:
         c = AppConfig.query.first()
@@ -170,6 +204,7 @@ def manage_local_device():
         return jsonify(message = 'Error: port already in use'), 500
 
 @application.route('/get_remote_devices')
+@login_required
 def get_remote_devices():
 
     devices = [{"name":d.name, 
@@ -186,6 +221,7 @@ def get_remote_devices():
 
 
 @application.route('/manage_remote_devices', methods=['GET', 'POST'])
+@login_required
 def manage_remote_devices(): 
     
     device_name = request.json["name"]
@@ -291,6 +327,7 @@ def echo_remote_device():
         return jsonify(message = f"DICOM ECHO to {request.json['ae_title']}@{request.json['address']}:{request.json['port']} failed"), 500
 
 @application.route('/recon_settings', methods=['GET', 'POST'])
+@login_required
 def recon_settings():
 
     if request.method == 'GET':
@@ -370,6 +407,7 @@ def recon_settings():
 ###################################################################################    
 
 @application.route('/check_server_connection')
+@login_required
 def check_server_connection():
 
     data = services['Server Monitor'].get_statistics()
@@ -381,6 +419,7 @@ def check_server_connection():
     
 
 @application.route('/get_services_status')
+@login_required
 def get_services_status():
 
     data = [{'service_name':name, 'status':service.get_status()} for name, service in services.items()]            
@@ -388,6 +427,7 @@ def get_services_status():
     return {"data": data}
 
 @application.route('/manage_service', methods=['GET', 'POST'])
+@login_required
 def manage_service():
     
     action = request.json['action']

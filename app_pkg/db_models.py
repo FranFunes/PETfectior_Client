@@ -1,7 +1,9 @@
 import os, logging
-from app_pkg import db
+from app_pkg import db, login
+from flask_login import UserMixin
 from datetime import datetime
 from sqlalchemy import event
+from werkzeug.security import generate_password_hash, check_password_hash
    
 logger = logging.getLogger('__main__')
 
@@ -203,15 +205,15 @@ class PetModel(db.Model):
 
     def __repr__(self):
         return f"PET Model {self.name}"
-    
-def delete_db(tables = [], all = False):
 
-    if not tables and all:
-        tables = [Patient, Study, Series, Instance, Task, Device, AppLog, AppConfig]
-    
-    for table in tables:
-        for instance in table.query.all():
-            db.session.delete(instance)
-    
-    db.session.commit()
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), index=True, unique=True)
+    password = db.Column(db.String(64))
 
+    def __repr__(self):
+        return f'<User {self.username}>'    
+
+@login.user_loader
+def load_user(id):
+    return User.query.get(int(id))

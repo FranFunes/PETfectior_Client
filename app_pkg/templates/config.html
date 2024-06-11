@@ -32,18 +32,17 @@
     <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
         <div class="container-fluid">
             <ul class="navbar-nav">
-              <li class="nav-item">
-                <a class="nav-link" href="/tasks">Tasks</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link active" href="/config">Config</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/dashboard" >Processes</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/logs">Logs</a>
-              </li>
+              <li class="nav-item"><a class="nav-link" href="/tasks">Tasks</a></li>
+              <li class="nav-item"><a class="nav-link" href="/logs">Logs</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                {% if current_user.is_anonymous %}
+                <li class="nav-item"><a class="nav-link" href="/config">Admin</a></li>
+                {% else %}
+                <li class="nav-item"><a class="nav-link active" href="/config">Config</a></li>
+                <li class="nav-item"><a class="nav-link" href="/dashboard">Processes</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Logout</a></li>
+                {% endif %}              
             </ul>
           </div>
     </nav>
@@ -75,7 +74,15 @@
                             <div class="mb-3">
                                 <label for="localConfigSharedPath" class="form-label">Shared path</label>
                                 <input type="text" class="form-control" id="localConfigSharedPath" name="localConfigSharedPath">
-                            </div>                   
+                            </div>        
+                            <div class="mb-3">
+                                <label for="localConfigAdminUser" class="form-label">Admin username</label>
+                                <input type="text" class="form-control" id="localConfigAdminUser" name="localConfigAdminUser">
+                            </div>        
+                            <div class="mb-3">
+                                <label for="localConfigAdminPass" class="form-label">Admin password</label>
+                                <input type="text" class="form-control" id="localConfigAdminPass" name="localConfigAdminPass">
+                            </div>                    
                             <div class="mb-3">
                                 <input type="checkbox" class="form-check-input" id="localConfigMirrorMode" name="localConfigMirrorMode">
                                 <label for="localConfigMirrorMode" class="form-check-label">Mirror mode</label>
@@ -244,6 +251,10 @@
                             <div class="grid-item" id="clientID"></div>                            
                             <div class="grid-item">Server URL:</div>
                             <div class="grid-item" id="serverURL">10.0.0.51:5001</div>
+                            <div class="grid-item">Admin user:</div>
+                            <div class="grid-item">···········</div>
+                            <div class="grid-item">Admin pass:</div>
+                            <div class="grid-item">···········</div>
                             <div class="grid-item">Mirror Mode: </div>
                             <div class="grid-item"><input type="checkbox" class="form-check-input" id="mirrorMode" name="mirrorMode" disabled></div>                          
                         </div>

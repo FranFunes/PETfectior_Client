@@ -3,6 +3,7 @@ from config import Config
 from sqlalchemy import MetaData
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_login import LoginManager
 
 application = Flask(__name__)
 application.config.from_object(Config)
@@ -17,5 +18,8 @@ convention = {
 metadata = MetaData(naming_convention=convention)
 db = SQLAlchemy(application, metadata=metadata)
 migrate = Migrate(application, db)
+login = LoginManager(application)
+login.login_view = 'login'
+login.login_message = "Login as administrator to view this section"
 
 from app_pkg import routes
