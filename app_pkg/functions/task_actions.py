@@ -53,7 +53,7 @@ def delete_finished():
     try:
         for t in tasks:
             db.session.delete(t)
-        db.session.commit()
+            db.session.commit()
         return f"{len(tasks)} finished tasks deleted successfully ", 200
     except:
         return "Uknown error occurred when trying to delete finished tasks", 500

@@ -64,7 +64,12 @@ class Series(db.Model):
 
     def __repr__(self):
         return f'<Series {self.SeriesDescription} from {self.PatientID}>'    
-    
+
+@event.listens_for(Series, 'before_delete')
+def delete_series(mapper, connection, target):
+    # Log message    
+    logger.info(f"deleting {target.SeriesInstanceUID}")
+
 class Instance(db.Model):
 
     SOPInstanceUID = db.Column(db.String(64), primary_key=True)
@@ -147,12 +152,15 @@ def delete_task(mapper, connection, target):
     logger.info(f"deleting task {target.id}")
     
     source_series = Series.query.get(target.series)
-    has_other_related_tasks = db.session.query(db.exists().where(Task.series == source_series.SeriesInstanceUID, Task.id != target.id)).scalar()
-    if not has_other_related_tasks:
-        logger.info(f"task {target.id} deleting source series")
-        db.session.delete(source_series)        
+    if source_series:
+        has_other_related_tasks = db.session.query(db.exists().where(Task.series == source_series.SeriesInstanceUID, Task.id != target.id)).scalar()
+        if not has_other_related_tasks:
+            logger.info(f"task {target.id} deleting source series")
+            db.session.delete(source_series)        
+        else:
+            logger.info(f"task {target.id} source series won't be deleted")
     else:
-        logger.info(f"task {target.id} source series won't be deleted")
+        logger.info(f"task {target.id} source series not found")
 
     # Delete results series
 
