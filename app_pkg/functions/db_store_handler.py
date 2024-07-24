@@ -1,4 +1,4 @@
-import os, logging
+import os, logging, traceback
 from queue import Queue
 from datetime import datetime
 from pynetdicom.events import Event
@@ -13,13 +13,24 @@ logger = logging.getLogger('__main__')
 def db_create_patient(ds: Dataset) -> Patient:
     
     pat_id = str(ds.PatientID)
-    pat_name = str(ds.PatientName)
     # Raise error if patient already exists
     patient = Patient.query.get(pat_id)
     if patient is not None:
         logger.error('patient already exists.')
         raise ValueError("This patient already exists")
-    patient = Patient(PatientID = pat_id, PatientName = pat_name)
+    patient = Patient(PatientID = pat_id)
+    for field in ['PatientName', 'PatientWeight', 'PatientAge', 'PatientSize']:
+        if field in ds:
+            datael = ds[field]
+            value = datael.value
+            if datael.VR == 'DS':
+                value = float(value)
+            if datael.VR == 'PN':
+                value = str(value)
+            if datael.VR == 'IS':
+                value = int(value)               
+            setattr(patient, field, value)
+
     db.session.add(patient)
     db.session.commit()
     return patient
@@ -27,20 +38,23 @@ def db_create_patient(ds: Dataset) -> Patient:
 def db_create_study(ds: Dataset) -> Study:
 
     uid = ds.StudyInstanceUID
-    date = datetime.strptime(ds.StudyDate + ds.StudyTime[:6], '%Y%m%d%H%M%S')
-    description = ds.StudyDescription
-
     # Raise error if study already exists
     study = Study.query.get(uid)
     if study is not None:
         logger.error('study already exists.')
         raise ValueError("This study already exists")
+    
     # Check if patient already exists and create it if not
     patient = Patient.query.get(ds.PatientID) or db_create_patient(ds)
-    study = Study(StudyInstanceUID = uid, 
-                    StudyDate = date,
-                    StudyDescription = description, 
-                    patient = patient)
+
+    study = Study(StudyInstanceUID = uid, patient = patient)
+
+    if 'StudyDate' in ds:
+        date = datetime.strptime(ds.StudyDate + ds.StudyTime[:6], '%Y%m%d%H%M%S')
+        study.StudyDate = date
+    if 'StudyDescription' in ds:
+        study.StudyDescription = ds.StudyDescription
+
     db.session.add(study)
     db.session.commit()
 
@@ -49,24 +63,29 @@ def db_create_study(ds: Dataset) -> Study:
 def db_create_series(ds: Dataset) -> Series:
 
     uid = ds.SeriesInstanceUID
-    date = datetime.strptime(ds.SeriesDate + ds.SeriesTime[:6], '%Y%m%d%H%M%S')
-    description = ds.SeriesDescription
-    mod = ds.Modality
-
     # Raise error if series already exists
     series = Series.query.get(uid)
     if series is not None:
         logger.error('series already exists.')
         raise ValueError("This series already exists")
+    
     # Check if patient and study already exist or create them if not
     patient = Patient.query.get(ds.PatientID) or db_create_patient(ds)
     study = Study.query.get(ds.StudyInstanceUID) or db_create_study(ds)
-    series = Series(SeriesInstanceUID = uid, 
-                    SeriesDate = date,
-                    SeriesDescription = description, 
-                    Modality = mod, 
-                    patient = patient,
-                    study = study)
+    series = Series(SeriesInstanceUID = uid, patient = patient, study = study)
+
+    if 'SeriesDate' in ds and 'SeriesTime' in ds:
+        date = datetime.strptime(ds.SeriesDate + ds.SeriesTime[:6], '%Y%m%d%H%M%S')
+        series.SeriesDate = date
+
+    for field in ['SeriesDescription','Modality','SeriesNumber']:
+        if field in ds:
+            datael = ds[field]
+            value = datael.value
+            if datael.VR == 'IS':
+                value = int(value)  
+            setattr(series, field, value)
+            
     db.session.add(series)
     db.session.commit()
         
@@ -182,6 +201,7 @@ def store_dataset(ds, root_dir):
         except Exception as e:            
             logger.error("Can't write new instance to database")
             logger.error(repr(e))
+            traceback.print_exc()
             """
             # Try to delete written file from disk
             try:
