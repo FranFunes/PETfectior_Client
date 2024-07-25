@@ -19,9 +19,6 @@ task_instance = db.Table('task_instance',
 class Patient(db.Model):
     PatientID = db.Column(db.String(64), primary_key=True)
     PatientName = db.Column(db.String(64), index=True)
-    PatientWeight = db.Column(db.Float())
-    PatientAge = db.Column(db.String(4))
-    PatientSize = db.Column(db.Float())
 
     # Cross-references down
     studies = db.relationship('Study', backref='patient', lazy='dynamic', cascade='all, delete-orphan')    
@@ -36,6 +33,9 @@ class Study(db.Model):
     StudyInstanceUID = db.Column(db.String(64), primary_key=True)
     StudyDate = db.Column(db.DateTime, index=True)    
     StudyDescription = db.Column(db.String(64), index=True)
+    PatientWeight = db.Column(db.Float())
+    PatientAge = db.Column(db.String(4))
+    PatientSize = db.Column(db.Float())
 
     # Cross-references up
     PatientID = db.Column(db.String(64), db.ForeignKey('patient.PatientID'))
