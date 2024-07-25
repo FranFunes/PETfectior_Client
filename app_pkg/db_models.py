@@ -33,7 +33,9 @@ class Study(db.Model):
     StudyInstanceUID = db.Column(db.String(64), primary_key=True)
     StudyDate = db.Column(db.DateTime, index=True)    
     StudyDescription = db.Column(db.String(64), index=True)
-
+    PatientWeight = db.Column(db.Float())
+    PatientAge = db.Column(db.String(4))
+    PatientSize = db.Column(db.Float())
 
     # Cross-references up
     PatientID = db.Column(db.String(64), db.ForeignKey('patient.PatientID'))
@@ -52,6 +54,8 @@ class Series(db.Model):
     SeriesDate = db.Column(db.DateTime, index=True)
     SeriesDescription = db.Column(db.String(64), index=True)
     Modality = db.Column(db.String(64), index=True)
+    SeriesNumber = db.Column(db.Integer())
+    SeriesTime = db.Column(db.DateTime)  
     
     # One-to-many relationships (as child)
     PatientID = db.Column(db.String(64), db.ForeignKey('patient.PatientID'))

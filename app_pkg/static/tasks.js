@@ -14,7 +14,7 @@ $(document).ready(function () {
             { data: 'updated', title: 'Last update' },         
             { data: 'task_id', title: 'Task ID' }
         ],
-        order: [[2, 'asc']],
+        order: [[9, 'desc']],
         language: {
             search: 'Buscar',
             url: 'https://cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json',

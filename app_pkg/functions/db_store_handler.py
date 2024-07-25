@@ -1,4 +1,4 @@
-import os, logging
+import os, logging, traceback
 from queue import Queue
 from datetime import datetime
 from pynetdicom.events import Event
@@ -10,64 +10,75 @@ from pymysql.err import IntegrityError
 logger = logging.getLogger('__main__')
 
 # Some functions to manage database operations
-def db_create_patient(ds: Dataset) -> Patient:
+def db_create_update_patient(ds: Dataset) -> Patient:
     
     pat_id = str(ds.PatientID)
-    pat_name = str(ds.PatientName)
-    # Raise error if patient already exists
     patient = Patient.query.get(pat_id)
-    if patient is not None:
-        logger.error('patient already exists.')
-        raise ValueError("This patient already exists")
-    patient = Patient(PatientID = pat_id, PatientName = pat_name)
-    db.session.add(patient)
+
+    if not patient:
+        logger.info('creating new patient.')
+        patient = Patient(PatientID = pat_id)
+        db.session.add(patient)
+        
+    if 'PatientName' in ds:
+        patient.PatientName = str(ds.PatientName)
+
     db.session.commit()
     return patient
 
-def db_create_study(ds: Dataset) -> Study:
+def db_create_update_study(ds: Dataset) -> Study:
 
     uid = ds.StudyInstanceUID
-    date = datetime.strptime(ds.StudyDate + ds.StudyTime[:6], '%Y%m%d%H%M%S')
-    description = ds.StudyDescription
-
-    # Raise error if study already exists
     study = Study.query.get(uid)
-    if study is not None:
-        logger.error('study already exists.')
-        raise ValueError("This study already exists")
-    # Check if patient already exists and create it if not
-    patient = Patient.query.get(ds.PatientID) or db_create_patient(ds)
-    study = Study(StudyInstanceUID = uid, 
-                    StudyDate = date,
-                    StudyDescription = description, 
-                    patient = patient)
-    db.session.add(study)
+
+    if not study:
+        logger.info('creating new study.')
+        # Check if patient already exists and create it if not
+        patient = Patient.query.get(ds.PatientID) or db_create_update_patient(ds)
+        study = Study(StudyInstanceUID = uid, patient = patient)
+        db.session.add(study)
+        
+    if 'StudyDate' in ds:
+        date = datetime.strptime(ds.StudyDate + ds.StudyTime[:6], '%Y%m%d%H%M%S')
+        study.StudyDate = date
+    if 'StudyDescription' in ds:
+        study.StudyDescription = str(ds.StudyDescription)
+    if 'PatientWeight' in ds:
+        study.PatientWeight = float(ds.PatientWeight)
+    if 'PatientSize' in ds:
+        study.PatientSize = float(ds.PatientSize)
+    if 'PatientAge' in ds:
+        study.PatientAge = str(ds.PatientAge)
+
     db.session.commit()
 
     return study
     
-def db_create_series(ds: Dataset) -> Series:
+def db_create_update_series(ds: Dataset) -> Series:
 
     uid = ds.SeriesInstanceUID
-    date = datetime.strptime(ds.SeriesDate + ds.SeriesTime[:6], '%Y%m%d%H%M%S')
-    description = ds.SeriesDescription
-    mod = ds.Modality
-
-    # Raise error if series already exists
     series = Series.query.get(uid)
-    if series is not None:
-        logger.error('series already exists.')
-        raise ValueError("This series already exists")
-    # Check if patient and study already exist or create them if not
-    patient = Patient.query.get(ds.PatientID) or db_create_patient(ds)
-    study = Study.query.get(ds.StudyInstanceUID) or db_create_study(ds)
-    series = Series(SeriesInstanceUID = uid, 
-                    SeriesDate = date,
-                    SeriesDescription = description, 
-                    Modality = mod, 
-                    patient = patient,
-                    study = study)
-    db.session.add(series)
+    
+    if not series:
+        logger.info('creating new series.')
+        # Check if patient and study already exist or create them if not
+        patient = Patient.query.get(ds.PatientID) or db_create_update_patient(ds)
+        study = Study.query.get(ds.StudyInstanceUID) or db_create_update_study(ds)
+        series = Series(SeriesInstanceUID = uid, patient = patient, study = study)
+        db.session.add(series)
+
+    if not series.SeriesDate and 'SeriesDate' in ds and 'SeriesTime' in ds:
+        date = datetime.strptime(ds.SeriesDate + ds.SeriesTime[:6], '%Y%m%d%H%M%S')
+        series.SeriesDate = date
+
+    for field in ['SeriesDescription','Modality','SeriesNumber']:
+        if field in ds:
+            datael = ds[field]
+            value = datael.value
+            if datael.VR == 'IS':
+                value = int(value)  
+            setattr(series, field, value)
+            
     db.session.commit()
         
     return series
@@ -83,9 +94,9 @@ def db_create_instance(ds: Dataset, filename: str) -> Instance:
         logger.error('instance already exists.')
         raise ValueError("This instance already exists")
     # Check if patient, study and series already exist or create them if not
-    patient = Patient.query.get(ds.PatientID) or db_create_patient(ds)
-    study = Study.query.get(ds.StudyInstanceUID) or db_create_study(ds)
-    series = Series.query.get(ds.SeriesInstanceUID) or db_create_series(ds)
+    patient = db_create_update_patient(ds)
+    study = db_create_update_study(ds)
+    series = db_create_update_series(ds)
     instance = Instance(SOPInstanceUID = uid, 
                         SOPClassUID = uid_class,
                         filename = filename,
@@ -150,9 +161,13 @@ def store_dataset(ds, root_dir):
 
     # Check if instance already exists    
     instance = Instance.query.get(ds.SOPInstanceUID)
-    # If instance already exists, don't store it
+    # If instance already exists, don't store it, and update parents only
     if instance:
         logger.debug('instance already exists. Ignoring')
+        db_create_update_patient(ds)
+        db_create_update_study(ds)
+        db_create_update_series(ds)
+
         return 1
     else:
         logger.debug('adding instance to database')
