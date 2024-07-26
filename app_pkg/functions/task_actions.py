@@ -65,7 +65,7 @@ def delete_failed():
     try:
         for t in tasks:
             db.session.delete(t)
-        db.session.commit()
+            db.session.commit()
         return f"{len(tasks)} failed tasks deleted successfully ", 200
     except:
         return "Uknown error occurred when trying to delete failed tasks", 500

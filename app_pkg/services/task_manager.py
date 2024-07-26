@@ -1,11 +1,9 @@
-import json, threading, logging
+import threading, logging, os
 from time import sleep
-from datetime import datetime
-import numpy as np
-from pydicom import Dataset
 
 from app_pkg import application, db
 from app_pkg.db_models import Task
+from app_pkg.functions.helper_funcs import process
 
 # Configure logging
 logger = logging.getLogger('__main__')
@@ -99,6 +97,17 @@ class TaskManager():
                     # Trigger next step by putting an element in its input queue
                     self.input_queues[task.current_step].put(task.id)
                     db.session.commit()
-                    
+                
+                # If server interaction is disabled, simulate processing
+                if not os.environ["SERVER_INTERACTION"] == "True":
+                    to_process = Task.query.filter_by(status_msg = 'processing').all()
+                    for task in to_process:
+                        try:
+                            process(task.id)
+                            logger.info(f"simulated processing for task {task.id}")
+                        except Exception as e:
+                            logger.error(f"simulated processing for task {task.id} failed")
+                            logger.error(repr(e))
+                
                 if not tasks:
-                    sleep(1) 
+                    sleep(1)
