@@ -119,7 +119,6 @@ class Compilator():
                     dataset = queue_element['dataset']
                     series_uid = dataset.SeriesInstanceUID
                     sop_uid = dataset.SOPInstanceUID
-                    recon_settings = queue_element['recon_ds']
                     ip = queue_element['address']
                     ae_title = queue_element['ae_title']
                     timing = datetime.now()

@@ -132,7 +132,7 @@ class Validator():
                         # Check if dicom information is complete
                         recon_settings = Dataset.from_json(task.recon_settings)
                         if not self.check_dicom_parameters(recon_settings):
-                            logger.info(f"task {task.id} completed but there are missing dicom information.")
+                            logger.info(f"task {task.id} completed but there is missing dicom information.")
                             task.status_msg = 'failed - missing info'
                             task.step_state = -1                            
                         else:

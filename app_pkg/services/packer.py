@@ -112,6 +112,14 @@ class SeriesPacker():
                             'client_id': config.client_id,
                             'task_id': task.id,
                             'recon_settings': json.loads(task.recon_settings),
+                            'PatientWeight': task.task_series.study.PatientWeight,
+                            'PatientSize': task.task_series.study.PatientSize,
+                            'PatientAge': task.task_series.study.PatientAge,
+                            'StudyInstanceUID': task.task_series.study.StudyInstanceUID,
+                            'SeriesInstanceUID': task.series,
+                            'SeriesNumber': task.task_series.SeriesNumber,
+                            'SeriesDate': task.task_series.SeriesDate.strftime('%Y%m%d'),
+                            'SeriesTime': task.task_series.SeriesDate.strftime('%H%M%S'),
                             'sha256':get_checksum(os.path.join('temp_series_packer', 'voxels.npy'), algorithm="SHA256")
                         }
                         with open(os.path.join("temp_series_packer", "metadata.json"), "w") as jsonfile:  
