@@ -1,5 +1,5 @@
-import logging
-from app_pkg import db
+import logging, threading
+from app_pkg import application, db
 from app_pkg.db_models import Task
 
 logger = logging.getLogger('__main__')
@@ -46,27 +46,47 @@ def retry_last_step(id):
     db.session.commit()
     return f"Retrying last step for task {id} ", 200
 
-def delete_finished():
+def delete_finished():    
 
     tasks = Task.query.filter_by(step_state = 2).all()
-    logger.info(f"deleting {len(tasks)} finished tasks")
-    try:
+    logger.info(f"deleting {len(tasks)} finished tasks")        
+    processing_thread = threading.Thread(target = delete_finished_background, 
+                                            args = (tasks,), name = 'delete_finished_thread')   
+    db.session.close()
+    processing_thread.start()
+    return "Finished tasks are being cleared in the background", 200
+
+def delete_finished_background(tasks):    
+    with application.app_context():
         for t in tasks:
-            db.session.delete(t)
-            db.session.commit()
-        return f"{len(tasks)} finished tasks deleted successfully ", 200
-    except:
-        return "Uknown error occurred when trying to delete finished tasks", 500
+            try:
+                if t.step_state == 2:
+                    db.session.delete(t)
+                    db.session.commit()        
+            except Exception as e:
+                logger.error("Error occurred when trying to delete finished tasks")
+                logger.error(repr(e))
 
 def delete_failed():
 
     tasks = Task.query.filter_by(step_state = -1).all()
     logger.info(f"deleting {len(tasks)} failed tasks")
-    try:
+    processing_thread = threading.Thread(target = delete_failed_background, 
+                                            args = (tasks,), name = 'delete_failed_thread')   
+    db.session.close()
+    processing_thread.start()
+    return "Failed tasks are being cleared in the background", 200
+    
+def delete_failed_background(tasks):
+    with application.app_context():
         for t in tasks:
-            db.session.delete(t)
-            db.session.commit()
-        return f"{len(tasks)} failed tasks deleted successfully ", 200
-    except:
-        return "Uknown error occurred when trying to delete failed tasks", 500
+            try:
+                if t.step_state == -1:
+                    db.session.delete(t)
+                    db.session.commit()        
+            except Exception as e:
+                logger.error("Error occurred when trying to delete failed tasks")
+                logger.error(repr(e))
+
+    
 

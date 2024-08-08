@@ -41,7 +41,7 @@ $(document).ready(function () {
     // Auto refresh, keeping selected rows and scrolling position
 
     function refreshTable() {
-        console.log('refreshing')
+        
         var selectedRows = tasks_table.rows({ selected: true });
         var idx = selectedRows[0];
     

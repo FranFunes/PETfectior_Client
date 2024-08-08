@@ -9,3 +9,4 @@ vpn/config
 docker-compose-no-vpn.yml
 series_to_unpack/
 unpacked_series/
+bkp_volumes
