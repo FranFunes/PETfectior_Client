@@ -1,6 +1,6 @@
 import logging, threading
 from app_pkg import application, db
-from app_pkg.db_models import Task
+from app_pkg.db_models import Task, Patient, Study, Series
 
 logger = logging.getLogger('__main__')
 
@@ -65,7 +65,8 @@ def delete_finished_background(tasks):
                     db.session.commit()        
             except Exception as e:
                 logger.error("Error occurred when trying to delete finished tasks")
-                logger.error(repr(e))
+                logger.error(repr(e))    
+        clear_database()
 
 def delete_failed():
 
@@ -87,6 +88,44 @@ def delete_failed_background(tasks):
             except Exception as e:
                 logger.error("Error occurred when trying to delete failed tasks")
                 logger.error(repr(e))
+        clear_database()
 
+def clear_database():
+
+    # Clear series with no tasks or instances associated
+    series = Series.query.all()
+    for ss in series:
+        try:
+            if not ss.instances.first() or (not ss.tasks.first() and not ss.originating_task):
+                logger.info(f'deleting empty series {ss}')
+                db.session.delete(ss)
+                db.session.commit()
+        except Exception as e:
+                logger.error(f'error when deleting empty series {ss}')
+                logger.error(repr(e))
+
+    # Clear studies with no series
+    studies = Study.query.all()
+    for st in studies:
+        try:
+            if not st.series.first():
+                logger.info(f'deleting empty study {st}')
+                db.session.delete(st)
+                db.session.commit()
+        except Exception as e:
+                logger.error(f'error when deleting empty study {st}')
+                logger.error(repr(e))
+
+    # Clear patients with no studies
+    patients = Patient.query.all()
+    for pt in patients:
+        try:
+            if not pt.series.first():
+                logger.info(f'deleting empty patient {pt}')
+                db.session.delete(pt)
+                db.session.commit()
+        except:
+                logger.error(f'error when deleting empty patient {pt}')
+                logger.error(repr(e))
     
 

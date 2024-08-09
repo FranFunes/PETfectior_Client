@@ -1,4 +1,5 @@
 import os, logging
+from shutil import rmtree
 from app_pkg import db, login
 from flask_login import UserMixin
 from datetime import datetime
@@ -36,6 +37,7 @@ class Study(db.Model):
     PatientWeight = db.Column(db.Float())
     PatientAge = db.Column(db.String(4))
     PatientSize = db.Column(db.Float())
+    stored_in = db.Column(db.Text())   
 
     # Cross-references up
     PatientID = db.Column(db.String(64), db.ForeignKey('patient.PatientID'))
@@ -46,7 +48,6 @@ class Study(db.Model):
 
     def __repr__(self):
         return f'<Study {self.StudyDescription} from {self.PatientID}>'
-
     
 class Series(db.Model):
 
@@ -56,6 +57,7 @@ class Series(db.Model):
     Modality = db.Column(db.String(64), index=True)
     SeriesNumber = db.Column(db.Integer())
     SeriesTime = db.Column(db.DateTime)  
+    stored_in = db.Column(db.Text())   
     
     # One-to-many relationships (as child)
     PatientID = db.Column(db.String(64), db.ForeignKey('patient.PatientID'))
@@ -69,10 +71,18 @@ class Series(db.Model):
     def __repr__(self):
         return f'<Series {self.SeriesDescription} from {self.PatientID}>'    
 
-@event.listens_for(Series, 'before_delete')
-def delete_series(mapper, connection, target):
+def clear_storage(mapper, connection, target):
     # Log message    
-    logger.info(f"deleting {target.SeriesInstanceUID}")
+    logger.info(f"deleting {target}")
+    # Delete files from disk
+    try:
+        rmtree(target.stored_in)
+    except Exception as e:
+        logger.error(f"could'n delete {target.stored_in} from storage")
+        logger.error(repr(e))
+
+event.listen(Study, 'before_delete', clear_storage)
+event.listen(Series, 'before_delete', clear_storage)
 
 class Instance(db.Model):
 
@@ -87,14 +97,7 @@ class Instance(db.Model):
 
     def __repr__(self):
         return f'<Instance {self.SOPInstanceUID} from {self.PatientID} stored at {self.filename}>'
-
-@event.listens_for(Instance, 'before_delete')
-def delete_instance(mapper, connection, target):
-    # Delete file from disk
-    try:
-        os.remove(target.filename)
-    except:
-        logger.error(f"could'n delete {target.filename} from storage")
+   
     
 class Device(db.Model):
 
