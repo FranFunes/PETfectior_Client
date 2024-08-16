@@ -174,12 +174,12 @@ def store_dataset(ds, root_dir):
         return 1
     else:
         logger.debug('adding instance to database')
-        # Try to store dataset in disk
-        os.makedirs(filedir, exist_ok = True)
         # Construct an unique fname for each dataset received
         filedir = os.path.join(root_dir, 
                             ds.StudyInstanceUID,
                             ds.SeriesInstanceUID)
+        # Try to store dataset in disk
+        os.makedirs(filedir, exist_ok = True)
         filepath = os.path.join(filedir, ds.SOPInstanceUID)
         try:
             ds.save_as(filepath, write_like_original = False)
