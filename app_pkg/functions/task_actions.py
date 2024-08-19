@@ -1,6 +1,7 @@
-import logging, threading
+import logging, threading, os
+from shutil import rmtree
 from app_pkg import application, db
-from app_pkg.db_models import Task, Patient, Study, Series
+from app_pkg.db_models import Task, Patient, Study, Series, Instance
 
 logger = logging.getLogger('__main__')
 
@@ -92,11 +93,11 @@ def delete_failed_background(tasks):
 
 def clear_database():
 
-    # Clear series with no tasks or instances associated
+    # Clear series with no tasks associated
     series = Series.query.all()
     for ss in series:
         try:
-            if not ss.instances.first() or (not ss.tasks.first() and not ss.originating_task):
+            if not ss.tasks.first() and not ss.originating_task:
                 logger.info(f'deleting empty series {ss}')
                 db.session.delete(ss)
                 db.session.commit()
@@ -104,6 +105,16 @@ def clear_database():
                 logger.error(f'error when deleting empty series {ss}')
                 logger.error(repr(e))
 
+    # Clear orphan instances:
+    for instance in Instance.query.filter_by(series = None).all():
+        try:
+            logger.info(f'deleting orphan instance {instance}')
+            db.session.delete(instance)
+            db.session.commit()
+        except Exception as e:
+            logger.error(f'error when deleting instance {instance}')
+            logger.error(repr(e))
+    
     # Clear studies with no series
     studies = Study.query.all()
     for st in studies:
@@ -128,4 +139,25 @@ def clear_database():
                 logger.error(f'error when deleting empty patient {pt}')
                 logger.error(repr(e))
     
+    # Delete files with no corresponding database objects
+    clear_storage()
+    
+def clear_storage():
+    studies = os.listdir('incoming')
+    for st in studies:
+        st_path = os.path.join('incoming', st)
+        st_db = Study.query.filter_by(stored_in = st_path).first()
+        if not st_db:
+            logger.info(f'Deleting non-db study {st_path}')
+            rmtree(st_path)
+        else:            
+            series = os.listdir(st_path)
+            for ss in series:
+                ss_path = os.path.join(st_path, ss)
+                ss_db = Series.query.filter_by(stored_in = ss_path).first()
+                if not ss_db:
+                    logger.info(f'Deleting non-db series {ss_path}')     
+                    rmtree(ss_path)
 
+
+    

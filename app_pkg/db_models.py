@@ -120,8 +120,7 @@ class Source(db.Model):
     related_tasks = db.relationship('Task', backref='task_source', lazy='dynamic')
 
     def __repr__(self):
-        return f'<Source {self.identifier}>'
-    
+        return f'<Source {self.identifier}>'    
     
 class Task(db.Model):
     id = db.Column(db.String(18), primary_key=True)
