@@ -1,8 +1,7 @@
 import signal, logging, os, sys
-from app_pkg import application, db
+from app_pkg import application
 from app_pkg.db_models import AppConfig
 from app_pkg.services import services
-from shutil import rmtree
 
 logger = logging.getLogger('__main__')
 if os.getenv('FLASK_HTTP_LOGGGING') == 'False':

@@ -31,28 +31,49 @@ $(document).ready(function () {
                             style: 'single',
                             selector: 'td',
                             info: false,
-                        }
+                        },
+        initComplete: function () {
+            setTimeout(refreshTable, 5000) 
+        }
+                        
     });
     
     // Auto refresh, keeping selected rows and scrolling position
-    setInterval( function () {
+
+    function refreshTable() {
+        
         var selectedRows = tasks_table.rows({ selected: true });
         var idx = selectedRows[0];
-
+    
         var scrollingContainer = $(tasks_table.table().node()).parent('div.dataTables_scrollBody');
         var scrollTop = scrollingContainer.scrollTop();
-               
-        tasks_table.ajax.reload( function() {
+        
+        tasks_table.ajax.reload(function () {
+            
             idx.forEach(function(element) {
                 tasks_table.row(element).select();                
             })
             scrollingContainer.scrollTop(scrollTop);
-        }); 
-    }, 1000);
+            setTimeout(refreshTable, 5000)    
+        });
+    }
+    
+    
 
     // Add buttons functionality
     $('.task-action').on('click', function() {
         
+        var thisBtn =  $(this)
+        var btnText = thisBtn.text()
+        // Disable all task action buttons until ajax resolves
+        $('.task-action').prop('disabled', true)
+
+        // Show spinner on clicked button
+        var spinner = $(`<span class="spinner-border spinner-border-sm"></span>`)           
+        $(this).prop('disabled', true)
+        $(this).text('')
+        $(this).append(spinner)
+
         var ajax_data ={}
         action = $(this).attr('action')
         ajax_data["action"] = action
@@ -75,11 +96,20 @@ $(document).ready(function () {
             error: function(xhr, status, error) {
                 // handle error response here
                 alert(xhr.responseJSON.message);
+            },
+            complete: function(){
+                // Show text, hide spinner and enable button
+                $('.task-action').prop('disabled', false)
+                spinner.remove()
+                thisBtn.text(btnText)
             }
             });
         }) 
 
 });
+
+
+
 
 // Don't show alerts on ajax errors
 //$.fn.dataTable.ext.errMode = 'throw';

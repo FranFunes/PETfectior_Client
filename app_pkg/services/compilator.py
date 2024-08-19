@@ -106,107 +106,112 @@ class Compilator():
         inactive_time = 0                
 
         while not self.stop_event.is_set() or not self.input_queue.empty():
-        
-            with application.app_context():
-                # If there are any elements in the input queue, read them.
-                if not self.input_queue.empty():
-                    
-                    # Reset inactivity timer
-                    inactive_time = 0
+            
+            try:
 
-                    # Read element from queue
-                    queue_element = self.input_queue.get()
-                    dataset = queue_element['dataset']
-                    series_uid = dataset.SeriesInstanceUID
-                    sop_uid = dataset.SOPInstanceUID
-                    ip = queue_element['address']
-                    ae_title = queue_element['ae_title']
-                    timing = datetime.now()
-
-                    # Record this source in the database if it doesn't exist
-                    src_id = f"{ae_title}@{ip}"
-                    source = Source.query.get(src_id)
-                    if not source:
-                        source = Source(identifier = src_id)
-                        db.session.add(source)
+                with application.app_context():
+                    # If there are any elements in the input queue, read them.
+                    if not self.input_queue.empty():
                         
-                    # Check if this SOP should be appended to an existing or new Task.          
-                    tasks = (Task.query.filter_by(current_step = 'compilator').
-                            filter_by(step_state = 0). 
-                            filter_by(series = series_uid).
-                            join(Source).filter_by(identifier=src_id)).all()
-                    matching_task = None
-                    i = Instance.query.get(sop_uid)
-                    for task in tasks:
-                        if not i in task.instances:
-                            matching_task = task
-                            break
-                    
-                    if not matching_task:
+                        # Reset inactivity timer
+                        inactive_time = 0
 
-                        # Create a new task          
-                        logger.info('creating new task')
-                        task_id = timing.strftime('%Y%m%d%H%M%S%f')[:-2]
+                        # Read element from queue
+                        queue_element = self.input_queue.get()
+                        dataset = queue_element['dataset']
+                        series_uid = dataset.SeriesInstanceUID
+                        sop_uid = dataset.SOPInstanceUID
+                        ip = queue_element['address']
+                        ae_title = queue_element['ae_title']
+                        timing = datetime.now()
 
-                        # Create new Task in the database
-                        task = Task(
-                            id = task_id,
-                            started = timing,
-                            updated = timing,
-                            current_step = 'compilator',
-                            status_msg = 'receiving',
-                            step_state = 0,
-                            expected_imgs = self.instances_in_series(dataset),
-                            task_series = Series.query.get(series_uid),
-                            instances = [Instance.query.get(sop_uid)],
-                            task_source = source
-                        )
-                        db.session.add(task)
-                        logger.info(f'created new task {task}')                        
-                    else:
-                        # Append to existing series                    
-                        logger.debug(f"Appending instance {sop_uid} to task {matching_task}")
-                        matching_task.instances.append(Instance.query.get(sop_uid))
-
-                    db.session.commit()
-                    
-                # If there are no elements in the queue and the thread has been inactive for 5 seconds, check
-                # tasks status
-                elif inactive_time >= 5:
-
-                    logger.debug(f"Inactive, checking tasks status...")
-                    # Reset inactivity timer
-                    inactive_time = 0
-                    for task in Task.query.filter((Task.current_step == 'compilator')&(Task.step_state==0)).all():
-                        
-                        # Check task status
-                        datasets, recon_settings = self.fetch_task_data(task.id)
-                        status = self.task_status(datasets, 
-                                                task.expected_imgs, 
-                                                task.updated)
-                        if status == 'abort':
-                            logger.info(f"Task {task.id} timed out")
-                            task.status_msg = "Failed - timed out"
-                            task.step_state = -1                        
-                        
-                        elif status == 'wait':
-                            logger.info(f"Waiting for task {task.id} with {len(task.instances)} instances to complete.")
-
-                        elif status == 'completed':
-
-                            # From task_data, keep the required for the next step only
-                            recon_settings = self.summarize_data(recon_settings, datasets)
+                        # Record this source in the database if it doesn't exist
+                        src_id = f"{ae_title}@{ip}"
+                        source = Source.query.get(src_id)
+                        if not source:
+                            source = Source(identifier = src_id)
+                            db.session.add(source)
                             
-                            # Write task_data to the database and pass the task to the next step
-                            task.recon_settings = recon_settings.to_json()
-                            task.current_step = self.next_step
-                            task.step_state = 1
-                            logger.info(f"Task {task.id} completed.")                       
-                    
-                    db.session.commit()
-                else:
-                    sleep(1)
-                    inactive_time += 1       
+                        # Check if this SOP should be appended to an existing or new Task.          
+                        tasks = (Task.query.filter_by(current_step = 'compilator').
+                                filter_by(step_state = 0). 
+                                filter_by(series = series_uid).
+                                join(Source).filter_by(identifier=src_id)).all()
+                        matching_task = None
+                        i = Instance.query.get(sop_uid)
+                        for task in tasks:
+                            if not i in task.instances:
+                                matching_task = task
+                                break
+                        
+                        if not matching_task:
+
+                            # Create a new task          
+                            logger.info('creating new task')
+                            task_id = timing.strftime('%Y%m%d%H%M%S%f')[:-2]
+
+                            # Create new Task in the database
+                            task = Task(
+                                id = task_id,
+                                started = timing,
+                                updated = timing,
+                                current_step = 'compilator',
+                                status_msg = 'receiving',
+                                step_state = 0,
+                                expected_imgs = self.instances_in_series(dataset),
+                                task_series = Series.query.get(series_uid),
+                                instances = [Instance.query.get(sop_uid)],
+                                task_source = source
+                            )
+                            db.session.add(task)
+                            logger.info(f'created new task {task}')                        
+                        else:
+                            # Append to existing series                    
+                            logger.debug(f"Appending instance {sop_uid} to task {matching_task}")
+                            matching_task.instances.append(Instance.query.get(sop_uid))
+
+                        db.session.commit()
+                        
+                    # If there are no elements in the queue and the thread has been inactive for 5 seconds, check
+                    # tasks status
+                    elif inactive_time >= 5:
+
+                        logger.debug(f"Inactive, checking tasks status...")
+                        # Reset inactivity timer
+                        inactive_time = 0
+                        for task in Task.query.filter((Task.current_step == 'compilator')&(Task.step_state==0)).all():
+                            
+                            # Check task status
+                            datasets, recon_settings = self.fetch_task_data(task.id)
+                            status = self.task_status(datasets, 
+                                                    task.expected_imgs, 
+                                                    task.updated)
+                            if status == 'abort':
+                                logger.info(f"Task {task.id} timed out")
+                                task.status_msg = "Failed - timed out"
+                                task.step_state = -1                        
+                            
+                            elif status == 'wait':
+                                logger.info(f"Waiting for task {task.id} with {len(task.instances)} instances to complete.")
+
+                            elif status == 'completed':
+
+                                # From task_data, keep the required for the next step only
+                                recon_settings = self.summarize_data(recon_settings, datasets)
+                                
+                                # Write task_data to the database and pass the task to the next step
+                                task.recon_settings = recon_settings.to_json()
+                                task.current_step = self.next_step
+                                task.step_state = 1
+                                logger.info(f"Task {task.id} completed.")                       
+                        
+                        db.session.commit()
+                    else:
+                        sleep(1)
+                        inactive_time += 1     
+            except Exception as e:
+                logger.error("error in main loop.")
+                logger.error(repr(e))
                             
 
     def task_status(self, datasets, n_imgs, last_received):

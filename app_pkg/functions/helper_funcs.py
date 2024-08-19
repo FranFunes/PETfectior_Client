@@ -16,7 +16,7 @@ def process(task_id):
         task = Task.query.get(task_id)
         config = AppConfig.query.first()
         zip_filename = os.path.join(config.shared_mount_point,'to_process',task.id + '_' + config.client_id + '.zip')        
-        unzip_folder = os.path.join('temp',task.id)
+        unzip_folder = os.path.join('temp_process',task.id)
         os.makedirs(unzip_folder, exist_ok=True)
         unpack_archive(zip_filename, unzip_folder)
         voxels_file = os.path.join(unzip_folder, 'voxels.npy')
@@ -33,7 +33,7 @@ def process(task_id):
         archive_name = os.path.join(config.shared_mount_point,'processed',task.id + '_' + config.client_id)        
         make_archive(archive_name, 'zip', unzip_folder)
 
-        rmtree('temp')
+        rmtree('temp_process')
         os.remove(zip_filename)
 
         # Flag step as completed     

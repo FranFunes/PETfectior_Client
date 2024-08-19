@@ -26,16 +26,16 @@ def db_create_update_patient(ds: Dataset) -> Patient:
     db.session.commit()
     return patient
 
-def db_create_update_study(ds: Dataset) -> Study:
+def db_create_update_study(ds: Dataset, path:str = None) -> Study:
 
     uid = ds.StudyInstanceUID
     study = Study.query.get(uid)
 
     if not study:
         logger.info('creating new study.')
-        # Check if patient already exists and create it if not
-        patient = Patient.query.get(ds.PatientID) or db_create_update_patient(ds)
-        study = Study(StudyInstanceUID = uid, patient = patient)
+        # Find corresponding patient or create it if it doesn't exist
+        patient = db_create_update_patient(ds)
+        study = Study(StudyInstanceUID = uid, patient = patient, stored_in = path)
         db.session.add(study)
         
     if 'StudyDate' in ds:
@@ -54,17 +54,18 @@ def db_create_update_study(ds: Dataset) -> Study:
 
     return study
     
-def db_create_update_series(ds: Dataset) -> Series:
+def db_create_update_series(ds: Dataset, path:str = None) -> Series:
 
     uid = ds.SeriesInstanceUID
     series = Series.query.get(uid)
     
     if not series:
         logger.info('creating new series.')
-        # Check if patient and study already exist or create them if not
-        patient = Patient.query.get(ds.PatientID) or db_create_update_patient(ds)
-        study = Study.query.get(ds.StudyInstanceUID) or db_create_update_study(ds)
-        series = Series(SeriesInstanceUID = uid, patient = patient, study = study)
+        # Find corresponding patient and study
+        # or create them if they don't exist
+        patient = db_create_update_patient(ds)
+        study = db_create_update_study(ds, os.path.dirname(path))
+        series = Series(SeriesInstanceUID = uid, patient = patient, study = study, stored_in = path)
         db.session.add(series)
 
     if not series.SeriesDate and 'SeriesDate' in ds and 'SeriesTime' in ds:
@@ -93,10 +94,12 @@ def db_create_instance(ds: Dataset, filename: str) -> Instance:
     if instance is not None:
         logger.error('instance already exists.')
         raise ValueError("This instance already exists")
-    # Check if patient, study and series already exist or create them if not
+    
+    # Find corresponding patient, study and series
+    # or create them if they don't exist
     patient = db_create_update_patient(ds)
-    study = db_create_update_study(ds)
-    series = db_create_update_series(ds)
+    study = db_create_update_study(ds, os.path.dirname(os.path.dirname(filename)))
+    series = db_create_update_series(ds, os.path.dirname(filename))
     instance = Instance(SOPInstanceUID = uid, 
                         SOPClassUID = uid_class,
                         filename = filename,
@@ -161,22 +164,22 @@ def store_dataset(ds, root_dir):
 
     # Check if instance already exists    
     instance = Instance.query.get(ds.SOPInstanceUID)
+    
     # If instance already exists, don't store it, and update parents only
     if instance:
         logger.debug('instance already exists. Ignoring')
         db_create_update_patient(ds)
         db_create_update_study(ds)
         db_create_update_series(ds)
-
         return 1
     else:
         logger.debug('adding instance to database')
-        # Try to store dataset in disk
+        # Construct an unique fname for each dataset received
         filedir = os.path.join(root_dir, 
                             ds.StudyInstanceUID,
                             ds.SeriesInstanceUID)
+        # Try to store dataset in disk
         os.makedirs(filedir, exist_ok = True)
-        # Construct an unique fname for each dataset received
         filepath = os.path.join(filedir, ds.SOPInstanceUID)
         try:
             ds.save_as(filepath, write_like_original = False)

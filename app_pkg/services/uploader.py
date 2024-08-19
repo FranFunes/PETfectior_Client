@@ -116,13 +116,13 @@ class SeriesUploader():
                         task.step_state = -1
                     else:
                         # If upload was succesful, delete file and send a message to the server                    
-                        logger.info(f"Upload successful for task {task.id}")
+                        logger.info(f"copied {filename} to {os.path.join(config.shared_mount_point, 'to_process')} for task {task.id}")
                         task.status_msg = 'upload ok'
                         db.session.commit()
                         try:                                                        
                             assert self.send_message(basename, task.recon_settings, config)
-                            task.status_msg = 'processing'
                             os.remove(filename)
+                            task.status_msg = 'processing'
                             logger.info('commit to server ok')
                             logger.info(f"File {filename} deleted")
                         except Exception as e:
