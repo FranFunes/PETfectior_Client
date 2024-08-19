@@ -10,7 +10,7 @@ $(document).ready(function () {
             title: 'State',
             render: function(data, type, row) {
                 if (row.status === 'failed') {
-                    return data + ' <i class="fa fa-search" title="More details"></i>';
+                    return data + ' <i class="fa fa-search" title="More details" style="cursor: pointer;"></i>';
                 }
                 return data;
             }
@@ -74,8 +74,6 @@ $(document).ready(function () {
             setTimeout(refreshTable, 2000)    
         });
     }
-    
-    
 
     // Add buttons functionality
     $('.task-action').on('click', function() {
