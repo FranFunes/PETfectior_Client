@@ -119,11 +119,15 @@ class SeriesDownloader():
                     except FileNotFoundError as e:
                         logger.error('Download error: file ' + fpath + ' not found')
                         task.status_msg = 'download failed'
+                        task.full_status_msg = """Download error file: the application didn't receive the expected results file from
+                        the remote processing server. Check Downloader error logs for more details."""
                         task.step_state = -1                        
                     except Exception as e:
                         logger.error('Unknown error during download')
                         logger.error(repr(e))
                         task.status_msg = 'download failed'
+                        task.full_status_msg = """Download error file: an unknown error occured while the application was downloading the results file from
+                        the remote processing server. Full error details: \n\n """ + repr(e)
                         task.step_state = -1
                     else:                    
                         # If download was successful, flag step as completed

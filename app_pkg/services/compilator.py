@@ -182,28 +182,38 @@ class Compilator():
                         for task in Task.query.filter((Task.current_step == 'compilator')&(Task.step_state==0)).all():
                             
                             # Check task status
-                            datasets, recon_settings = self.fetch_task_data(task.id)
-                            status = self.task_status(datasets, 
-                                                    task.expected_imgs, 
-                                                    task.updated)
-                            if status == 'abort':
-                                logger.info(f"Task {task.id} timed out")
-                                task.status_msg = "Failed - timed out"
-                                task.step_state = -1                        
-                            
-                            elif status == 'wait':
-                                logger.info(f"Waiting for task {task.id} with {len(task.instances)} instances to complete.")
-
-                            elif status == 'completed':
-
-                                # From task_data, keep the required for the next step only
-                                recon_settings = self.summarize_data(recon_settings, datasets)
+                            try:
+                                datasets, recon_settings = self.fetch_task_data(task.id)
+                            except Exception as e:
+                                logger.error(f"fetch_task_data failed for task {task.id}")
+                                logger.error(repr(e))
+                                task.status_msg = 'Failed - task data not found'
+                                task.full_status_msg = """The original DICOM files of this task were not found. Please delete
+                                the task and start it again by sending the original DICOM series from the remote device."""
+                                task.step_state = -1    
+                            else:
+                                status, msg = self.task_status(datasets, 
+                                                        task.expected_imgs, 
+                                                        task.updated)
+                                if status == 'abort':
+                                    logger.info(f"Task {task.id} timed out")
+                                    task.status_msg = 'Failed - timed out'
+                                    task.full_status_msg = msg
+                                    task.step_state = -1                        
                                 
-                                # Write task_data to the database and pass the task to the next step
-                                task.recon_settings = recon_settings.to_json()
-                                task.current_step = self.next_step
-                                task.step_state = 1
-                                logger.info(f"Task {task.id} completed.")                       
+                                elif status == 'wait':
+                                    logger.info(f"Waiting for task {task.id} with {len(task.instances)} instances to complete.")
+
+                                elif status == 'completed':
+
+                                    # From task_data, keep the required for the next step only
+                                    recon_settings = self.summarize_data(recon_settings, datasets)
+                                    
+                                    # Write task_data to the database and pass the task to the next step
+                                    task.recon_settings = recon_settings.to_json()
+                                    task.current_step = self.next_step
+                                    task.step_state = 1
+                                    logger.info(f"Task {task.id} completed.")                       
                         
                         db.session.commit()
                     else:
@@ -239,41 +249,33 @@ class Compilator():
         if n_imgs and n_imgs == len(datasets):
             if n_imgs >= min_instances:
                 logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances completed by n_imgs criteria.")
-                status = 'completed'
+                return 'completed', ''
             elif series_timed_out:
+                msg = f"""Only {len(datasets)} images were received after a waiting period of {timeout} seconds. 
+                Only series with {min_instances} or more images can be processed."""
                 logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances doesn't meet minimum instances criteria and waiting period has expired.")
-                status = 'abort'
+                return 'abort', msg
             else:
                 logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances doesn't meet minimum instances criteria, but we can wait for more instances.")
-                status = 'wait'
-            
-        elif self.check_for_contiguity(datasets):
-
-            logger.info(f"series {datasets[0].SeriesInstanceUID} meets contiguity criteria.")
-
-            if series_timed_out:
-                if len(datasets) >= min_instances:
-                    logger.info(f"series {datasets[0].SeriesInstanceUID} completed by contiguity criteria.")
-                    status = 'completed'
-                else:
-                    logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances doesn't meet minimum instances criteria and waiting period has expired.")
-                    status = 'abort'
+                return 'wait', ''
+        
+        if series_timed_out:
+            if len(datasets) <  min_instances:
+                logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances doesn't meet minimum instances criteria and waiting period has expired.")
+                msg = f"""Only {len(datasets)} images were received after a waiting period of {timeout} seconds. Only series with {min_instances}
+                or more images can be processed."""
+                return 'abort', msg            
+            if self.check_for_contiguity(datasets):
+                logger.info(f"series {datasets[0].SeriesInstanceUID} completed by contiguity criteria.")
+                return 'completed',''
             else:
-                if len(datasets) >= min_instances:
-                    logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances meets minimum instances criteria, but we can wait for more instances.")
-                else:
-                    logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances doesn't meet minimum instances criteria, but we can wait for more instances.")
-                status = 'wait'
-
-        else:
-            if series_timed_out:
+                msg = f"""The series can't be processed because separation between consecutive slices
+                is greater than {config.slice_gap_tolerance} (or there are missing slices)"""
                 logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances didn't meet contiguity criteria and waiting period has expired.")
-                status = 'abort'
-            else:
-                logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances doesn't meet contiguity criteria but we can wait for more instances.")
-                status = 'wait'
-
-        return status
+                return 'abort', msg
+        else:            
+            logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} waiting for more instances.")      
+            return 'wait', ''
     
     def check_for_contiguity(self, datasets):
 

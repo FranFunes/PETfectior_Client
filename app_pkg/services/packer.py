@@ -149,7 +149,9 @@ class SeriesPacker():
                         logger.info(f'compressing failed for task {task.id}')
                         logger.error(repr(e))
                         task.status_msg = 'compression failed'
-                        task.step_state = -1    
+                        task.step_state = -1
+                        task.full_status_msg = """An unknown error ocurred while trying to compress image data to send to the
+                        remote processing server. Full error message follows: \n\n""" + repr(e)    
                                     
                     db.session.commit()
                 else:   

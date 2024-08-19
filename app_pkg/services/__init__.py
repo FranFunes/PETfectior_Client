@@ -110,6 +110,9 @@ if app_config_available:
             for task in Task.query.filter_by(step_state = 0).all():
                 task.step_state = -1
                 task.status_msg = 'aborted - app reset'
+                task.full_status_msg = """The application restarted while this task was in progress. 
+                You can restart it from the begging or from the last succesful step (use restart or 
+                retry last step buttons)"""
                 db.session.commit()
 
         # Start services (except by Server Monitor)

@@ -124,17 +124,24 @@ class Validator():
                     if not destinations:
                         logger.error(f"task {task.id} destination is unknown.")
                         task.status_msg = 'failed - no destination'
-                        task.step_state = -1                        
+                        task.step_state = -1
+                        task.full_status_msg = """The processing for this task can't continue because there are no destinations
+                        set for the resulting series. Please check remote DICOM devices configuration and make sure that at least
+                        one device is marked as destination, or the mirror mode is active and the source device of this task's
+                        series is known to PETfectior."""                         
                     else:
                         for dest in destinations:
                             if not dest in task.destinations:
                                 task.destinations.append(dest)
                         # Check if dicom information is complete
                         recon_settings = Dataset.from_json(task.recon_settings)
-                        if not self.check_dicom_parameters(recon_settings):
+                        valid, msg = self.check_dicom_parameters(recon_settings)
+                        if not valid:
                             logger.info(f"task {task.id} completed but there is missing dicom information.")
                             task.status_msg = 'failed - missing info'
-                            task.step_state = -1                            
+                            task.step_state = -1    
+                            task.full_status_msg = """The processing for this task can't continue because there is missing
+                            or invalid information in the DICOM header. """ + msg                            
                         else:
                             # Check if a model exists in the remote processing server for this model                            
                             try:
@@ -142,7 +149,11 @@ class Validator():
                             except AssertionError:                            
                                 logger.error(f"task {task.id} completed but no model found for these recon settings: {recon_settings.to_json()}")
                                 task.status_msg = 'failed - no model'
-                                task.step_state = -1  
+                                task.step_state = -1    
+                                task.full_status_msg = """The remote processing server rejected this task. Possible causes:\n
+                                                        \t  - There are no processing algorithms trained for these reconstruction settings or radiopharmaceutical.
+                                                        \t  - You don't have an active license
+                                                        \t  - You don't have an active license for this radiopharmaceutical."""  
                             except ConnectionError as e:                            
                                 logger.error(f"server connection failed.")
                                 logger.error(repr(e))
@@ -151,7 +162,8 @@ class Validator():
                             except AttributeError as e:
                                 logger.error(f"missing dicom information for task {task.id}.")
                                 logger.error(repr(e))
-                                task.status_msg = 'failed - missing info'
+                                task.status_msg = 'failed - missing info'    
+                                task.full_status_msg = """There is no connection with the remote processing server."""  
                                 task.step_state = -1                  
                             else:
                                 # Add this PET device name to the database
@@ -211,49 +223,56 @@ class Validator():
             try:
                 dataset[field]
             except:
-                logger.error(field + " unavailable")
-                return False
+                msg = field + " unavailable"
+                logger.error(msg)
+                return False, msg
         try:
             dataset.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical
         except:
-            logger.error("Radiopharmaceutical unavailable")
-            return False
+            msg = "Radiopharmaceutical unavailable"
+            logger.error(msg)
+            return False, msg
         
         try:
             assert dataset.Manufacturer in ['SIEMENS','GE MEDICAL SYSTEMS']
         except:
-            logger.error(dataset.Manufacturer + " not valid")
-            return False
+            msg = dataset.Manufacturer + " not valid"
+            logger.error(msg)
+            return False, msg
         
         if dataset.Manufacturer=='SIEMENS':  
             try:
                 dataset.ConvolutionKernel
             except:
-                logger.error("SIEMENS dataset does not have the ConvolutionKernel field")
-                return False  
+                msg = "SIEMENS dataset does not have the ConvolutionKernel field"
+                logger.error(msg)
+                return False, msg
             try:
                 dataset.ReconstructionMethod
             except:
-                logger.error("SIEMENS dataset does not have the ReconstructionMethod field")
-                return False                
+                msg = "SIEMENS dataset does not have the ReconstructionMethod field"
+                logger.error(msg)
+                return False, msg            
         elif dataset.Manufacturer=='GE MEDICAL SYSTEMS':        
             try:
                 dataset[0x000910B2]
             except Exception as e:
-                logger.error("GE MEDICAL SYSTEMS dataset does not have the 0x000910B2 field")
+                msg = "GE MEDICAL SYSTEMS dataset does not have the 0x000910B2 field"
+                logger.error(msg)
                 logger.error(repr(e))
-
-                return False        
+                return False, msg
             try:
                 dataset[0x000910B3]
             except:
-                logger.error("GE MEDICAL SYSTEMS dataset does not have the 0x000910B3 field")
-                return False                   
+                msg = "GE MEDICAL SYSTEMS dataset does not have the 0x000910B3 field"
+                logger.error(msg)
+                return False, msg               
             try:
                 dataset[0x000910BA]
             except:
-                logger.error("GE MEDICAL SYSTEMS dataset does not have the 0x000910BA field")
-                return False          
+                msg = "GE MEDICAL SYSTEMS dataset does not have the 0x000910BA field"
+                logger.error(msg)
+                return False, msg          
             
             if type(dataset[0x000910BA].value) == bytes:
                 isfiltered = int.from_bytes(dataset[0x000910BA].value, "little")  
@@ -263,15 +282,17 @@ class Validator():
                 try:
                     dataset[0x000910BB]
                 except:
-                    logger.error("GE MEDICAL SYSTEMS dataset is filtered and  does not have the 0x000910BB field")
-                    return False
+                    msg = "GE MEDICAL SYSTEMS dataset is filtered and  does not have the 0x000910BB field"
+                    logger.error(msg)
+                    return False, msg
                 try:
                     dataset[0x000910DC]
                 except:
-                    logger.error("GE MEDICAL SYSTEMS dataset is filtered and does not have the 0x000910DC field")
-                    return False
+                    msg = "GE MEDICAL SYSTEMS dataset is filtered and does not have the 0x000910DC field"
+                    logger.error(msg)
+                    return False, msg
         
-        return True
+        return True, ""
 
     def check_model(self, ss: Dataset) -> bool:
                 

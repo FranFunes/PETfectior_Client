@@ -114,6 +114,8 @@ class SeriesUploader():
                         logger.error(repr(e))
                         task.status_msg = 'upload failed'
                         task.step_state = -1
+                        task.full_status_msg = """An unknown error occurred while trying to uploading task data to the remote
+                        processing server. Full error message follows:\n\n""" + repr(e)   
                     else:
                         # If upload was succesful, delete file and send a message to the server                    
                         logger.info(f"copied {filename} to {os.path.join(config.shared_mount_point, 'to_process')} for task {task.id}")
@@ -130,6 +132,7 @@ class SeriesUploader():
                             logger.error(repr(e))
                             task.status_msg = 'commit to server failed'
                             task.step_state = -1
+                            task.full_status_msg = """An error occurred while trying to trigger processing on the remote server."""  
                     db.session.commit()
                 else:
                     sleep(1)
@@ -149,7 +152,7 @@ class SeriesUploader():
         try:
             post_rsp = requests.post('http://' + config.server_url + '/processing', json = data)
             assert post_rsp.json()['response'] == 'Processing'
-            logger.info(f"post to /processing on succesful.")  
+            logger.info(f"post to /processing on server succesful.")  
             return True
         except Exception as e:
             logger.error(f"post to /processing on server failed.")                
