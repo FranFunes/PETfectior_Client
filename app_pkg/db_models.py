@@ -128,8 +128,9 @@ class Task(db.Model):
     updated = db.Column(db.DateTime)
     current_step = db.Column(db.String(32))
     recon_settings = db.Column(db.Text()) # JSON
-    step_state = db.Column(db.Integer, index=True) # -1 failed, 0 processing, 1 completed
+    step_state = db.Column(db.Integer, index=True) # -1 failed, 0 processing, 1 processing, 2 completed
     status_msg = db.Column(db.Text())
+    full_status_msg = db.Column(db.Text())
     expected_imgs = db.Column(db.Integer)
     
     # One-to-many relationships (as child)

@@ -72,7 +72,9 @@ def get_tasks_table():
                 'description': t.task_series.SeriesDescription,
                 'imgs': str(len(t.instances))+ '/' + str(t.expected_imgs),
                 'started':t.started.strftime('%d/%m/%Y %H:%M:%S'),
-                'status':t.status_msg,
+                'status': {-1:'failed', 0: 'processing', 1: 'processing',2: 'completed'}[t.step_state],
+                'status_msg':t.status_msg,
+                'status_full_msg':t.full_status_msg,
                 'updated': t.updated.strftime('%d/%m/%Y %H:%M:%S'),
                 'task_id': t.id} for t in Task.query.all()]
     except Exception as e:

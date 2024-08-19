@@ -122,7 +122,9 @@ class SeriesUnpacker():
                         logger.error(f"Could not decompress file {filename}")
                         logger.error(repr(e))
                         task.status_msg = 'decompression failed'     
-                        task.step_state = -1                   
+                        task.step_state = -1
+                        task.full_status_msg = """An unknown error ocurred while trying to decompress image data sent by the
+                        remote processing server. Full error message follows: \n\n""" + repr(e)                     
                     else:                        
                         # List decompressed files
                         filelist = os.listdir(extract_dir)
@@ -137,12 +139,16 @@ class SeriesUnpacker():
                             logger.error(f"Failed when reading {extract_dir}")
                             logger.error(repr(e))                                                        
                             task.status_msg = f"failed - .npy not found"
-                            task.step_state = -1 
+                            task.step_state = -1
+                            task.full_status_msg = """A .npy file is expected in the data sent by the server, and it was not found.
+                            Please contact support."""   
                         except Exception as e:
                             logger.error(f"Failed when filtering {extract_dir}")
                             logger.error(repr(e))                                                        
                             task.status_msg = f"failed - postfilter" 
                             task.step_state = -1
+                            task.full_status_msg = """An unknown error occurred while trying to apply postfilter to the result image.
+                            Full error message follows:\n\n""" + repr(e)   
                         else:
                             task.status_msg = 'building dicoms' 
                             db.session.commit()                            
@@ -185,7 +191,9 @@ class SeriesUnpacker():
                                 logger.info(f"{task.id}: not all expected instances stored")
                                 logger.info(f"{task.id}: expected {len(series) * len(task.instances)}, stored {stored_ok}")
                                 task.status_msg = f"failed - dicom storage failed"                             
-                                task.step_state = -1    
+                                task.step_state = -1
+                                task.full_status_msg = f"""{len(series) * len(task.instances)} resulting images were expected for this
+                                task, but only {stored_ok} were succesfully written to disk and database"""       
 
                     db.session.commit()
                 else:

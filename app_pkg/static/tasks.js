@@ -1,42 +1,59 @@
 $(document).ready(function () {
 
     var tasks_table = $('#tasks').DataTable({
-        ajax: "/get_tasks_table", 
-        columns: [            
-            { data: 'PatientName', title: 'Patient' }, 
-            { data: 'StudyDate', title: 'Date', type: 'date' }, 
-            { data: 'status', title: 'State' },
-            { data: 'source', title: 'Source' },
-            { data: 'destinations', title: 'Destinations' },
-            { data: 'description', title: 'Series' },
-            { data: 'imgs', title: 'Imgs' },
-            { data: 'started', title: 'Started' },
-            { data: 'updated', title: 'Last update' },         
-            { data: 'task_id', title: 'Task ID' }
-        ],
-        order: [[9, 'desc']],
-        language: {
-            search: 'Buscar',
-            url: 'https://cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json',
-            emptyTable: "<br><br>",
-            processing: " ",
+    ajax: "/get_tasks_table", 
+    columns: [            
+        { data: 'PatientName', title: 'Patient' }, 
+        { data: 'StudyDate', title: 'Date', type: 'date' }, 
+        { 
+            data: 'status_msg', 
+            title: 'State',
+            render: function(data, type, row) {
+                if (row.status === 'failed') {
+                    return data + ' <i class="fa fa-search" title="More details" style="cursor: pointer;"></i>';
+                }
+                return data;
+            }
         },
-        processing:     false,
-        paging:         false,
-        scrollX:        true,  
-        scrollY:        '500px',
-        searching:      false,
-        info:           false,
-        select:         {
-                            style: 'single',
-                            selector: 'td',
-                            info: false,
-                        },
-        initComplete: function () {
-            setTimeout(refreshTable, 5000) 
-        }
-                        
-    });
+        { data: 'source', title: 'Source' },
+        { data: 'destinations', title: 'Destinations' },
+        { data: 'description', title: 'Series' },
+        { data: 'imgs', title: 'Imgs' },
+        { data: 'started', title: 'Started' },
+        { data: 'updated', title: 'Last update' },         
+        { data: 'task_id', title: 'Task ID' }
+    ],
+    order: [[9, 'desc']],
+    language: {
+        search: 'Buscar',
+        url: 'https://cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json',
+        emptyTable: "<br><br>",
+        processing: " ",
+    },
+    processing:     false,
+    paging:         false,
+    scrollX:        true,  
+    scrollY:        '500px',
+    searching:      false,
+    info:           false,
+    select:         {
+                        style: 'single',
+                        selector: 'td',
+                        info: false,
+                    },
+    initComplete: function () {
+
+        // Add click event for showing error details
+        $('#tasks tbody').on('click', 'i.fa-search', function() {
+            var data = tasks_table.row($(this).closest('tr')).data();
+            $('#errorMsg').text(data.status_full_msg);
+            $('#errorDetailsModal').modal('show');
+        });
+
+        refreshTable()
+    }                        
+});
+
     
     // Auto refresh, keeping selected rows and scrolling position
 
@@ -54,11 +71,9 @@ $(document).ready(function () {
                 tasks_table.row(element).select();                
             })
             scrollingContainer.scrollTop(scrollTop);
-            setTimeout(refreshTable, 5000)    
+            setTimeout(refreshTable, 2000)    
         });
     }
-    
-    
 
     // Add buttons functionality
     $('.task-action').on('click', function() {
