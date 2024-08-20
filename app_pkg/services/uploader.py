@@ -238,7 +238,7 @@ class SeriesUploader():
                 'StudyInstanceUID': task.task_series.study.StudyInstanceUID,
                 'SeriesInstanceUID': task.series,
                 'StudyDate': task.task_series.study.StudyDate.strftime("%Y-%m-%d"),
-                'SeriesTime': task.task_series.SeriesDate.strftime('%Y%m%d'),
+                'SeriesTime': task.task_series.SeriesDate.strftime('%H:%M:%S'),
                 'weight': task.task_series.study.PatientWeight,
                 'height': task.task_series.study.PatientSize,
                 'age': task.task_series.study.PatientAge

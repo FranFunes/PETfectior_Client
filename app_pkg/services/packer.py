@@ -118,8 +118,8 @@ class SeriesPacker():
                             'StudyInstanceUID': task.task_series.study.StudyInstanceUID,
                             'SeriesInstanceUID': task.series,
                             'SeriesNumber': task.task_series.SeriesNumber,
-                            'SeriesDate': task.task_series.SeriesDate.strftime('%Y%m%d'),
-                            'SeriesTime': task.task_series.SeriesDate.strftime('%H%M%S'),
+                            'SeriesDate': task.task_series.SeriesDate.strftime('%Y-%m-%d'),
+                            'SeriesTime': task.task_series.SeriesDate.strftime('%H:%M:%S'),
                             'sha256':get_checksum(os.path.join('temp_series_packer', 'voxels.npy'), algorithm="SHA256")
                         }
                         with open(os.path.join("temp_series_packer", "metadata.json"), "w") as jsonfile:  
