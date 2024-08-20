@@ -1,5 +1,5 @@
 import threading, logging, os, requests
-from requests import ConnectionError
+from requests import ConnectionError, JSONDecodeError
 from time import sleep
 from datetime import datetime
 from pydicom import Dataset
@@ -156,14 +156,32 @@ class Validator():
                             except ConnectionError as e:                            
                                 logger.error(f"server connection failed.")
                                 logger.error(repr(e))
-                                task.status_msg = 'failed - server connection'
+                                task.status_msg = 'failed - server connection'    
+                                task.full_status_msg = """There is no connection with the remote processing server.
+                                Please check the internet connection from the device where this applications runs.
+                                If it is ok and this message still appears, please contact support."""
+                                task.step_state = -1
+                            except JSONDecodeError as e:                            
+                                logger.error(f"the server returned an incorrect JSON object during /check_model.")
+                                logger.error(repr(e))
+                                task.status_msg = 'failed - server response'    
+                                task.full_status_msg = """The remote processing server sent a message that couldn't
+                                be understood. Please contact support."""
                                 task.step_state = -1
                             except AttributeError as e:
                                 logger.error(f"missing dicom information for task {task.id}.")
                                 logger.error(repr(e))
                                 task.status_msg = 'failed - missing info'    
                                 task.full_status_msg = """There is no connection with the remote processing server."""  
-                                task.step_state = -1                  
+                                task.step_state = -1   
+                            except Exception as e:
+                                logger.error(f"uknown error during check_model.")                                
+                                logger.error(repr(e))
+                                task.status_msg = 'failed - server interaction'    
+                                task.full_status_msg = """An unknown error occurred when checking the task data with
+                                the remote processing server. Please contact support."""  
+                                task.step_state = -1   
+
                             else:
                                 # Add this PET device name to the database
                                 names = [m.name for m in PetModel.query.all()]
