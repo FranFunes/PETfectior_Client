@@ -352,6 +352,7 @@ class Validator():
         post_rsp = requests.post('http://' + c.server_url + '/check_model', json = data)
 
         messages = {
+            "Ok": "The task has been validated by the server",
             "Radiopharmaceutical Inactive": f"""You don't have an active license for the radiopharmaceutical 
                                                 {ss.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical}""",
             "Client Inactive": "You don't have an active license",
