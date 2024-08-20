@@ -148,9 +148,9 @@ class Validator():
                                 assert model_available
                             except AssertionError:                            
                                 logger.error(f"server rejected the task {task.id}: " + message)
-                                task.status_msg = 'failed - no model'
+                                task.status_msg = 'fail - rejected'
                                 task.step_state = -1    
-                                task.full_status_msg = "The remote processing server rejected this task for this reason:" + message
+                                task.full_status_msg = "The remote processing server rejected this task for this reason:\n" + message
                             except ConnectionError as e:                            
                                 logger.error(f"server connection failed.")
                                 logger.error(repr(e))
@@ -352,10 +352,12 @@ class Validator():
         post_rsp = requests.post('http://' + c.server_url + '/check_model', json = data)
 
         messages = {
-            "Radiopharmaceutical Inactive": "You don't have an active license for this radiopharmaceutical",
+            "Radiopharmaceutical Inactive": f"""You don't have an active license for the radiopharmaceutical 
+                                                {ss.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical}""",
             "Client Inactive": "You don't have an active license",
-            "Not avialable Model": """There are no processing algorithms
-                                        trained for these reconstruction settings or radiopharmaceutical."""
+            "Not avialable Model": f"""There are no processing algorithms
+                                        trained for these reconstruction settings 
+                                        or radiopharmaceutical {ss.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical}."""
         }
 
         return post_rsp.json()['response'], messages[post_rsp.json()['reason']]
