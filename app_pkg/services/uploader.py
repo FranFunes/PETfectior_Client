@@ -214,7 +214,11 @@ class SeriesUploader():
         series_date = task.task_series.SeriesDate
         rf_start_time = getattr(ss.RadiopharmaceuticalInformationSequence[0],
                                                  'RadiopharmaceuticalStartTime', '')
-        rf_start_time = datetime.strptime(rf_start_time, "%H%M%S")
+        try:
+            rf_start_time = datetime.strptime(rf_start_time, "%H%M%S")
+        except ValueError:
+            rf_start_time = datetime.strptime(rf_start_time, "%H%M%S.%f")
+        
         if rf_start_time:
             radiopharmaceutical_start = series_date.strftime("%Y-%m-%d") + ' ' + rf_start_time.strftime("%H:%M:%S")
         else:
