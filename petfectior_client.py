@@ -1,9 +1,15 @@
+# Load environment variables
+from dotenv import load_dotenv
+load_dotenv()
+
 import signal, logging, os, sys
 from app_pkg import application
 from app_pkg.db_models import AppConfig
 from app_pkg.services import services
 
 logger = logging.getLogger('__main__')
+
+
 if os.getenv('FLASK_HTTP_LOGGGING') == 'False':
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)

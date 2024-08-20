@@ -1,7 +1,11 @@
+# Load environment variables
+from dotenv import load_dotenv
+load_dotenv()
+
+import os
 from app_pkg import application, db
 from app_pkg.db_models import User, Study, Series
 from app_pkg.functions.task_actions import clear_database
-import os
 
 with application.app_context():
     u = User.query.first()

@@ -1,10 +1,9 @@
 from pynetdicom import AE
 from pynetdicom.sop_class import PositronEmissionTomographyImageStorage
-from pydicom import dcmread
 from pydicom.dataset import Dataset
-import os, threading, logging, json
+import threading, logging
 from time import sleep
-from typing import List, Union, Callable
+from typing import List, Union
 from pathlib import Path
 
 from app_pkg import application, db

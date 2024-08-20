@@ -1,5 +1,3 @@
-from app_pkg import application, db
-from app_pkg.db_models import AppLog
 import logging, os
 from logging.handlers import RotatingFileHandler
 

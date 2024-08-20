@@ -1,8 +1,7 @@
-import json, threading, logging, os, requests
+import threading, logging, os, requests
 from requests import ConnectionError
 from time import sleep
 from datetime import datetime
-import numpy as np
 from pydicom import Dataset
 
 from typing import List
@@ -236,7 +235,7 @@ class Validator():
         try:
             assert dataset.Manufacturer in ['SIEMENS','GE MEDICAL SYSTEMS']
         except:
-            msg = dataset.Manufacturer + " not valid"
+            msg = dataset.Manufacturer + " manufacturer is not supported"
             logger.error(msg)
             return False, msg
         

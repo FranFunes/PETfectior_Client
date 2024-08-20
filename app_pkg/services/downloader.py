@@ -1,4 +1,4 @@
-import logging, threading, os, json
+import logging, threading, os
 from time import sleep
 from shutil import copy
 from app_pkg import application, db
