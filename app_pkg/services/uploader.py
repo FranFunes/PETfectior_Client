@@ -233,7 +233,7 @@ class SeriesUploader():
                 'SliceThickness': ss.SliceThickness,
                 'Radiofarmaco': getattr(ss.RadiopharmaceuticalInformationSequence[0],'Radiopharmaceutical',''),
                 'HalfLife': float(getattr(ss.RadiopharmaceuticalInformationSequence[0],'RadionuclideHalfLife',0)),
-                'radiopharmaceutical_dose': float(getattr(ss.RadiopharmaceuticalInformationSequence[0],'RadionuclideTotalDose', 0)),
+                'radiopharmaceutical_dose': round(float(getattr(ss.RadiopharmaceuticalInformationSequence[0],'RadionuclideTotalDose', 0)) / 37000000, 2),
                 'radiopharmaceutical_start': radiopharmaceutical_start,
                 'StudyInstanceUID': task.task_series.study.StudyInstanceUID,
                 'SeriesInstanceUID': task.series,
