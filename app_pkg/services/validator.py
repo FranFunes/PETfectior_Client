@@ -144,15 +144,13 @@ class Validator():
                         else:
                             # Check if a model exists in the remote processing server for this model                            
                             try:
-                                assert self.check_model(recon_settings)
+                                model_available, message = self.check_model(recon_settings)
+                                assert model_available
                             except AssertionError:                            
-                                logger.error(f"task {task.id} completed but no model found for these recon settings: {recon_settings.to_json()}")
+                                logger.error(f"server rejected the task {task.id}: " + message)
                                 task.status_msg = 'failed - no model'
                                 task.step_state = -1    
-                                task.full_status_msg = """The remote processing server rejected this task. Possible causes:\n
-                                                        \t  - There are no processing algorithms trained for these reconstruction settings or radiopharmaceutical.
-                                                        \t  - You don't have an active license
-                                                        \t  - You don't have an active license for this radiopharmaceutical."""  
+                                task.full_status_msg = "The remote processing server rejected this task for this reason:" + message
                             except ConnectionError as e:                            
                                 logger.error(f"server connection failed.")
                                 logger.error(repr(e))
@@ -161,19 +159,20 @@ class Validator():
                                 Please check the internet connection from the device where this applications runs.
                                 If it is ok and this message still appears, please contact support."""
                                 task.step_state = -1
-                            except JSONDecodeError as e:                            
+                            except (JSONDecodeError, KeyError) as e:                           
                                 logger.error(f"the server returned an incorrect JSON object during /check_model.")
                                 logger.error(repr(e))
                                 task.status_msg = 'failed - server response'    
                                 task.full_status_msg = """The remote processing server sent a message that couldn't
                                 be understood. Please contact support."""
-                                task.step_state = -1
+                                task.step_state = -1 
                             except AttributeError as e:
                                 logger.error(f"missing dicom information for task {task.id}.")
                                 logger.error(repr(e))
                                 task.status_msg = 'failed - missing info'    
-                                task.full_status_msg = """There is no connection with the remote processing server."""  
-                                task.step_state = -1   
+                                task.full_status_msg = """The processing for this task can't continue because there is missing
+                                or invalid information in the DICOM header. """  
+                                task.step_state = -1 
                             except Exception as e:
                                 logger.error(f"uknown error during check_model.")                                
                                 logger.error(repr(e))
@@ -319,8 +318,7 @@ class Validator():
             subset_index = recon_method.find('s')
             space_index = recon_method.find(' ')
             iterations = int(recon_method[space_index+1:iterations_index])
-            subsets = int(recon_method[iterations_index+1:subset_index])
-            
+            subsets = int(recon_method[iterations_index+1:subset_index])            
         elif ss.Manufacturer == 'GE MEDICAL SYSTEMS':
             if type(ss[0x000910B2].value) == bytes:
                 iterations = int.from_bytes(ss[0x000910B2].value, "little")  
@@ -335,25 +333,29 @@ class Validator():
             logger.info(f"no models for manufacturer {ss.Manufacturer}")      
             return False
         
+        c = AppConfig.query.first()
         data = {
-                'ManufacturerModelName': str(ss.ManufacturerModelName),
-                'ReconstructionMethod': str(ss.ReconstructionMethod),
-                'Iteraciones': iterations,
-                'Subsets': subsets,
-                'VoxelSpacing': str(ss.PixelSpacing),
-                'SliceThickness': ss.SliceThickness,
-                'Radiofarmaco': ss.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical,
-                'HalfLife': ss.RadiopharmaceuticalInformationSequence[0].RadionuclideHalfLife
-            }           
+                "id_client": c.client_id,
+                "ManufacturerModelName": str(ss.ManufacturerModelName),
+                "ReconstructionMethod": str(ss.ReconstructionMethod),
+                "Iteraciones": iterations,
+                "Subsets": subsets,
+                "VoxelSpacing": str(ss.PixelSpacing),
+                "SliceThickness": ss.SliceThickness,
+                "Radiofarmaco": ss.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical,
+                "HalfLife": ss.RadiopharmaceuticalInformationSequence[0].RadionuclideHalfLife
+        }        
 
-        if not os.environ["SERVER_INTERACTION"] == "True":
+        if not os.getenv["SERVER_INTERACTION"] == "True":
             return True
     
-        server_url = AppConfig.query.first().server_url
-        post_rsp = requests.post('http://' + server_url + '/check_model', json = data)
-        if not post_rsp.json()['response']:
-            logger.error(f"model not found.")   
-            return False             
-        else:
-            logger.info(f"model found.")  
-            return True       
+        post_rsp = requests.post('http://' + c.server_url + '/check_model', json = data)
+
+        messages = {
+            "Radiopharmaceutical Inactive": "You don't have an active license for this radiopharmaceutical",
+            "Client Inactive": "You don't have an active license",
+            "Not avialable Model": """There are no processing algorithms
+                                        trained for these reconstruction settings or radiopharmaceutical."""
+        }
+
+        return post_rsp.json()['response'], messages[post_rsp.json()['reason']]
