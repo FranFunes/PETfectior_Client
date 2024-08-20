@@ -174,7 +174,7 @@ class Validator():
                                 or invalid information in the DICOM header. """  
                                 task.step_state = -1 
                             except Exception as e:
-                                logger.error(f"uknown error during check_model.")                                
+                                logger.error(f"unknown error during check_model.")                                
                                 logger.error(repr(e))
                                 task.status_msg = 'failed - server interaction'    
                                 task.full_status_msg = """An unknown error occurred when checking the task data with
@@ -346,7 +346,7 @@ class Validator():
                 "HalfLife": ss.RadiopharmaceuticalInformationSequence[0].RadionuclideHalfLife
         }        
 
-        if not os.getenv["SERVER_INTERACTION"] == "True":
+        if not os.getenv("SERVER_INTERACTION") == "True":
             return True
     
         post_rsp = requests.post('http://' + c.server_url + '/check_model', json = data)
