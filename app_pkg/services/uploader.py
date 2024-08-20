@@ -223,7 +223,12 @@ class SeriesUploader():
             radiopharmaceutical_start = series_date.strftime("%Y-%m-%d") + ' ' + rf_start_time.strftime("%H:%M:%S")
         else:
             radiopharmaceutical_start = ''
-            
+        
+        try:
+            age = int(task.task_series.study.PatientAge[1:3])
+        except:
+            age = 0
+
         data = {
                 'ManufacturerModelName': str(ss.ManufacturerModelName),
                 'ReconstructionMethod': str(ss.ReconstructionMethod),
@@ -239,9 +244,9 @@ class SeriesUploader():
                 'SeriesInstanceUID': task.series,
                 'StudyDate': task.task_series.study.StudyDate.strftime("%Y-%m-%d"),
                 'SeriesTime': task.task_series.SeriesDate.strftime('%H:%M:%S'),
-                'weight': task.task_series.study.PatientWeight,
-                'height': task.task_series.study.PatientSize,
-                'age': task.task_series.study.PatientAge
+                'weight': int(task.task_series.study.PatientWeight or 0),
+                'height': int(100*(task.task_series.study.PatientSize or 0)),
+                'age': age
             }            
 
         return data
