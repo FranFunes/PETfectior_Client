@@ -1,4 +1,4 @@
-import logging, threading, os, requests
+import logging, threading, os, requests, traceback
 from time import sleep
 from shutil import copy
 from pydicom.dataset import Dataset
@@ -56,7 +56,7 @@ class SeriesUploader():
             return f"Uploader can't start ({config.shared_mount_point} is not a valid directory or is not existent)"
         except Exception as e:
             logger.error(f"Uploader can't start ({os.path.join(config.shared_mount_point, 'to_process')} can't be created)")
-            logger.error(f"Uploader - {repr(e)}")
+            logger.error(traceback.format_exc())
             return f"Uploader can't start ({os.path.join(config.shared_mount_point, 'to_process')} can't be created)"
 
     
@@ -76,7 +76,7 @@ class SeriesUploader():
             return "Uploader stopped"
         except Exception as e:
             logger.error("Uploader could not be stopped")
-            logger.error(repr(e))
+            logger.error(traceback.format_exc())
             return "Uploader could not be stopped"
 
     def get_status(self):
@@ -112,7 +112,7 @@ class SeriesUploader():
                         copy(filename, os.path.join(config.shared_mount_point, 'to_process'))
                     except Exception as e:
                         logger.error(f"Unknown error occurred while copying {filename} to {os.path.join(config.shared_mount_point, 'to_process')}")
-                        logger.error(repr(e))
+                        logger.error(traceback.format_exc())
                         task.status_msg = 'upload failed'
                         task.step_state = -1
                         task.full_status_msg = """An unknown error occurred while trying to uploading task data to the remote
@@ -130,7 +130,7 @@ class SeriesUploader():
                             logger.info(f"File {filename} deleted")
                         except Exception as e:
                             logger.error('commit to server failed')
-                            logger.error(repr(e))
+                            logger.error(traceback.format_exc())
                             task.status_msg = 'commit to server failed'
                             task.step_state = -1
                             task.full_status_msg = """An error occurred while trying to trigger processing on the remote server."""  
@@ -157,7 +157,7 @@ class SeriesUploader():
             return True
         except Exception as e:
             logger.error(f"post to /processing on server failed.")                
-            logger.error(repr(e))
+            logger.error(traceback.format_exc())
             return False
 
     def extract_metadata(self, task: Task) -> dict:

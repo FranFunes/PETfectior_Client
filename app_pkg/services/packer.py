@@ -1,4 +1,4 @@
-import threading, logging, os, json
+import threading, logging, os, json, traceback
 from shutil import make_archive, rmtree
 from simple_file_checksum import get_checksum
 from time import sleep
@@ -68,7 +68,7 @@ class SeriesPacker():
             return "Packer stopped!"
         except Exception as e:
             logger.error("SeriesPacker stop failed")
-            logger.error(repr(e))
+            logger.error(traceback.format_exc())
             return "Packer could not be stopped!"
     
     def get_status(self):
@@ -137,7 +137,7 @@ class SeriesPacker():
                             rmtree('temp_series_packer')
                         except Exception as e:
                             logger.info('could not remove temporary folder')
-                            logger.info(repr(e))
+                            logger.info(traceback.format_exc())
                         
                         # Flag step as completed                                
                         task.current_step = self.next_step
@@ -147,7 +147,7 @@ class SeriesPacker():
 
                     except Exception as e:
                         logger.info(f'compressing failed for task {task.id}')
-                        logger.error(repr(e))
+                        logger.error(traceback.format_exc())
                         task.status_msg = 'compression failed'
                         task.step_state = -1
                         task.full_status_msg = """An unknown error ocurred while trying to compress image data to send to the

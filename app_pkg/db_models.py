@@ -1,4 +1,4 @@
-import os, logging
+import os, logging, traceback
 from shutil import rmtree
 from app_pkg import db, login
 from flask_login import UserMixin
@@ -78,7 +78,7 @@ def clear_storage(mapper, connection, target):
         rmtree(target.stored_in)
     except Exception as e:
         logger.error(f"could'n delete {target.stored_in} from storage")
-        logger.error(repr(e))
+        logger.error(traceback.format_exc())
 
 event.listen(Study, 'before_delete', clear_storage)
 event.listen(Series, 'before_delete', clear_storage)

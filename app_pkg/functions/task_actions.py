@@ -1,4 +1,4 @@
-import logging, threading, os
+import logging, threading, os, traceback
 from shutil import rmtree
 from app_pkg import application, db
 from app_pkg.db_models import Task, Patient, Study, Series, Instance
@@ -66,7 +66,7 @@ def delete_finished_background(tasks):
                     db.session.commit()        
             except Exception as e:
                 logger.error("Error occurred when trying to delete finished tasks")
-                logger.error(repr(e))    
+                logger.error(traceback.format_exc())    
         clear_database()
 
 def delete_failed():
@@ -88,7 +88,7 @@ def delete_failed_background(tasks):
                     db.session.commit()        
             except Exception as e:
                 logger.error("Error occurred when trying to delete failed tasks")
-                logger.error(repr(e))
+                logger.error(traceback.format_exc())
         clear_database()
 
 def clear_database():
@@ -103,7 +103,7 @@ def clear_database():
                 db.session.commit()
         except Exception as e:
                 logger.error(f'error when deleting empty series {ss}')
-                logger.error(repr(e))
+                logger.error(traceback.format_exc())
 
     # Clear orphan instances:
     for instance in Instance.query.filter_by(series = None).all():
@@ -113,7 +113,7 @@ def clear_database():
             db.session.commit()
         except Exception as e:
             logger.error(f'error when deleting instance {instance}')
-            logger.error(repr(e))
+            logger.error(traceback.format_exc())
     
     # Clear studies with no series
     studies = Study.query.all()
@@ -125,7 +125,7 @@ def clear_database():
                 db.session.commit()
         except Exception as e:
                 logger.error(f'error when deleting empty study {st}')
-                logger.error(repr(e))
+                logger.error(traceback.format_exc())
 
     # Clear patients with no studies
     patients = Patient.query.all()
@@ -137,7 +137,7 @@ def clear_database():
                 db.session.commit()
         except:
                 logger.error(f'error when deleting empty patient {pt}')
-                logger.error(repr(e))
+                logger.error(traceback.format_exc())
     
     # Delete files with no corresponding database objects
     clear_storage()

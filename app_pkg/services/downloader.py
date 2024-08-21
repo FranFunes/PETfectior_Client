@@ -1,4 +1,4 @@
-import logging, threading, os
+import logging, threading, os, traceback
 from time import sleep
 from shutil import copy
 from app_pkg import application, db
@@ -60,7 +60,7 @@ class SeriesDownloader():
             return f"Downloader can't start ({config.shared_mount_point} is not a valid directory or is not existent)"
         except Exception as e:
             logger.error(f"Downloader can't start ({os.path.join(config.shared_mount_point, 'processed')} can't be created)")
-            logger.error(f"Downloader - {repr(e)}")
+            logger.error(traceback.format_exc())
             return f"Downloader can't start ({os.path.join(config.shared_mount_point, 'processed')} can't be created)"
 
     
@@ -80,7 +80,7 @@ class SeriesDownloader():
             return "Downloader stopped"
         except Exception as e:
             logger.error("Downloader could not be stopped")
-            logger.error(repr(e))
+            logger.error(traceback.format_exc())
             return "Downloader could not be stopped"
 
     def get_status(self):
@@ -124,7 +124,7 @@ class SeriesDownloader():
                         task.step_state = -1                        
                     except Exception as e:
                         logger.error('Unknown error during download')
-                        logger.error(repr(e))
+                        logger.error(traceback.format_exc())
                         task.status_msg = 'download failed'
                         task.full_status_msg = """Download error file: an unknown error occured while the application was downloading the results file from
                         the remote processing server. Full error details: \n\n """ + repr(e)
@@ -141,7 +141,7 @@ class SeriesDownloader():
                             logger.info(f"{fpath} deleted from vpn shared folder")
                         except Exception as e:
                             logger.error(f"Unknown error when trying to delete {fpath} from vpn shared folder")
-                            logger.error(repr(e)) 
+                            logger.error(traceback.format_exc()) 
 
                     db.session.commit()
             

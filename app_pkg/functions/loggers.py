@@ -15,7 +15,7 @@ class CapitalizeFormatter(logging.Formatter):
         return super().format(record)
 
 def dicom_logger():
-
+    
     logger = logging.getLogger('pynetdicom')
     logger.setLevel(logging.DEBUG)
     logger.handlers = []
@@ -23,8 +23,7 @@ def dicom_logger():
     handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s; %(levelname).1s; %(message)s ')    
     handler.setFormatter(formatter)
-    logger.addHandler(handler)
-   
+    logger.addHandler(handler)   
 
 def app_logger():
 
