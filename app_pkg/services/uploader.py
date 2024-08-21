@@ -2,6 +2,7 @@ import logging, threading, os, requests
 from time import sleep
 from shutil import copy
 from pydicom.dataset import Dataset
+from datetime import datetime
 
 from app_pkg import application, db
 from app_pkg.db_models import Task, AppConfig
@@ -122,7 +123,7 @@ class SeriesUploader():
                         task.status_msg = 'upload ok'
                         db.session.commit()
                         try:                                                        
-                            assert self.send_message(basename, task.recon_settings, config)
+                            assert self.send_message(basename, task, config)
                             os.remove(filename)
                             task.status_msg = 'processing'
                             logger.info('commit to server ok')
@@ -137,17 +138,17 @@ class SeriesUploader():
                 else:
                     sleep(1)
 
-    def send_message(self, filename, metadata, config):
+    def send_message(self, filename, task, config):
         
         if not os.environ["SERVER_INTERACTION"] == "True":
             return True                        
                 
         # Send the post
         data = {
-            'input_file': filename,
-            'client_port':os.environ["FLASK_RUN_PORT"],  
-            'client_id': config.client_id,
-            'metadata': self.parse_metadata(metadata)
+            "input_file": filename,
+            "client_port": os.environ["FLASK_RUN_PORT"],
+            "client_id": config.client_id,
+            "metadata": self.extract_metadata(task)
         }
         try:
             post_rsp = requests.post('http://' + config.server_url + '/processing', json = data)
@@ -159,12 +160,12 @@ class SeriesUploader():
             logger.error(repr(e))
             return False
 
-    def parse_metadata(self, ss: Dataset) -> dict:
+    def extract_metadata(self, task: Task) -> dict:
 
         """
         
-        Esta función toma un pydicom.dataset (o su versión json serializada) y devuelve
-        un diccionario con las siguientes keys:
+        Esta función toma extrae de la tarea almacenada en la base de datos, 
+        los siguientes campos, y genera un json para pasar al server:
 
         'ManufacturerModelName'
         'ReconstructionMethod'
@@ -174,10 +175,19 @@ class SeriesUploader():
         'SliceThickness'
         'Radiofarmaco'
         'HalfLife'
+        'StudyInstanceUID'
+        'SeriesInstanceUID'
+        'StudyDate'
+        'SeriesTime'
+        'radiopharmaceutical_dose'
+        'radiopharmaceutical_start'
+        'weight'
+        'height'
+        'age'
 
         """
-        if type(ss == str):
-            ss = Dataset.from_json(ss)
+        
+        ss = Dataset.from_json(task.recon_settings)
 
         if ss.Manufacturer == 'SIEMENS':
             recon_method = ss.ReconstructionMethod
@@ -201,6 +211,24 @@ class SeriesUploader():
         else:        
             raise ValueError('Fabricante desconocido')
         
+        series_date = task.task_series.SeriesDate
+        rf_start_time = getattr(ss.RadiopharmaceuticalInformationSequence[0],
+                                                 'RadiopharmaceuticalStartTime', '')
+        try:
+            rf_start_time = datetime.strptime(rf_start_time, "%H%M%S")
+        except ValueError:
+            rf_start_time = datetime.strptime(rf_start_time, "%H%M%S.%f")
+        
+        if rf_start_time:
+            radiopharmaceutical_start = series_date.strftime("%Y-%m-%d") + ' ' + rf_start_time.strftime("%H:%M:%S")
+        else:
+            radiopharmaceutical_start = ''
+        
+        try:
+            age = int(task.task_series.study.PatientAge[1:3])
+        except:
+            age = 0
+
         data = {
                 'ManufacturerModelName': str(ss.ManufacturerModelName),
                 'ReconstructionMethod': str(ss.ReconstructionMethod),
@@ -208,8 +236,17 @@ class SeriesUploader():
                 'Subsets': subsets,
                 'VoxelSpacing': str(ss.PixelSpacing),
                 'SliceThickness': ss.SliceThickness,
-                'Radiofarmaco': ss.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical,
-                'HalfLife': ss.RadiopharmaceuticalInformationSequence[0].RadionuclideHalfLife
+                'Radiofarmaco': getattr(ss.RadiopharmaceuticalInformationSequence[0],'Radiopharmaceutical',''),
+                'HalfLife': float(getattr(ss.RadiopharmaceuticalInformationSequence[0],'RadionuclideHalfLife',0)),
+                'radiopharmaceutical_dose': round(float(getattr(ss.RadiopharmaceuticalInformationSequence[0],'RadionuclideTotalDose', 0)) / 37000000, 2),
+                'radiopharmaceutical_start': radiopharmaceutical_start,
+                'StudyInstanceUID': task.task_series.study.StudyInstanceUID,
+                'SeriesInstanceUID': task.series,
+                'StudyDate': task.task_series.study.StudyDate.strftime("%Y-%m-%d"),
+                'SeriesTime': task.task_series.SeriesDate.strftime('%H:%M:%S'),
+                'weight': int(task.task_series.study.PatientWeight or 0),
+                'height': int(100*(task.task_series.study.PatientSize or 0)),
+                'age': age
             }            
 
         return data
