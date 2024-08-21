@@ -1,9 +1,6 @@
 from pynetdicom import AE, evt, AllStoragePresentationContexts, VerificationPresentationContexts
 from pynetdicom._globals import DEFAULT_TRANSFER_SYNTAXES
-
-import pydicom
-import logging, os
-
+import logging, os, traceback, pydicom
 from app_pkg import application
 from app_pkg.db_models import AppConfig
 
@@ -85,7 +82,7 @@ class StoreSCP(AE):
                 return "Dicom Listener started successfully"
             except Exception as e:
                 logger.error(f'Failed when starting StoreSCP {ae_title}@{self.address}:{port}')
-                logger.error(repr(e))
+                logger.error(traceback.format_exc())
                 return "Dicom Listener could not be started"
         else:
             return 'Dicom Listener is already running'

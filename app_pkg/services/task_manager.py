@@ -1,4 +1,4 @@
-import threading, logging, os
+import threading, logging, os, traceback
 from time import sleep
 
 from app_pkg import application, db
@@ -107,7 +107,7 @@ class TaskManager():
                             logger.info(f"simulated processing for task {task.id}")
                         except Exception as e:
                             logger.error(f"simulated processing for task {task.id} failed")
-                            logger.error(repr(e))
+                            logger.error(traceback.format_exc())
                 
                 if not tasks:
                     sleep(1)

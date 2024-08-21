@@ -1,4 +1,4 @@
-import logging, threading, requests
+import logging, threading, requests, traceback
 from time import sleep
 from datetime import datetime
 from app_pkg import application
@@ -24,7 +24,7 @@ class ServerMonitor():
         self.last_disconnection = None
         self.connected = False
         self.state = 'Unknown'  
-
+        
     def start(self):
 
         """
@@ -33,7 +33,7 @@ class ServerMonitor():
 
         """
 
-        # Set an event to stop the thread later 
+        # Set main thread and stop events
         self.stop_event = threading.Event()
                     
         try:
@@ -45,8 +45,8 @@ class ServerMonitor():
             return "Server Monitor can't be started: database not available"
                 
         if not self.get_status() == 'Running':
-            # Create and start the thread if all conditions are fullfilled
-            self.main_thread = threading.Thread(target = self.main, args = ())   
+            # Start the main thread if all conditions are fullfilled              
+            self.main_thread = threading.Thread(target = self.main, args = ()) 
             self.main_thread.start()
             logger.info('Server monitor started')
             return "Server monitor started successfully"
@@ -67,7 +67,7 @@ class ServerMonitor():
             return "Server monitor stopped!"
         except Exception as e:
             logger.error("Server monitor stop failed")
-            logger.error(repr(e))
+            logger.error(traceback.format_exc())
             return "Server monitor could not be stopped!"
     
     def get_status(self):

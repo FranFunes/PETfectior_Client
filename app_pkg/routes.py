@@ -1,6 +1,6 @@
 from flask import render_template, request, jsonify, redirect, flash, url_for
 from flask_login import login_user, logout_user, current_user, login_required
-import ipaddress, os, logging
+import ipaddress, os, logging, traceback
 import pandas as pd
 from datetime import datetime
 from sqlalchemy.exc import OperationalError
@@ -79,7 +79,7 @@ def get_tasks_table():
                 'task_id': t.id} for t in Task.query.all()]
     except Exception as e:
         logger.error("can't access database")
-        logger.error(repr(e))
+        logger.error(traceback.format_exc())
         data = []
 
     return {"data": data}
@@ -123,7 +123,7 @@ def get_app_config():
         password = current_user.password
     except Exception as e:
         logger.error("can't access config in database")
-        logger.error(repr(e))     
+        logger.error(traceback.format_exc())     
                 
     data = {
         "mirror_mode": mirror_mode,
@@ -147,7 +147,7 @@ def get_local_device():
         address = c.ip_address
     except Exception as e:
         logger.error("can't access config in database")
-        logger.error(repr(e))
+        logger.error(traceback.format_exc())
     
     device = {'ae_title': ae_title, 'address': address, 'port':port}
     data = {
@@ -165,7 +165,7 @@ def get_pet_models():
         return models, 200
     except Exception as e:
         logger.error("can't access pet models in database")
-        logger.error(repr(e))
+        logger.error(traceback.format_exc())
         return {'message': "can't access pet models in database"}, 500    
 
 @application.route('/manage_app_config', methods=['GET', 'POST'])
@@ -234,7 +234,7 @@ def manage_remote_devices():
         d = Device.query.get(device_name)
     except OperationalError as e:
         logger.error('SQL OperationalError')
-        logger.error(repr(e))
+        logger.error(traceback.format_exc())
         return jsonify(message = "Error al leer la base de datos"), 500    
            
     action = request.json["action"]
@@ -252,7 +252,7 @@ def manage_remote_devices():
             return jsonify(message = "Error: el dispositivo no existe"), 500    
         except Exception as e:
             logger.error('uknown error when searching database')
-            logger.error(repr(e))
+            logger.error(traceback.format_exc())
             return jsonify(message = "Error al leer la base de datos"), 500    
     
     
@@ -287,7 +287,7 @@ def manage_remote_devices():
             return jsonify(message = "Dispositivo creado correctamente"), 200   
         except:
             logger.error('uknown error when creating new device')
-            logger.error(repr(e))
+            logger.error(traceback.format_exc())
             return jsonify(message = "Error al crear el nuevo dispositivo"), 500  
  
     # Edit device
@@ -308,7 +308,7 @@ def manage_remote_devices():
             return {"message":"Dispositivo editado correctamente"}    
         except Exception as e:
             logger.info('edit device failed')
-            print(repr(e))
+            logger.error(traceback.format_exc())
             return {"message":"Error al acceder a la base de datos"}
 
 @application.route('/ping_remote_device', methods=['GET', 'POST'])
@@ -340,7 +340,7 @@ def recon_settings():
                        'enabled':r.enabled, 'mode':r.mode, 'model': r.model, 'noise': r.noise} for r in recons]
             return jsonify(data = recons), 200
         except Exception as e:
-            logger.error(repr(e))
+            logger.error(traceback.format_exc())
             return jsonify(message = "Error while querying recon settings"), 500
 
     elif request.method == 'POST':
@@ -357,7 +357,7 @@ def recon_settings():
                 return jsonify(message = "Configuración modificada exitosamente"), 200   
             except Exception as e:
                 logger.error('uknown error when creating new post filter settings')
-                logger.error(repr(e))
+                logger.error(traceback.format_exc())
                 return jsonify(message = "Error al modificar la configuración"), 500
         
         # Query database for instance
@@ -366,7 +366,7 @@ def recon_settings():
             assert rs
         except OperationalError as e:
             logger.error('SQL OperationalError')
-            logger.error(repr(e))
+            logger.error(traceback.format_exc())
             return jsonify(message = "Error al leer la base de datos"), 500    
         except AssertionError:
             logger.error('trying to delete unexistent post filter settings')
@@ -380,7 +380,7 @@ def recon_settings():
                 return jsonify(message = "Configuración modificada correctamente"), 200
             except Exception as e:
                 logger.error('uknown error when searching database')
-                logger.error(repr(e))
+                logger.error(traceback.format_exc())
                 return jsonify(message = "Error al leer la base de datos"), 500   
         
         if action == 'edit':
@@ -397,7 +397,7 @@ def recon_settings():
                 return jsonify(message = "Se modificó la configuración correctamente"), 200
             except Exception as e:
                 logger.error('uknown error when searching database')
-                logger.error(repr(e))
+                logger.error(traceback.format_exc())
                 return jsonify(message = "Error al leer la base de datos"), 500
         
         else:

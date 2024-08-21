@@ -1,4 +1,4 @@
-import queue, logging, sys
+import queue, logging, sys, traceback
 
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
@@ -122,7 +122,7 @@ if app_config_available:
                     service.start()
                 except Exception as e:
                     logger.error(f"failed when starting {name}")
-                    logger.error(repr(e))
+                    logger.error(traceback.format_exc())
 
 else:
     logger.error(f"services won't start as database is not available")

@@ -1,4 +1,4 @@
-import threading, logging, os
+import threading, logging, os, traceback
 from shutil import unpack_archive, rmtree
 from copy import deepcopy
 from time import sleep
@@ -74,7 +74,7 @@ class SeriesUnpacker():
             return "SeriesUnpacker stopped"            
         except Exception as e:
             logger.error("SeriesUnpacker stop failed")
-            logger.error(repr(e))
+            logger.error(traceback.format_exc())
             return "SeriesUnpacker could not be stopped"
 
     def get_status(self):
@@ -120,7 +120,7 @@ class SeriesUnpacker():
                         db.session.commit()
                     except Exception as e:
                         logger.error(f"Could not decompress file {filename}")
-                        logger.error(repr(e))
+                        logger.error(traceback.format_exc())
                         task.status_msg = 'decompression failed'     
                         task.step_state = -1
                         task.full_status_msg = """An unknown error ocurred while trying to decompress image data sent by the
@@ -137,14 +137,14 @@ class SeriesUnpacker():
                             series = self.apply_postfilter(extract_dir, templates[0], voxel_size)
                         except FileNotFoundError as e:
                             logger.error(f"Failed when reading {extract_dir}")
-                            logger.error(repr(e))                                                        
+                            logger.error(traceback.format_exc())                                                        
                             task.status_msg = f"failed - .npy not found"
                             task.step_state = -1
                             task.full_status_msg = """A .npy file is expected in the data sent by the server, and it was not found.
                             Please contact support."""   
                         except Exception as e:
                             logger.error(f"Failed when filtering {extract_dir}")
-                            logger.error(repr(e))                                                        
+                            logger.error(traceback.format_exc())                                                        
                             task.status_msg = f"failed - postfilter" 
                             task.step_state = -1
                             task.full_status_msg = """An unknown error occurred while trying to apply postfilter to the result image.
@@ -168,7 +168,7 @@ class SeriesUnpacker():
                                     logger.info(f"Building dicoms for {extract_dir} successful")
                                 except Exception as e:
                                     logger.error(f"Failed when building dicoms for {extract_dir}")
-                                    logger.error(repr(e))
+                                    logger.error(traceback.format_exc())
 
                             logger.info(f"{stored_ok} dicoms stored succesfully")                        
                             task.status_msg = f"building dicoms {success}/{len(series)}" 
@@ -206,14 +206,14 @@ class SeriesUnpacker():
             v = np.load(os.path.join(extract_dir, 'denoised.npy'))
         except Exception as e:
             logger.error(f"Failed when loading voxels from {os.path.join(extract_dir, 'denoised.npy')}")
-            logger.error(repr(e))
+            logger.error(traceback.format_exc())
             raise FileNotFoundError
         
         try:            
             noise = np.load(os.path.join(extract_dir, 'noise.npy'))            
         except Exception as e:
             logger.error(f"Failed when loading noise from {os.path.join(extract_dir, 'noise.npy')}")
-            logger.error(repr(e))
+            logger.error(traceback.format_exc())
             raise FileNotFoundError
         
         try:

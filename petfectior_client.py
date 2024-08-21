@@ -2,7 +2,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-import signal, logging, os, sys
+import signal, logging, os, sys, traceback
 from app_pkg import application
 from app_pkg.db_models import AppConfig
 from app_pkg.services import services
@@ -23,7 +23,7 @@ def terminate_processes(signalNumber, frame):
             service.stop()
         except Exception as e:
             logger.error(f"failed when stopping {name}")            
-            logger.error(repr(e))    
+            logger.error(traceback.format_exc())    
             
     # Clear shared folder
     try:
@@ -38,10 +38,10 @@ def terminate_processes(signalNumber, frame):
                 os.remove(fpath)
             except Exception as e:
                 logger.error(f"{fpath} couldn't be deleted")  
-                logger.error(repr(e))                  
+                logger.error(traceback.format_exc())                  
     except Exception as e:
         logger.error(f"error while trying to clear shared folder {os.path.join(mount_point,'processed')}")                  
-        logger.error(repr(e))                  
+        logger.error(traceback.format_exc())                  
     
     exit(1)
     

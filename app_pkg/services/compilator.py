@@ -1,4 +1,4 @@
-import threading, logging
+import threading, logging, traceback
 from time import sleep
 from datetime import datetime
 import numpy as np
@@ -186,7 +186,7 @@ class Compilator():
                                 datasets, recon_settings = self.fetch_task_data(task.id)
                             except Exception as e:
                                 logger.error(f"fetch_task_data failed for task {task.id}")
-                                logger.error(repr(e))
+                                logger.error(traceback.format_exc())
                                 task.status_msg = 'Failed - task data not found'
                                 task.full_status_msg = """The original DICOM files of this task were not found. Please delete
                                 the task and start it again by sending the original DICOM series from the remote device."""
@@ -221,7 +221,7 @@ class Compilator():
                         inactive_time += 1     
             except Exception as e:
                 logger.error("error in main loop.")
-                logger.error(repr(e))
+                logger.error(traceback.format_exc())
                             
 
     def task_status(self, datasets, n_imgs, last_received):
@@ -317,7 +317,7 @@ class Compilator():
             n_imgs = dataset.NumberOfSlices
             logger.info(f"{n_imgs} instances expected for series {dataset.SeriesInstanceUID}")      
         except AttributeError as e:
-            logger.info(f"failed: " + repr(e))            
+            logger.info(traceback.format_exc())            
             n_imgs = None
 
         return n_imgs    
@@ -332,7 +332,7 @@ class Compilator():
         except Exception as e:
             max_idx = 0
             logger.error(f"Could not select max ActualFrameDuration. Using first element")
-            logger.error(repr(e))                                
+            logger.error(traceback.format_exc())                                
         recon_settings = recon_settings[max_idx]
         
         # Find SpacingBetweenSlices information

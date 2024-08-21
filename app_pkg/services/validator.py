@@ -1,4 +1,4 @@
-import threading, logging, os, requests
+import threading, logging, os, requests, json, traceback
 from requests import ConnectionError, JSONDecodeError
 from time import sleep
 from datetime import datetime
@@ -147,35 +147,35 @@ class Validator():
                                 model_available, message = self.check_model(recon_settings)
                                 assert model_available
                             except AssertionError:                            
-                                logger.error(f"server rejected the task {task.id}: " + message)
+                                logger.info(f"server rejected the task {task.id}: " + message)
                                 task.status_msg = 'fail - rejected'
                                 task.step_state = -1    
                                 task.full_status_msg = "The remote processing server rejected this task for this reason:\n" + message
                             except ConnectionError as e:                            
-                                logger.error(f"server connection failed.")
-                                logger.error(repr(e))
+                                logger.info(f"server connection failed.")
+                                logger.info(traceback.format_exc())
                                 task.status_msg = 'failed - server connection'    
                                 task.full_status_msg = """There is no connection with the remote processing server.
                                 Please check the internet connection from the device where this applications runs.
                                 If it is ok and this message still appears, please contact support."""
                                 task.step_state = -1
                             except (JSONDecodeError, KeyError) as e:                           
-                                logger.error(f"the server returned an incorrect JSON object during /check_model.")
-                                logger.error(repr(e))
+                                logger.info(f"the server returned an incorrect JSON object during /check_model.")
+                                logger.info(traceback.format_exc())
                                 task.status_msg = 'failed - server response'    
                                 task.full_status_msg = """The remote processing server sent a message that couldn't
                                 be understood. Please contact support."""
                                 task.step_state = -1 
                             except AttributeError as e:
-                                logger.error(f"missing dicom information for task {task.id}.")
-                                logger.error(repr(e))
+                                logger.info(f"missing dicom information for task {task.id}.")
+                                logger.info(traceback.format_exc())
                                 task.status_msg = 'failed - missing info'    
                                 task.full_status_msg = """The processing for this task can't continue because there is missing
                                 or invalid information in the DICOM header. """  
                                 task.step_state = -1 
                             except Exception as e:
                                 logger.error(f"unknown error during check_model.")                                
-                                logger.error(repr(e))
+                                logger.error(traceback.format_exc())
                                 task.status_msg = 'failed - server interaction'    
                                 task.full_status_msg = """An unknown error occurred when checking the task data with
                                 the remote processing server. Please contact support."""  
@@ -275,7 +275,7 @@ class Validator():
             except Exception as e:
                 msg = "GE MEDICAL SYSTEMS dataset does not have the 0x000910B2 field"
                 logger.error(msg)
-                logger.error(repr(e))
+                logger.error(traceback.format_exc())
                 return False, msg
             try:
                 dataset[0x000910B3]
@@ -331,7 +331,7 @@ class Validator():
                 subsets = ss[0x000910B3].value
         else:
             logger.info(f"no models for manufacturer {ss.Manufacturer}")      
-            return False
+            return False, f"{ss.Manufacturer} is not supported"
         
         c = AppConfig.query.first()
         data = {
@@ -345,10 +345,11 @@ class Validator():
                 "Radiofarmaco": ss.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical,
                 "HalfLife": ss.RadiopharmaceuticalInformationSequence[0].RadionuclideHalfLife
         }        
+        logger.info('checking model for these reconstruction settings:\n' + json.dumps(data, indent = 2))
 
         if not os.getenv("SERVER_INTERACTION") == "True":
-            return True
-    
+            return True, "Server interaction disabled"
+        
         post_rsp = requests.post('http://' + c.server_url + '/check_model', json = data)
 
         messages = {
