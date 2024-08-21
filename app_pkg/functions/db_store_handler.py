@@ -1,4 +1,4 @@
-import os, logging, traceback
+import os, logging
 from queue import Queue
 from datetime import datetime
 from pynetdicom.events import Event

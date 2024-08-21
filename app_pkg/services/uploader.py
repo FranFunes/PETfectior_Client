@@ -1,4 +1,4 @@
-import logging, threading, os, requests, psutil, json
+import logging, threading, os, requests
 from time import sleep
 from shutil import copy
 from pydicom.dataset import Dataset

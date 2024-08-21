@@ -1,7 +1,7 @@
 import os, logging, subprocess
 from app_pkg import application, db
 from app_pkg.db_models import Task, AppConfig
-from shutil import make_archive, unpack_archive, rmtree, copy
+from shutil import make_archive, unpack_archive, rmtree
 import numpy as np
 from scipy.ndimage import gaussian_filter
 

@@ -77,7 +77,7 @@ $(document).ready(function () {
                 tasks_table.row(selectedRowId).select();
             }
             scrollingContainer.scrollTop(scrollTop);
-            setTimeout(refreshTable, 50);
+            setTimeout(refreshTable, 2000);
         });
     }
 

@@ -4,7 +4,6 @@ from app_pkg import db, login
 from flask_login import UserMixin
 from datetime import datetime
 from sqlalchemy import event
-from werkzeug.security import generate_password_hash, check_password_hash
    
 logger = logging.getLogger('__main__')
 
