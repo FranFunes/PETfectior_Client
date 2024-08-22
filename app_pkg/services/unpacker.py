@@ -11,7 +11,7 @@ from app_pkg.functions.helper_funcs import filter_3D
 
 
 from app_pkg import application, db
-from app_pkg.db_models import AppConfig, Task, Series, FilterSettings
+from app_pkg.db_models import AppConfig, Task, Series, FilterSettings, Radiopharmaceutical
 
 # Configure logging
 logger = logging.getLogger('__main__')
@@ -142,6 +142,13 @@ class SeriesUnpacker():
                             task.step_state = -1
                             task.full_status_msg = """A .npy file is expected in the data sent by the server, and it was not found.
                             Please contact support."""   
+                        except ValueError as e:
+                            logger.info(e)
+                            logger.error(traceback.format_exc())                                                        
+                            task.status_msg = f"failed - .npy not found"
+                            task.step_state = -1
+                            task.full_status_msg = """There are no post-filter settings available for this combination of PET model
+                            and radiopharmaceutical"""  
                         except Exception as e:
                             logger.error(f"Failed when filtering {extract_dir}")
                             logger.error(traceback.format_exc())                                                        
@@ -218,14 +225,18 @@ class SeriesUnpacker():
         
         try:
             with application.app_context():
-                recons = [r for r in FilterSettings.query.all() if r.enabled]            
+                recons = [r for r in FilterSettings.query.all() if r.enabled]    
             assert recons
         except: 
+            logger.info(f"No post-filter settings found; the processed with no post-filter will be sent.")
             return [{'voxels': v,
                      'series_description':'PETFECTIOR',
                      'series_number':1001}]
-        # Only apply filter settings valid for this pet model
+        # Only apply filter settings valid for this pet model and radiopharmaceutical
         recons = [r for r in recons if r.model == 'all' or r.model == original_series.ManufacturerModelName]
+        recons = [r for r in recons if r.radiopharmaceutical == 'all' or
+                    original_series.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical 
+                    in Radiopharmaceutical.query.get(r.radiopharmaceutical).synonyms]
         if not recons:
             raise ValueError(f'No postfilter settings found for pet model {original_series.ManufacturerModelName}')
         series = []

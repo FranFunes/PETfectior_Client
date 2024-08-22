@@ -36,7 +36,7 @@ $(document).ready(function () {
             // handle error response here
             console.log(xhr.responseText);
         }
-        }); 
+    }); 
 
     // Initialize PET models names in filter settings modal
     $.ajax({
@@ -53,7 +53,7 @@ $(document).ready(function () {
             // handle error response here
             console.log(xhr.responseText);
         }
-        });
+    });    
 
     // Initialize devices table
     var devices_table = $('#devices').DataTable({
@@ -81,6 +81,7 @@ $(document).ready(function () {
             { data: 'description', title:'Series description' },
             { data: 'mode', title:'Naming mode'},
             { data: 'model', title:'PET models'},
+            { data: 'radiopharmaceutical', title:'Radiopharmaceutical'},
             { data: 'series_number', title:'Series number', name: "series_number"},
             { data: 'fwhm', title: 'FWHM' },
             { data: 'noise', title: 'Noise %' },
@@ -97,23 +98,36 @@ $(document).ready(function () {
           }
     });
 
-    // Enable select behaviour for tables
-    $('#devices tbody').on('click', 'tr', function () {                
-        if (!$(this).hasClass('selected')) {                  
-            devices_table.rows().deselect()
-            devices_table.row($(this)).select()
-        }
-        else {
-            devices_table.rows().deselect()
+    // Initialize radiopharmaceuticals table
+    var rf_table = $('#radiopharmaceuticals').DataTable({
+        ajax: "/radiopharmaceuticals",
+        columns: [                        
+            { data: 'name', title:'Name', name: "name"},
+            { data: 'half_life', title:'Half life'},
+            { data: 'synonyms', title:'DICOM header'},        
+        ],
+        searching: false,
+        paging: false,
+        ordering: false,
+        info: false,
+        initComplete: function () {
+            // Initialize radiopharmaceuticals names in filter settings modal
+            for (let rf of rf_table.column("name:name").data().toArray()) {
+                var option = $(`<option value="${rf}">${rf}</option>`)
+                $("#postfilterRFName").append(option)        
+            }
         }
     });
-    $('#postfilterSettings tbody').on('click', 'tr', function () {                
-        if (!$(this).hasClass('selected')) {                  
-            postFilter_table.rows().deselect()
-            postFilter_table.row($(this)).select()
+
+    // Enable select behaviour for tables
+    $('table tbody').on('click', 'tr', function () {   
+        var thisTable = $(this).closest('table').DataTable();
+        if (!$(this).hasClass('selected')) { 
+            thisTable.rows().deselect()
+            thisTable.row($(this)).select()
         }
         else {
-            postFilter_table.rows().deselect()
+            thisTable.rows().deselect()
         }
     });
 
@@ -368,6 +382,91 @@ $(document).ready(function () {
         $('#echoRemoteDevice').removeClass('btn-danger').removeClass('btn-success').addClass('btn-primary').text('Echo')
     });
 
+    // Radiofarmaceutical management
+    var rfAction
+
+    // Adapt modal contents depending on selected action
+    $("#newRadiopharmaceutical").on('click', function () {
+        rfAction = "add"        
+        // Reset form
+        $('#radiopharmaceuticalName').prop('disabled', false)
+        $("#radiopharmaceuticalForm")[0].reset()
+        $('.modal-title').text('Add new radiopharmaceutical')              
+    })
+    
+    $("#editRadiopharmaceutical").on('click', function () {                
+        // If there are any selected rows, show modal
+        var selectedRows = rf_table.rows({ selected: true })
+        
+        if (selectedRows.count() > 0) {         
+            $('#radiopharmaceuticalModal').modal('show');   
+            // Fill form with selected device info
+            $('.modal-title').text('Edit radiopharmaceutical')            
+
+            data = selectedRows.data()[0]            
+            $('#radiopharmaceuticalName').val(data.name)
+            $('#radiopharmaceuticalName').prop('disabled', true)
+            $('#radiopharmaceuticalSynonyms').val(data.synonyms)
+            $('#radiopharmaceuticalHalflife').val(data.half_life)
+            
+            rfAction = "edit"        
+        }                
+    })    
+
+    // Delete radiopharmaceutical
+    $("#deleteRadiopharmaceutical").on('click', function () {
+
+        var ajax_data = rf_table.rows({ selected: true }).data()[0]
+        ajax_data.action = "delete"
+        if (confirm(`Delete radiopharmaceutical "${ajax_data.name}"?`)){
+            $.ajax({
+                url: "/radiopharmaceuticals",
+                method: "POST",
+                data:   JSON.stringify(ajax_data),
+                dataType: "json",
+                contentType: "application/json",
+                success: function(response) {                    
+                    // Show success message
+                    alert(response.message)
+                    rf_table.ajax.reload()
+                },
+                error: function(xhr, status, error) {
+                    // handle error response here
+                    alert(xhr.responseJSON.message);
+                }
+            }); 
+        }
+    })
+
+    // New/Edit form submit
+    $("#radiopharmaceuticalForm").submit(function(event) {
+        console.log(data)
+        // Prevent the form from submitting normally
+        event.preventDefault();      
+        var ajax_data = {
+            "action": rfAction,
+            "name": $('#radiopharmaceuticalName').val(),
+            "half_life": $('#radiopharmaceuticalHalflife').val(),
+            "synonyms": $('#radiopharmaceuticalSynonyms').val()
+        }   
+        $.ajax({
+            url: "/radiopharmaceuticals",
+            method: "POST",
+            data:   JSON.stringify(ajax_data),
+            dataType: "json",
+            contentType: "application/json",
+            success: function(response) {                    
+                // Show success message
+                alert(response.message)
+                rf_table.ajax.reload()
+            },
+            error: function(xhr, status, error) {
+                // handle error response here
+                alert(xhr.responseJSON.message);
+            }
+            });     
+    });
+    
     // Post filter settings manager
     var postfilterAction
 
@@ -393,6 +492,7 @@ $(document).ready(function () {
             data = selectedRows.data()[0]            
             $('#postfilterDescription').val(data.description)
             $('#postfilterModelName').val(data.model)
+            $('#postfilterRFName').val(data.radiopharmaceutical)
             $('#postfilterSeriesNumber').val(data.series_number)
             $('#postfilterFWHM').val(data.fwhm)
             $( "#postfilterEnabled" ).prop( "checked", data.enabled) 
@@ -438,6 +538,7 @@ $(document).ready(function () {
             "id": postfilterAction == "add" ? "" : postFilter_table.rows({ selected: true }).data()[0].id,
             "description": $('#postfilterDescription').val(),
             "model": $('#postfilterModelName').val(),
+            "radiopharmaceutical": $('#postfilterRFName').val(),
             "series_number": $('#postfilterSeriesNumber').val()|1000,
             "mode": $("#postfilterMode").val(),
             "fwhm":  $('#postfilterFWHM').val(),
@@ -460,7 +561,7 @@ $(document).ready(function () {
                 alert(xhr.responseJSON.message);
             }
             });     
-    });    
+    });  
 
 });
 

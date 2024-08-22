@@ -209,6 +209,7 @@ class FilterSettings(db.Model):
     series_number = db.Column(db.Integer, default = '1001')
     noise = db.Column(db.Float, default = 0)
     model = db.Column(db.String(64), default = 'all')
+    radiopharmaceutical = db.Column(db.String(64), default = 'all')
     enabled = db.Column(db.Boolean, default = True)
 
     def __repr__(self):
@@ -227,6 +228,14 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return f'<User {self.username}>'    
+    
+class Radiopharmaceutical(db.Model):
+    name = db.Column(db.String(64), primary_key=True, nullable=False)
+    synonyms = db.Column(db.Text())
+    half_life = db.Column(db.Float())
+
+    def __repr__(self):
+        return f"Radiopharmaceutical {self.name}"
 
 @login.user_loader
 def load_user(id):

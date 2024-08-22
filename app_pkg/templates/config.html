@@ -111,11 +111,11 @@
                     <div class="modal-body">
                         <form id="localDeviceManagerForm">
                             <div class="mb-3">
-                                <label for="localdeviceManagerAET" class="form-label">IP Address</label>
+                                <label for="localDeviceManagerIP" class="form-label">IP Address</label>
                                 <input type="text" class="form-control" id="localDeviceManagerIP" name="localDeviceManagerIP">
                             </div>         
                             <div class="mb-3">
-                                <label for="localdeviceManagerAET" class="form-label">AE Title</label>
+                                <label for="localDeviceManagerAET" class="form-label">AE Title</label>
                                 <input type="text" class="form-control" id="localDeviceManagerAET" name="localDeviceManagerAET">
                             </div>                  
                             <div class="modal-footer">
@@ -175,7 +175,46 @@
                     </div>
                 </div>
             </div>
-        </div>        
+        </div>
+        
+        <!-- Modal for radiopharmaceuticals CRUD -->
+        <div class="modal fade" id="radiopharmaceuticalModal">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+            
+                    <!-- Modal Header -->
+                    <div class="modal-header">
+                    <h4 class="modal-title">New Radiopharmaceutical</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+            
+                    <!-- Modal body -->
+                    <div class="modal-body">
+                        <form id="radiopharmaceuticalForm">
+                            <div class="mb-3" id="radiopharmaceuticalNameDiv">
+                                <label for="radiopharmaceuticalName" class="form-label">Name</label>
+                                <input type="text" class="form-control" id="radiopharmaceuticalName" name="radiopharmaceuticalName">
+                                
+                            </div>
+                            <div class="mb-3">
+                                <label for="radiopharmaceuticalSynonyms" class="form-label">Possible designations in the DICOM header 
+                                    (please include all possibilities, separating with commas)</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="radiopharmaceuticalSynonyms" name="radiopharmaceuticalSynonyms">                                    
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="radiopharmaceuticalHalflife" class="form-label">Half-life (in minutes)</label>
+                                <input type="number" step="0.1" class="form-control" id="radiopharmaceuticalHalflife" name="radiopharmaceuticalHalflife">
+                            </div>                 
+                            <div class="modal-footer">
+                                <button type="submit" id="radiopharmaceuticalSubmit" class="btn btn-danger" data-bs-dismiss="modal">Send</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <!-- Modal for post filter settings CRUD -->
         <div class="modal fade" id="postfilterModal">
@@ -202,8 +241,14 @@
                                 </div>                                
                             </div>
                             <div class="mb-3">
-                                <label for="postfilterModelName" class="form-label">Apply to these PET models:</label>
+                                <label for="postfilterModelName" class="form-label">Apply to this PET model:</label>
                                 <select class="form-control" id="postfilterModelName">
+                                    <option value="all">All</option>                                    
+                                </select>    
+                            </div>
+                            <div class="mb-3">
+                                <label for="postfilterRFName" class="form-label">Apply to this radiopharmaceutical:</label>
+                                <select class="form-control" id="postfilterRFName">
                                     <option value="all">All</option>                                    
                                 </select>    
                             </div>
@@ -238,58 +283,64 @@
         </div>
 
         
-        <!-- General configuration -->
         <div class="row pt-3">
+            <!-- General configuration -->
             <div class="col">
-                <div class="card">
+                <div class="card h-100">
                     <div class="card-header">
                         General configuration
                     </div>
-                    <div class="card-body">                            
-                        <div class="grid-container">                            
-                            <div class="grid-item">Client ID:</div>
-                            <div class="grid-item" id="clientID"></div>                            
-                            <div class="grid-item">Server URL:</div>
-                            <div class="grid-item" id="serverURL">10.0.0.51:5001</div>
-                            <div class="grid-item">Admin user:</div>
-                            <div class="grid-item">···········</div>
-                            <div class="grid-item">Admin pass:</div>
-                            <div class="grid-item">···········</div>
-                            <div class="grid-item">Mirror Mode: </div>
-                            <div class="grid-item"><input type="checkbox" class="form-check-input" id="mirrorMode" name="mirrorMode" disabled></div>                          
+                    <div class="card-body">     
+                        <div class="d-flex flex-column h-100">
+                            <div class="grid-container">                            
+                                <div class="grid-item">Client ID:</div>
+                                <div class="grid-item" id="clientID"></div>                            
+                                <div class="grid-item">Server URL:</div>
+                                <div class="grid-item" id="serverURL">10.0.0.51:5001</div>
+                                <div class="grid-item">Admin user:</div>
+                                <div class="grid-item">···········</div>
+                                <div class="grid-item">Admin pass:</div>
+                                <div class="grid-item">···········</div>
+                                <div class="grid-item">Mirror Mode: </div>
+                                <div class="grid-item"><input type="checkbox" class="form-check-input" id="mirrorMode" name="mirrorMode" disabled></div>                                                          
+                            </div>
+                            <div class="flex-grow-1 h-100"></div>
+                            <div class="col text-end">
+                                <button type="button" id="editLocalConfig" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#localConfigModal">Edit</button>
+                            </div>                       
                         </div>
-                        <div class="col text-end">
-                            <button type="button" id="editLocalConfig" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#localConfigModal">Edit</button>
-                        </div>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- Local DICOM configuration -->        
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-header">
+                      Local DICOM Application
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-column h-100">
+                            <div class="grid-container">                            
+                                <div class="grid-item">AE Title:</div>
+                                <div class="grid-item" id="localAET"></div>
+                                <div class="grid-item">IP Address:</div>
+                                <div class="grid-item" id="localIP"></div>
+                                <div class="grid-item">Port:</div>
+                                <div class="grid-item" id="localPort"></div>                          
+                            </div>
+                            <div class="flex-grow-1 h-100"></div>
+                            <div class="col text-end">
+                                <button type="button" id="editLocalDevice" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#localDeviceModal">Edit</button>
+                            </div>
+                        </div>                            
+                        
+                        
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Local DICOM configuration -->
-        <div class="row pt-3">
-            <div class="col">
-                <div class="card">
-                    <div class="card-header">
-                      Local DICOM Application
-                    </div>
-                    <div class="card-body">                            
-                        <div class="grid-container">                            
-                            <div class="grid-item">AE Title:</div>
-                            <div class="grid-item" id="localAET"></div>
-                            <div class="grid-item">IP Address:</div>
-                            <div class="grid-item" id="localIP"></div>
-                            <div class="grid-item">Port:</div>
-                            <div class="grid-item" id="localPort"></div>                            
-                          </div>
-                        <div class="col text-end">
-                            <button type="button" id="editLocalDevice" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#localDeviceModal">Edit</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Remote DICOM devices configuration -->
         <div class="row pt-3">
             <div class="col">
@@ -306,6 +357,29 @@
                                 <button type="button" id="newDevice" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#deviceModal">New</button>
                                 <button type="button" id="editDevice" class="btn btn-outline-dark">Edit</button>
                                 <button type="button" id="deleteDevice" class="btn btn-outline-dark">Delete</button>                  
+                            </div>
+                        </div>
+                    </div>                    
+                </div>
+            </div>
+        </div>
+
+        <!-- Radiopharmaceuticals configuration -->
+        <div class="row pt-3 pb-3">
+            <div class="col">
+                <div class="card">   
+                    <div class="card-header">
+                        Radiopharmaceuticals
+                      </div>
+                    <div class="card-body">
+                        <table id="radiopharmaceuticals" class="display compact" style="width:100%">
+                        
+                        </table>
+                        <div class="row pt-2">            
+                            <div class="col text-end">
+                                <button type="button" id="newRadiopharmaceutical" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#radiopharmaceuticalModal">New</button>
+                                <button type="button" id="editRadiopharmaceutical" class="btn btn-outline-dark">Edit</button>
+                                <button type="button" id="deleteRadiopharmaceutical" class="btn btn-outline-dark">Delete</button>                  
                             </div>
                         </div>
                     </div>                    

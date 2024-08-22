@@ -7,7 +7,7 @@ from sqlalchemy.exc import OperationalError
 
 
 from app_pkg import application, db
-from app_pkg.db_models import Device, Task, AppConfig, FilterSettings, PetModel, User
+from app_pkg.db_models import Device, Task, AppConfig, FilterSettings, PetModel, User, Radiopharmaceutical
 from app_pkg.services import services
 from app_pkg.functions.task_actions import delete_task, restart_task, retry_last_step, delete_finished, delete_failed
 from app_pkg.functions.helper_funcs import ping
@@ -166,7 +166,79 @@ def get_pet_models():
     except Exception as e:
         logger.error("can't access pet models in database")
         logger.error(traceback.format_exc())
-        return {'message': "can't access pet models in database"}, 500    
+        return {'message': "can't access pet models in database"}, 500
+
+    
+@application.route('/radiopharmaceuticals', methods=['GET', 'POST'])
+@login_required
+def radiopharmaceuticals():
+
+    if request.method == 'GET':
+        try:
+            # Send radiopharmaceuticals information
+            rfs = [{
+                "name": r.name, 
+                "synonyms": r.synonyms,
+                "half_life": r.half_life,
+                } for r in Radiopharmaceutical.query.all()]        
+            return {"data": rfs}, 200
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            return jsonify(message = "Error while querying recon settings"), 500
+
+    elif request.method == 'POST':
+                
+        action = request.json["action"]
+        if action == "add":
+            try:
+                new_rf = Radiopharmaceutical(name = request.json['name'], half_life = request.json['half_life'],
+                                             synonyms = request.json['synonyms'])
+                db.session.add(new_rf)
+                db.session.commit()
+                logger.info(f'new radiopharmaceutical settings {repr(new_rf)} created.') 
+                return jsonify(message = "Configuración modificada exitosamente"), 200   
+            except Exception as e:
+                logger.error('uknown error when creating new radiopharmaceutical')
+                logger.error(traceback.format_exc())
+                return jsonify(message = "Error al modificar la configuración"), 500
+        
+        # Query database for instance
+        try:
+            rf = Radiopharmaceutical.query.get(request.json['name'])
+            assert rf
+        except OperationalError as e:
+            logger.error('SQL OperationalError')
+            logger.error(traceback.format_exc())
+            return jsonify(message = "Error al leer la base de datos"), 500    
+        except AssertionError:
+            logger.error('trying to modify unexistent radiopharmaceutical')
+            return jsonify(message = "Error: la configuración no existe"), 500  
+            
+        if action == "delete":       
+            try:   
+                db.session.delete(rf)
+                db.session.commit()
+                logger.info(f'{rf} deleted')
+                return jsonify(message = "Configuración modificada correctamente"), 200
+            except Exception as e:
+                logger.error('uknown error when searching database')
+                logger.error(traceback.format_exc())
+                return jsonify(message = "Error al leer la base de datos"), 500   
+        
+        if action == 'edit':
+            try:                
+                rf.half_life = request.json['half_life']
+                rf.synonyms = request.json['synonyms']
+                db.session.commit()
+                logger.info(f'{rf} edited')
+                return jsonify(message = "Se modificó la configuración correctamente"), 200
+            except Exception as e:
+                logger.error('uknown error when searching database')
+                logger.error(traceback.format_exc())
+                return jsonify(message = "Error al leer la base de datos"), 500
+        
+        else:
+            return jsonify(message = "Acción desconocida"), 500
 
 @application.route('/manage_app_config', methods=['GET', 'POST'])
 @login_required
@@ -337,7 +409,8 @@ def recon_settings():
             # Send recon information
             recons = FilterSettings.query.all()
             recons = [{'id':r.id, 'fwhm':r.fwhm, 'description':r.description, 'series_number':r.series_number,
-                       'enabled':r.enabled, 'mode':r.mode, 'model': r.model, 'noise': r.noise} for r in recons]
+                       'radiopharmaceutical': r.radiopharmaceutical, 'enabled':r.enabled, 'mode':r.mode, 
+                       'model': r.model, 'noise': r.noise} for r in recons]
             return jsonify(data = recons), 200
         except Exception as e:
             logger.error(traceback.format_exc())
@@ -350,7 +423,8 @@ def recon_settings():
             try:
                 new_rs = FilterSettings(fwhm = request.json['fwhm'], description = request.json['description'],
                                         series_number = request.json['series_number'], enabled = request.json['enabled'],
-                                        mode = request.json['mode'], model = request.json['model'], noise = request.json['noise'])
+                                        mode = request.json['mode'], model = request.json['model'], noise = request.json['noise'],
+                                        radiopharmaceutical = request.json['radiopharmaceutical'])
                 db.session.add(new_rs)
                 db.session.commit()
                 logger.info(f'new post filter settings {repr(new_rs)} created.') 
@@ -369,7 +443,7 @@ def recon_settings():
             logger.error(traceback.format_exc())
             return jsonify(message = "Error al leer la base de datos"), 500    
         except AssertionError:
-            logger.error('trying to delete unexistent post filter settings')
+            logger.error('trying to modify unexistent post filter settings')
             return jsonify(message = "Error: la configuración no existe"), 500  
             
         if action == "delete":       
@@ -392,6 +466,7 @@ def recon_settings():
                 rs.series_number = request.json['series_number']
                 rs.noise = request.json['noise']
                 rs.model = request.json['model']
+                rs.radiopharmaceutical = request.json['radiopharmaceutical']
                 db.session.commit()
                 logger.info(f'{rs} edited')
                 return jsonify(message = "Se modificó la configuración correctamente"), 200
