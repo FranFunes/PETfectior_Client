@@ -440,7 +440,6 @@ $(document).ready(function () {
 
     // New/Edit form submit
     $("#radiopharmaceuticalForm").submit(function(event) {
-        console.log(data)
         // Prevent the form from submitting normally
         event.preventDefault();      
         var ajax_data = {

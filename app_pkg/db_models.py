@@ -135,6 +135,7 @@ class Task(db.Model):
     # One-to-many relationships (as child)
     series = db.Column(db.String(64), db.ForeignKey('series.SeriesInstanceUID')) 
     source = db.Column(db.String(96), db.ForeignKey('source.identifier'))   
+    radiopharmaceutical = db.Column(db.String(64), db.ForeignKey('radiopharmaceutical.name'))
 
     # One-to-many relationships (as parent)
     result_series = db.relationship('Series', backref='result_task', lazy='dynamic', foreign_keys='Series.originating_task', cascade='all, delete-orphan')
@@ -233,6 +234,9 @@ class Radiopharmaceutical(db.Model):
     name = db.Column(db.String(64), primary_key=True, nullable=False)
     synonyms = db.Column(db.Text())
     half_life = db.Column(db.Float())
+
+    # One-to-many relationships (as parent)
+    related_tasks = db.relationship('Task', backref='task_radiopharmaceutical', lazy='dynamic')
 
     def __repr__(self):
         return f"Radiopharmaceutical {self.name}"
