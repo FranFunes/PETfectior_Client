@@ -4,7 +4,7 @@ load_dotenv()
 
 import os
 from app_pkg import application, db
-from app_pkg.db_models import User, Study, Series
+from app_pkg.db_models import User, Study, Series, Radiopharmaceutical, FilterSettings
 from app_pkg.functions.task_actions import clear_database
 
 with application.app_context():
@@ -12,6 +12,18 @@ with application.app_context():
     if not u:     
         u =  User(username = 'petfectior', password = 'petfectior')
         db.session.add(u)
+
+    rf = Radiopharmaceutical.query.first()
+    if not rf:
+        rf = Radiopharmaceutical(name = 'FDG', synonyms = 'FDG, fluorodeoxyglucose', half_life = 109.8)
+        db.session.add(rf)
+
+    for fs in FilterSettings.query.filter_by(radiopharmaceutical = None):
+        fs.radiopharmaceutical = 'all'
+    
+    for fs in FilterSettings.query.filter_by(model = None):
+        fs.model = 'all'
+        
     db.session.commit()
 
     # Delete empty studies and series

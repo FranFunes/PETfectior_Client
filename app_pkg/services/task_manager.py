@@ -104,7 +104,7 @@ class TaskManager():
                     for task in to_process:
                         try:
                             process(task.id)
-                            logger.info(f"simulated processing for task {task.id}")
+                            logger.info(f"simulated processing for task {task.id}")                        
                         except Exception as e:
                             logger.error(f"simulated processing for task {task.id} failed")
                             logger.error(traceback.format_exc())

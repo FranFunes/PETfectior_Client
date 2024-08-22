@@ -7,7 +7,7 @@ from pydicom import Dataset
 from typing import List
 
 from app_pkg import application, db
-from app_pkg.db_models import Device, Task, PetModel, AppConfig
+from app_pkg.db_models import Device, Task, PetModel, AppConfig, Radiopharmaceutical
 
 # Configure logging
 logger = logging.getLogger('__main__')
@@ -109,7 +109,6 @@ class Validator():
             
             with application.app_context():
 
-                timing = datetime.now()
                 # If there are any elements in the input queue, read them.
                 if not self.input_queue.empty():
 
@@ -119,7 +118,7 @@ class Validator():
                     db.session.commit()
 
                     # Set destinations for this task
-                    destinations = self.set_destinations(task.id)
+                    destinations = self.set_destinations(task)
                     if not destinations:
                         logger.error(f"task {task.id} destination is unknown.")
                         task.status_msg = 'failed - no destination'
@@ -142,57 +141,73 @@ class Validator():
                             task.full_status_msg = """The processing for this task can't continue because there is missing
                             or invalid information in the DICOM header. """ + msg                            
                         else:
-                            # Check if a model exists in the remote processing server for this model                            
-                            try:
-                                model_available, message = self.check_model(recon_settings)
-                                assert model_available
-                            except AssertionError:                            
-                                logger.info(f"server rejected the task {task.id}: " + message)
-                                task.status_msg = 'fail - rejected'
+                            # Check if the radiopharmaceutical is known and use it for this task
+                            rf_str = recon_settings.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical
+                            rf = [r for r in Radiopharmaceutical.query.all() 
+                                  if rf_str in r.synonyms]
+                            if not rf:
+                                logger.info(f"unknown radiopharmaceutical {rf_str} for task {task.id}")
+                                task.status_msg = 'failed - unknown radiopharmaceutical'
                                 task.step_state = -1    
-                                task.full_status_msg = "The remote processing server rejected this task for this reason:\n" + message
-                            except ConnectionError as e:                            
-                                logger.info(f"server connection failed.")
-                                logger.info(traceback.format_exc())
-                                task.status_msg = 'failed - server connection'    
-                                task.full_status_msg = """There is no connection with the remote processing server.
-                                Please check the internet connection from the device where this applications runs.
-                                If it is ok and this message still appears, please contact support."""
-                                task.step_state = -1
-                            except (JSONDecodeError, KeyError) as e:                           
-                                logger.info(f"the server returned an incorrect JSON object during /check_model.")
-                                logger.info(traceback.format_exc())
-                                task.status_msg = 'failed - server response'    
-                                task.full_status_msg = """The remote processing server sent a message that couldn't
-                                be understood. Please contact support."""
-                                task.step_state = -1 
-                            except AttributeError as e:
-                                logger.info(f"missing dicom information for task {task.id}.")
-                                logger.info(traceback.format_exc())
-                                task.status_msg = 'failed - missing info'    
-                                task.full_status_msg = """The processing for this task can't continue because there is missing
-                                or invalid information in the DICOM header. """  
-                                task.step_state = -1 
-                            except Exception as e:
-                                logger.error(f"unknown error during check_model.")                                
-                                logger.error(traceback.format_exc())
-                                task.status_msg = 'failed - server interaction'    
-                                task.full_status_msg = """An unknown error occurred when checking the task data with
-                                the remote processing server. Please contact support."""  
-                                task.step_state = -1   
-
+                                task.full_status_msg = f"""The DICOM headers for this task has {rf_str} in the Radiopharmaceutical field,
+                                which is not recognized. Please use the Config menu to add a new radiopharmaceutical with this string
+                                included in the DICOM header, or add this string to an existent radiopharmaceutical (use comma-separated 
+                                values)"""
                             else:
-                                # Add this PET device name to the database
-                                names = [m.name for m in PetModel.query.all()]
-                                if not recon_settings.ManufacturerModelName in names:
-                                    model = PetModel(name = recon_settings.ManufacturerModelName)
-                                    db.session.add(model)                          
+                                task.task_radiopharmaceutical = rf[0]
+                                db.session.commit()
 
-                                # Flag step as completed                                
-                                task.current_step = self.next_step
-                                task.status_msg = 'validated'
-                                task.step_state = 1
-                                logger.info(f"Task {task.id} validated.")
+                                # Check if a model exists in the remote processing server for this model                            
+                                try:
+                                    model_available, message = self.check_model(task)
+                                    assert model_available
+                                except AssertionError:                            
+                                    logger.info(f"server rejected the task {task.id}: " + message)
+                                    task.status_msg = 'fail - rejected'
+                                    task.step_state = -1    
+                                    task.full_status_msg = "The remote processing server rejected this task for this reason:\n" + message
+                                except ConnectionError as e:                            
+                                    logger.info(f"server connection failed.")
+                                    logger.info(traceback.format_exc())
+                                    task.status_msg = 'failed - server connection'    
+                                    task.full_status_msg = """There is no connection with the remote processing server.
+                                    Please check the internet connection from the device where this applications runs.
+                                    If it is ok and this message still appears, please contact support."""
+                                    task.step_state = -1
+                                except (JSONDecodeError, KeyError) as e:                           
+                                    logger.info(f"the server returned an incorrect JSON object during /check_model.")
+                                    logger.info(traceback.format_exc())
+                                    task.status_msg = 'failed - server response'    
+                                    task.full_status_msg = """The remote processing server sent a message that couldn't
+                                    be understood. Please contact support."""
+                                    task.step_state = -1 
+                                except AttributeError as e:
+                                    logger.info(f"missing dicom information for task {task.id}.")
+                                    logger.info(traceback.format_exc())
+                                    task.status_msg = 'failed - missing info'    
+                                    task.full_status_msg = """The processing for this task can't continue because there is missing
+                                    or invalid information in the DICOM header. """  
+                                    task.step_state = -1 
+                                except Exception as e:
+                                    logger.error(f"unknown error during check_model.")                                
+                                    logger.error(traceback.format_exc())
+                                    task.status_msg = 'failed - server interaction'    
+                                    task.full_status_msg = """An unknown error occurred when checking the task data with
+                                    the remote processing server. Please contact support."""  
+                                    task.step_state = -1   
+
+                                else:
+                                    # Add this PET device name to the database
+                                    names = [m.name for m in PetModel.query.all()]
+                                    if not recon_settings.ManufacturerModelName in names:
+                                        model = PetModel(name = recon_settings.ManufacturerModelName)
+                                        db.session.add(model)                          
+
+                                    # Flag step as completed                                
+                                    task.current_step = self.next_step
+                                    task.status_msg = 'validated'
+                                    task.step_state = 1
+                                    logger.info(f"Task {task.id} validated.")
                                 
                     db.session.commit()
                                             
@@ -200,7 +215,7 @@ class Validator():
                     sleep(1)
 
                         
-    def set_destinations(self, task_id: str) -> List[Device]:
+    def set_destinations(self, task: Task) -> List[Device]:
 
         destinations = []
         
@@ -209,7 +224,7 @@ class Validator():
         # Check if mirror mode is activated and there are any devices matching the source IP/AET
         mirror_mode = AppConfig.query.first().mirror_mode
         if mirror_mode:       
-            src_id = Task.query.get(task_id).source       
+            src_id = task.source       
             aet, ip = src_id.split('@')
             matching_ip = Device.query.filter_by(address = ip).all()         
             if len(matching_ip) == 1:
@@ -248,6 +263,8 @@ class Validator():
             msg = "Radiopharmaceutical unavailable"
             logger.error(msg)
             return False, msg
+
+        
         
         try:
             assert dataset.Manufacturer in ['SIEMENS','GE MEDICAL SYSTEMS']
@@ -310,7 +327,10 @@ class Validator():
         
         return True, ""
 
-    def check_model(self, ss: Dataset) -> bool:
+    def check_model(self, task: Task) -> bool:
+
+
+        ss = Dataset.from_json(task.recon_settings)
                 
         if ss.Manufacturer == 'SIEMENS':
             recon_method = ss.ReconstructionMethod
