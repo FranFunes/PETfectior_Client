@@ -33,7 +33,7 @@
     <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
         <div class="container-fluid">
             <ul class="navbar-nav">
-              <li class="nav-item"><a class="nav-link" href="/tasks">Tasks</a></li>
+              <li class="nav-item"><a class="nav-link" href="/tasks">Tareas</a></li>
               <li class="nav-item"><a class="nav-link active" href="/logs">Logs</a></li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
@@ -41,8 +41,8 @@
                 <li class="nav-item"><a class="nav-link" href="/config">Admin</a></li>
                 {% else %}
                 <li class="nav-item"><a class="nav-link" href="/config">Config</a></li>
-                <li class="nav-item"><a class="nav-link" href="/dashboard">Processes</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Logout</a></li>
+                <li class="nav-item"><a class="nav-link" href="/dashboard">Procesos</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Cerrar sesión</a></li>
                 {% endif %}              
             </ul>
           </div>
@@ -51,7 +51,7 @@
     <div class="container-sm pt-3">
 
         <div class="row">
-            <h1 class="display-6 text-center">Log Viewer</h1>
+            <h1 class="display-6 text-center">Visor de mensajes de la aplicación</h1>
         </div>
 
         <!-- Search form -->
@@ -59,18 +59,18 @@
             <form id="search_logs">
                 <div class="form-group pt-3">
                     <!-- Log type selection -->
-                    <label for="type-select" class="h5">Log type:</label>
+                    <label for="type-select" class="h5">Tipo de mensaje:</label>
                     <select class="form-control" id="logtype-select">
                         <option>App</option>
                         <option>Dicom</option>
                     </select>
                     <!-- Processes selection -->
-                    <label for="process-select" class="h5 pt-3">Modules:</label>
+                    <label for="process-select" class="h5 pt-3">Módulos:</label>
                     <select class="form-control" id="process-select">
-                        <option>ALL</option>
+                        <option>TODOS</option>
                     </select>
                     <!-- Level selection -->
-                    <label class="h5 pt-2" for="process-select">Levels</label>
+                    <label class="h5 pt-2" for="process-select">Niveles</label>
                     <div class="row" name="level-select">
                         <div class="col-sm-2">
                             <label class="checkbox-inline">
@@ -98,7 +98,7 @@
                             </label>
                         </div>
                     </div>
-                    <label class="h5 pt-2">Datetime</label>
+                    <label class="h5 pt-2">Filtro temporal</label>
                     <div class="col">
                         <div class="form-check">
                             <input type="radio" class="form-check-input" id="date_any" value="anydate" name="datetime">
@@ -106,7 +106,7 @@
                         </div>
                         <div class="form-check">
                             <input type="radio" class="form-check-input" id="date_range" value="range" name="datetime">
-                            <label class="form-check-label" for="date_range">Range (From : To)</label>
+                            <label class="form-check-label" for="date_range">Rango (Desde : Hasta)</label>
                         </div>
                         <div class="row">
                             <div class="col-sm-2">
@@ -129,10 +129,10 @@
                 <!-- Submit -->
                 <div class="row pt-3">
                     <div class="col">
-                        <button type="submit" class="btn btn-primary">Search</button>
+                        <button type="submit" class="btn btn-primary">Buscar</button>
                     </div>
                     <div class="col text-end">
-                        <button class="btn btn-outline-dark" id="export">Export</button>
+                        <button class="btn btn-outline-dark" id="export">Exportar</button>
                     </div>
                 </div>
             </form>

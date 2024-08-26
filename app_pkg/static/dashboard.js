@@ -3,16 +3,16 @@ $(document).ready(function () {
     var table_processes = $('#processes').DataTable({
         ajax: "/get_services_status",            
         columns: [
-            { data: 'service_name', title: 'Service' },
-            { data: 'status', title: 'Status' },
+            { data: 'service_name', title: 'Proceso' },
+            { data: 'status', title: 'Estado' },
             {   
-                title: 'Start',
-                defaultContent: '<button class="btn btn-primary">Start</button>',
+                title: 'Iniciar',
+                defaultContent: '<button class="btn btn-primary">Iniciar</button>',
                 class: 'startServiceBtn'
             },
             {
-                title: 'Stop',
-                defaultContent: '<button class="btn btn-danger">Stop</button>',
+                title: 'Detener',
+                defaultContent: '<button class="btn btn-danger">Detener</button>',
                 class: 'stopServiceBtn'
             },
             /*
@@ -85,11 +85,11 @@ $(document).ready(function () {
     var table_monitor = $('#monitor').DataTable({
         ajax: "/check_server_connection",            
         columns: [
-            { data: 'state', title: 'Server connection state' },
-            { data: 'state_duration', title: 'State duration' },
-            { data: 'total_disconnections', title: 'Disconnections' },
-            { data: 'total_uptime', title: 'Total uptime' },
-            { data: 'total_downtime', title: 'Total downtime' },            
+            { data: 'state', title: 'Estado conexión al servidor' },
+            { data: 'state_duration', title: 'Duración del estado' },
+            { data: 'total_disconnections', title: 'Desconexiones' },
+            { data: 'total_uptime', title: 'Tiempo en funcionamiento' },
+            { data: 'total_downtime', title: 'Tiempo caído' },            
         ],
         processing:     false,
         paging:         false,

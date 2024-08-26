@@ -14,8 +14,8 @@ $(document).ready(function () {
         },
         error: function(xhr, status, error) {
             // handle error response here
-            $("#clientID").text('Not available - server error')
-            $("#serverURL").text('Not available - server error')
+            $("#clientID").text('No disponible - error del servidor')
+            $("#serverURL").text('No disponible - error del servidor')
             $( "#mirrorMode" ).prop( "checked", false )  
 
             console.log(xhr.responseText);
@@ -59,17 +59,17 @@ $(document).ready(function () {
     var devices_table = $('#devices').DataTable({
         ajax: "/get_remote_devices",
         columns: [            
-            { data: 'name', title:'Name' },
+            { data: 'name', title:'Nombre' },
             { data: 'ae_title', title: 'AE Title' },
-            { data: 'address', title: 'IP Address' },
-            { data: 'is_destination', title: 'Use as destination' }
+            { data: 'address', title: 'Dirección IP' },
+            { data: 'is_destination', title: 'Usar como destino' }
         ],
         searching: false,
         paging: false,
         ordering: false,
         info: false,
         language: {
-            "emptyTable": "No peer devices configured"
+            "emptyTable": "No hay dispositivos remotos configurados"
           } 
     });
 
@@ -78,14 +78,14 @@ $(document).ready(function () {
         ajax: "/recon_settings",
         columns: [            
             { data: 'id', visible: false },
-            { data: 'description', title:'Series description' },
-            { data: 'mode', title:'Naming mode'},
-            { data: 'model', title:'PET models'},
-            { data: 'radiopharmaceutical', title:'Radiopharmaceutical'},
-            { data: 'series_number', title:'Series number', name: "series_number"},
+            { data: 'description', title:'Nombre de la serie' },
+            { data: 'mode', title:'Asignacion de nombre'},
+            { data: 'model', title:'Modelo PET'},
+            { data: 'radiopharmaceutical', title:'Radiofármaco'},
+            { data: 'series_number', title:'Número de serie', name: "series_number"},
             { data: 'fwhm', title: 'FWHM' },
-            { data: 'noise', title: 'Noise %' },
-            { data: 'enabled', title: 'Enabled' },            
+            { data: 'noise', title: 'Ruido %' },
+            { data: 'enabled', title: 'Activada', render: (data) => data ? 'Sí' : 'No'},            
         ],
         searching: false,
         paging: false,
@@ -102,8 +102,8 @@ $(document).ready(function () {
     var rf_table = $('#radiopharmaceuticals').DataTable({
         ajax: "/radiopharmaceuticals",
         columns: [                        
-            { data: 'name', title:'Name', name: "name"},
-            { data: 'half_life', title:'Half life'},
+            { data: 'name', title:'Nombre', name: "name"},
+            { data: 'half_life', title:'Vida media'},
             { data: 'synonyms', title:'DICOM header'},        
         ],
         searching: false,
@@ -134,13 +134,13 @@ $(document).ready(function () {
     // App config manager
     $("#editLocalConfig").on('click', function () {    
         // Fill form with local device info        
-        $('.modal-title').text('Edit App Configuration') 
+        $('.modal-title').text('Editar configuración de la aplicación') 
         $('#localConfigClientID').val($("#clientID").text()) 
         $('#localConfigServerURL').val($("#serverURL").text()) 
         if (localStorage.getItem('sharedPath') !== null) {
             $('#localConfigSharedPath').val(localStorage.getItem('sharedPath'))            
         } else {
-            $('#localConfigSharedPath').val("Unknown")
+            $('#localConfigSharedPath').val("Desconocido")
         }
         $( "#localConfigMirrorMode" ).prop( "checked", $( "#mirrorMode" ).prop( "checked" )) 
 
@@ -173,7 +173,7 @@ $(document).ready(function () {
             },
             error: function(xhr, status, error) {
                 // handle error response here
-                alert("Update config failed");
+                alert("Error al actualizar la configuración");
             }
             });  
     });  
@@ -183,7 +183,7 @@ $(document).ready(function () {
         // Fill form with local device info
         $('#localDeviceManagerIP').val($("#localIP").text())  
         $('#localDeviceManagerAET').val($("#localAET").text())  
-        $('.modal-title').text('Edit local DICOM configuration')      
+        $('.modal-title').text('Editar la configuración DICOM local')      
     })
 
     // Edit local device form submit
@@ -222,7 +222,7 @@ $(document).ready(function () {
         deviceAction = "add"
         // Reset form
         $("#deviceManagerForm")[0].reset()
-        $('.modal-title').text('Add new device')
+        $('.modal-title').text('Añadir un dispositivo')
         $('#deviceManagerName').prop('disabled', false)       
     })
     
@@ -233,7 +233,7 @@ $(document).ready(function () {
         if (selectedRows.count() > 0) {         
             $('#deviceModal').modal('show');   
             // Fill form with selected device info
-            $('.modal-title').text('Edit device')
+            $('.modal-title').text('Editar un dispositivo')
             $('#deviceManagerName').prop('disabled',true)
 
             data = selectedRows.data()[0]            
@@ -253,7 +253,7 @@ $(document).ready(function () {
         var ajax_data = devices_table.rows({ selected: true }).data()[0]
         ajax_data.action = "delete"
         console.log(ajax_data)
-        if (confirm(`Delete device ${ajax_data.name}?`)){
+        if (confirm(`Eliminar dispositivo ${ajax_data.name}?`)){
             $.ajax({
                 url: "/manage_remote_devices",
                 method: "POST",
@@ -322,7 +322,7 @@ $(document).ready(function () {
             contentType: "application/json",
             success: function(response) {                    
                 // Show success message
-                $("#pingRemoteDevice")[0].innerHTML = 'Success'
+                $("#pingRemoteDevice")[0].innerHTML = 'Correcto'
                 $("#pingRemoteDevice").prop('disabled', false)
                 $("#pingRemoteDevice").addClass('btn-success')
                 $("#pingRemoteDevice").removeClass('btn-danger')
@@ -330,7 +330,7 @@ $(document).ready(function () {
             },
             error: function(xhr, status, error) {
                 // handle error response here
-                $("#pingRemoteDevice")[0].innerHTML = 'Failed'
+                $("#pingRemoteDevice")[0].innerHTML = 'Fallo'
                 $("#pingRemoteDevice").prop('disabled', false)
                 $("#pingRemoteDevice").addClass('btn-danger')
                 $("#pingRemoteDevice").removeClass('btn-success')
@@ -361,14 +361,14 @@ $(document).ready(function () {
             contentType: "application/json",
             success: function(response) {                    
                 // Show success message
-                $("#echoRemoteDevice")[0].innerHTML = 'Success'
+                $("#echoRemoteDevice")[0].innerHTML = 'Correcto'
                 $("#echoRemoteDevice").prop('disabled', false)
                 $("#echoRemoteDevice").addClass('btn-success')
                 $("#echoRemoteDevice").removeClass('btn-danger')
             },
             error: function(xhr, status, error) {
                 // handle error response here
-                $("#echoRemoteDevice")[0].innerHTML = 'Failed'
+                $("#echoRemoteDevice")[0].innerHTML = 'Fallo'
                 $("#echoRemoteDevice").prop('disabled', false)
                 $("#echoRemoteDevice").addClass('btn-danger')
                 $("#echoRemoteDevice").removeClass('btn-suc cess')
@@ -391,7 +391,7 @@ $(document).ready(function () {
         // Reset form
         $('#radiopharmaceuticalName').prop('disabled', false)
         $("#radiopharmaceuticalForm")[0].reset()
-        $('.modal-title').text('Add new radiopharmaceutical')              
+        $('.modal-title').text('Añadir radiofármaco')              
     })
     
     $("#editRadiopharmaceutical").on('click', function () {                
@@ -401,7 +401,7 @@ $(document).ready(function () {
         if (selectedRows.count() > 0) {         
             $('#radiopharmaceuticalModal').modal('show');   
             // Fill form with selected device info
-            $('.modal-title').text('Edit radiopharmaceutical')            
+            $('.modal-title').text('Editar radiofármaco')            
 
             data = selectedRows.data()[0]            
             $('#radiopharmaceuticalName').val(data.name)
@@ -418,7 +418,7 @@ $(document).ready(function () {
 
         var ajax_data = rf_table.rows({ selected: true }).data()[0]
         ajax_data.action = "delete"
-        if (confirm(`Delete radiopharmaceutical "${ajax_data.name}"?`)){
+        if (confirm(`Eliminar radiofármaco "${ajax_data.name}"?`)){
             $.ajax({
                 url: "/radiopharmaceuticals",
                 method: "POST",
@@ -475,7 +475,7 @@ $(document).ready(function () {
         var sn = Math.max(...postFilter_table.column('series_number:name').data().toArray()) + 1 ?? 1001
         // Reset form
         $("#postfilterManagerForm")[0].reset()
-        $('.modal-title').text('Add new postfilter')           
+        $('.modal-title').text('Añadir post-filtro')           
         $('#postfilterSeriesNumber').val(sn)        
     })
     
@@ -486,7 +486,7 @@ $(document).ready(function () {
         if (selectedRows.count() > 0) {         
             $('#postfilterModal').modal('show');   
             // Fill form with selected device info
-            $('.modal-title').text('Edit postfilter settings')            
+            $('.modal-title').text('Editar post-filtro')            
 
             data = selectedRows.data()[0]            
             $('#postfilterDescription').val(data.description)
@@ -508,7 +508,7 @@ $(document).ready(function () {
 
         var ajax_data = postFilter_table.rows({ selected: true }).data()[0]
         ajax_data.action = "delete"
-        if (confirm(`Delete recon "${ajax_data.description}"?`)){
+        if (confirm(`Eliminar recon "${ajax_data.description}"?`)){
             $.ajax({
                 url: "/recon_settings",
                 method: "POST",
@@ -563,10 +563,6 @@ $(document).ready(function () {
     });  
 
 });
-
-
-
-
 
 // Don't show alerts on ajax errors
 $.fn.dataTable.ext.errMode = 'throw';

@@ -45,14 +45,15 @@ $(document).ready(function () {
             dataType: "json"
         },
         columns: [
-            { data: 'date', title: 'Date' },
-            { data: 'time', title: 'Time' },
-            { data: 'level', title: 'Level' },
-            { data: 'module', title: 'Module' },
-            { data: 'function', title: 'Function' },
-            { data: 'message', title: 'Message' },
+            { data: 'date', title: 'Fecha' },
+            { data: 'time', title: 'Hora' },
+            { data: 'level', title: 'Nivel' },
+            { data: 'module', title: 'Módulo' },
+            { data: 'function', title: 'Función' },
+            { data: 'message', title: 'Mensaje' },
         ],
         language: {
+            url: '//cdn.datatables.net/plug-ins/2.1.4/i18n/es-MX.json',
             emptyTable: '<br>'.repeat(10),
             processing: '<br>',
         },
@@ -167,7 +168,7 @@ $(document).ready(function () {
                 localStorage.setItem("endTime", endTime)
                 localStorage.setItem("process", process)
                 localStorage.setItem("levels", JSON.stringify(levels))
-                button[0].innerHTML = 'Search'
+                button[0].innerHTML = 'Buscar'
             })
         } else if ($('#logtype-select').val() == 'Dicom'){
             var ajax_data = {
@@ -192,7 +193,7 @@ $(document).ready(function () {
                     alert("Dicom log not found");
                 },
                 complete:  function(){
-                    button[0].innerHTML = 'Search'
+                    button[0].innerHTML = 'Buscar'
                 }
                 });  
         }
@@ -239,7 +240,7 @@ $(document).ready(function () {
         link.click();
         URL.revokeObjectURL(link.href);
 
-        $(this)[0].innerHTML = 'Export'
+        $(this)[0].innerHTML = 'Exportar'
     })
 
 });
