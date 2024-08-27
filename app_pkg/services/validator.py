@@ -138,7 +138,7 @@ class Validator():
                             logger.info(f"task {task.id} completed but there is missing dicom information.")
                             task.status_msg = 'fallo - info DICOM'
                             task.step_state = -1
-                            task.full_status_msg = """El procesamiento de esta tarea no puede continuear porque hay
+                            task.full_status_msg = """El procesamiento de esta tarea no puede continuar porque hay
                             información faltante o inválida en el encabezado DICOM. """ + msg                  
                         else:
                             # Check if the radiopharmaceutical is known and use it for this task
