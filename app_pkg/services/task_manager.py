@@ -100,7 +100,7 @@ class TaskManager():
                 
                 # If server interaction is disabled, simulate processing
                 if not os.environ["SERVER_INTERACTION"] == "True":
-                    to_process = Task.query.filter_by(status_msg = 'processing').all()
+                    to_process = Task.query.filter_by(status_msg = 'procesando').all()
                     for task in to_process:
                         try:
                             process(task.id)

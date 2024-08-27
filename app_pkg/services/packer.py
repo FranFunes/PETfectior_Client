@@ -92,7 +92,7 @@ class SeriesPacker():
                 # If there are any elements in the input queue, read them.
                 if not self.input_queue.empty():                    
                     task = Task.query.get(self.input_queue.get())
-                    task.status_msg = 'compressing'
+                    task.status_msg = 'comprimiendo'
                     db.session.commit()
                     config = AppConfig.query.first()
                                         
@@ -141,17 +141,17 @@ class SeriesPacker():
                         
                         # Flag step as completed                                
                         task.current_step = self.next_step
-                        task.status_msg = 'packed'
+                        task.status_msg = 'comprimido'
                         task.step_state = 1
                         logger.info(f"Task {task.id} packed.")
 
                     except Exception as e:
                         logger.info(f'compressing failed for task {task.id}')
                         logger.error(traceback.format_exc())
-                        task.status_msg = 'compression failed'
+                        task.status_msg = 'falló la compresión'
                         task.step_state = -1
-                        task.full_status_msg = """An unknown error ocurred while trying to compress image data to send to the
-                        remote processing server. Full error message follows: \n\n""" + repr(e)    
+                        task.full_status_msg = """Ocurrió un error desconocido al intentar comprimir los datos de imagen para
+                         enviar al servidor remoto. Mensaje completo de error:\n\n""" + repr(e)  
                                     
                     db.session.commit()
                 else:   

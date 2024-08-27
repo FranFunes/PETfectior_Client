@@ -106,34 +106,35 @@ class SeriesUploader():
                     # Read and copy file to the shared folder
                     try:                    
                         logger.info(f"Uploading {filename}")    
-                        task.status_msg = 'uploading'
+                        task.status_msg = 'enviando'
                         db.session.commit()
                         basename = os.path.basename(filename)
                         copy(filename, os.path.join(config.shared_mount_point, 'to_process'))
                     except Exception as e:
                         logger.error(f"Unknown error occurred while copying {filename} to {os.path.join(config.shared_mount_point, 'to_process')}")
                         logger.error(traceback.format_exc())
-                        task.status_msg = 'upload failed'
+                        task.status_msg = 'envío fallido'
                         task.step_state = -1
-                        task.full_status_msg = """An unknown error occurred while trying to uploading task data to the remote
-                        processing server. Full error message follows:\n\n""" + repr(e)   
+                        task.full_status_msg = """Ocurrió un error inesperado al intentar enviar los datos de la tarea
+                        al servidor remoto. Mensaje de error completo:\n\n""" + repr(e)                           
                     else:
                         # If upload was succesful, delete file and send a message to the server                    
                         logger.info(f"copied {filename} to {os.path.join(config.shared_mount_point, 'to_process')} for task {task.id}")
-                        task.status_msg = 'upload ok'
+                        task.status_msg = 'envío ok'
                         db.session.commit()
                         try:                                                        
                             assert self.send_message(basename, task, config)
                             os.remove(filename)
-                            task.status_msg = 'processing'
+                            task.status_msg = 'procesando'
                             logger.info('commit to server ok')
                             logger.info(f"File {filename} deleted")
                         except Exception as e:
                             logger.error('commit to server failed')
                             logger.error(traceback.format_exc())
-                            task.status_msg = 'commit to server failed'
+                            task.status_msg = 'envío fallido'
                             task.step_state = -1
-                            task.full_status_msg = """An error occurred while trying to trigger processing on the remote server."""  
+                            task.full_status_msg = """Ocurrió un error al intentar notificar el envío de una nueva
+                             tarea al servidor remoto."""                              
                     db.session.commit()
                 else:
                     sleep(1)

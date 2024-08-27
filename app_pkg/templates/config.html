@@ -32,7 +32,7 @@
     <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
         <div class="container-fluid">
             <ul class="navbar-nav">
-              <li class="nav-item"><a class="nav-link" href="/tasks">Tasks</a></li>
+              <li class="nav-item"><a class="nav-link" href="/tasks">Tareas</a></li>
               <li class="nav-item"><a class="nav-link" href="/logs">Logs</a></li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
@@ -40,8 +40,8 @@
                 <li class="nav-item"><a class="nav-link" href="/config">Admin</a></li>
                 {% else %}
                 <li class="nav-item"><a class="nav-link active" href="/config">Config</a></li>
-                <li class="nav-item"><a class="nav-link" href="/dashboard">Processes</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Logout</a></li>
+                <li class="nav-item"><a class="nav-link" href="/dashboard">Procesos</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Cerrar sesión</a></li>
                 {% endif %}              
             </ul>
           </div>
@@ -56,7 +56,7 @@
             
                     <!-- Modal Header -->
                     <div class="modal-header">
-                    <h4 class="modal-title">Local Application Config</h4>
+                    <h4 class="modal-title">Configuración de la aplicación local</h4>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
             
@@ -64,31 +64,31 @@
                     <div class="modal-body">
                         <form id="localAppConfigForm">        
                             <div class="mb-3">
-                                <label for="localConfigClientID" class="form-label">Client ID</label>
+                                <label for="localConfigClientID" class="form-label">ID del cliente:</label>
                                 <input type="text" class="form-control" id="localConfigClientID" name="localConfigClientID">
                             </div>        
                             <div class="mb-3">
-                                <label for="localConfigServerURL" class="form-label">Server URL</label>
+                                <label for="localConfigServerURL" class="form-label">URL del servidor:</label>
                                 <input type="text" class="form-control" id="localConfigServerURL" name="localConfigServerURL">
                             </div>        
                             <div class="mb-3">
-                                <label for="localConfigSharedPath" class="form-label">Shared path</label>
+                                <label for="localConfigSharedPath" class="form-label">Ruta compartida:</label>
                                 <input type="text" class="form-control" id="localConfigSharedPath" name="localConfigSharedPath">
                             </div>        
                             <div class="mb-3">
-                                <label for="localConfigAdminUser" class="form-label">Admin username</label>
+                                <label for="localConfigAdminUser" class="form-label">Nombre de usuario administrador:</label>
                                 <input type="text" class="form-control" id="localConfigAdminUser" name="localConfigAdminUser">
                             </div>        
                             <div class="mb-3">
-                                <label for="localConfigAdminPass" class="form-label">Admin password</label>
+                                <label for="localConfigAdminPass" class="form-label">Contraseña del administrador:</label>
                                 <input type="text" class="form-control" id="localConfigAdminPass" name="localConfigAdminPass">
                             </div>                    
                             <div class="mb-3">
                                 <input type="checkbox" class="form-check-input" id="localConfigMirrorMode" name="localConfigMirrorMode">
-                                <label for="localConfigMirrorMode" class="form-check-label">Mirror mode</label>
+                                <label for="localConfigMirrorMode" class="form-check-label">Modo espejo</label>
                             </div>                      
                             <div class="modal-footer">
-                                <button type="submit" id="localAppConfigSubmit" class="btn btn-danger" data-bs-dismiss="modal">Send</button>
+                                <button type="submit" id="localAppConfigSubmit" class="btn btn-danger" data-bs-dismiss="modal">Enviar</button>
                             </div>
                         </form>
                     </div>
@@ -103,7 +103,7 @@
             
                     <!-- Modal Header -->
                     <div class="modal-header">
-                    <h4 class="modal-title">Local DICOM Application</h4>
+                    <h4 class="modal-title">Aplicación  DICOM local</h4>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
             
@@ -111,15 +111,15 @@
                     <div class="modal-body">
                         <form id="localDeviceManagerForm">
                             <div class="mb-3">
-                                <label for="localDeviceManagerIP" class="form-label">IP Address</label>
+                                <label for="localDeviceManagerIP" class="form-label">Dirección IP:</label>
                                 <input type="text" class="form-control" id="localDeviceManagerIP" name="localDeviceManagerIP">
                             </div>         
                             <div class="mb-3">
-                                <label for="localDeviceManagerAET" class="form-label">AE Title</label>
+                                <label for="localDeviceManagerAET" class="form-label">AE Title:</label>
                                 <input type="text" class="form-control" id="localDeviceManagerAET" name="localDeviceManagerAET">
                             </div>                  
                             <div class="modal-footer">
-                                <button type="submit" id="localDeviceManagerSubmit" class="btn btn-danger" data-bs-dismiss="modal">Send</button>
+                                <button type="submit" id="localDeviceManagerSubmit" class="btn btn-danger" data-bs-dismiss="modal">Enviar</button>
                             </div>
                         </form>
                     </div>
@@ -134,7 +134,7 @@
             
                     <!-- Modal Header -->
                     <div class="modal-header">
-                    <h4 class="modal-title">New device</h4>
+                    <h4 class="modal-title">Nuevo dispositivo</h4>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
             
@@ -142,19 +142,19 @@
                     <div class="modal-body">
                         <form id="deviceManagerForm">
                             <div class="mb-3 mt-3" id="deviceNameDiv">
-                                <label for="deviceManagerName" class="form-label">Name</label>
+                                <label for="deviceManagerName" class="form-label">Nombre</label>
                                 <input type="text" class="form-control" id="deviceManagerName" name="deviceManagerName">
                                 
                             </div>
                             <div class="mb-3">
-                                <label for="deviceManagerIP" class="form-label">IP Address</label>
+                                <label for="deviceManagerIP" class="form-label">Dirección IP</label>
                                 <div class="input-group">
                                     <input type="text" class="form-control" id="deviceManagerIP" name="deviceManagerIP">
                                     <button class="btn btn-primary test-button" id="pingRemoteDevice">Ping </button>                                    
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <label for="deviceManagerPort" class="form-label">Port</label>
+                                <label for="deviceManagerPort" class="form-label">Puerto</label>
                                 <input type="text" class="form-control" id="deviceManagerPort" name="deviceManagerPort">
                             </div>                   
                             <div class="mb-3">
@@ -166,10 +166,10 @@
                             </div>
                             <div class="mb-3">
                                 <input type="checkbox" class="form-check-input" id="deviceManagerIsDest" name="deviceManagerIsDest">
-                                <label for="deviceManagerIsDest" class="form-check-label">Use as destination</label>
+                                <label for="deviceManagerIsDest" class="form-check-label">Usar como destino</label>
                             </div>                   
                             <div class="modal-footer">
-                                <button type="submit" id="deviceManagerSubmit" class="btn btn-danger" data-bs-dismiss="modal">Send</button>
+                                <button type="submit" id="deviceManagerSubmit" class="btn btn-danger" data-bs-dismiss="modal">Enviar</button>
                             </div>
                         </form>
                     </div>
@@ -184,7 +184,7 @@
             
                     <!-- Modal Header -->
                     <div class="modal-header">
-                    <h4 class="modal-title">New Radiopharmaceutical</h4>
+                    <h4 class="modal-title">Agregar radiofármaco</h4>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
             
@@ -192,23 +192,23 @@
                     <div class="modal-body">
                         <form id="radiopharmaceuticalForm">
                             <div class="mb-3" id="radiopharmaceuticalNameDiv">
-                                <label for="radiopharmaceuticalName" class="form-label">Name</label>
+                                <label for="radiopharmaceuticalName" class="form-label">Nombre</label>
                                 <input type="text" class="form-control" id="radiopharmaceuticalName" name="radiopharmaceuticalName">
                                 
                             </div>
                             <div class="mb-3">
-                                <label for="radiopharmaceuticalSynonyms" class="form-label">Possible designations in the DICOM header 
-                                    (please include all possibilities, separating with commas)</label>
+                                <label for="radiopharmaceuticalSynonyms" class="form-label">Nombres con los que aparece en el encabezado DICOM 
+                                    (incluya todos los posibles, separados con coma)</label>
                                 <div class="input-group">
                                     <input type="text" class="form-control" id="radiopharmaceuticalSynonyms" name="radiopharmaceuticalSynonyms">                                    
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <label for="radiopharmaceuticalHalflife" class="form-label">Half-life (in minutes)</label>
+                                <label for="radiopharmaceuticalHalflife" class="form-label">Vida media (en minutos)</label>
                                 <input type="number" step="0.1" class="form-control" id="radiopharmaceuticalHalflife" name="radiopharmaceuticalHalflife">
                             </div>                 
                             <div class="modal-footer">
-                                <button type="submit" id="radiopharmaceuticalSubmit" class="btn btn-danger" data-bs-dismiss="modal">Send</button>
+                                <button type="submit" id="radiopharmaceuticalSubmit" class="btn btn-danger" data-bs-dismiss="modal">Enviar</button>
                             </div>
                         </form>
                     </div>
@@ -223,7 +223,7 @@
             
                     <!-- Modal Header -->
                     <div class="modal-header">
-                    <h4 class="modal-title">New postprocessing Settings</h4>
+                    <h4 class="modal-title">Nuevo post-filtro</h4>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
             
@@ -231,29 +231,29 @@
                     <div class="modal-body">
                         <form id="postfilterManagerForm">
                             <div class="mb-3" id="seriesdescriptionDiv">
-                                <label for="postfilterDescription" class="form-label">Series description:</label>
+                                <label for="postfilterDescription" class="form-label">Nombre de la serie:</label>
                                 <div class="input-group">
                                     <input type="text" class="form-control" id="postfilterDescription" name="postfilterDescription">                                    
                                     <select class="form-control" id="postfilterMode">
-                                        <option value="append">Append to original</option>
-                                        <option value="replace">Replace original</option>
+                                        <option value="append">Añadir al original</option>
+                                        <option value="replace">Reemplazar el original</option>
                                     </select>                                    
                                 </div>                                
                             </div>
                             <div class="mb-3">
-                                <label for="postfilterModelName" class="form-label">Apply to this PET model:</label>
+                                <label for="postfilterModelName" class="form-label">Aplicar a este modelo de PET:</label>
                                 <select class="form-control" id="postfilterModelName">
-                                    <option value="all">All</option>                                    
+                                    <option value="all">Todos</option>                                    
                                 </select>    
                             </div>
                             <div class="mb-3">
-                                <label for="postfilterRFName" class="form-label">Apply to this radiopharmaceutical:</label>
+                                <label for="postfilterRFName" class="form-label">Aplicar a estos radiofármacos:</label>
                                 <select class="form-control" id="postfilterRFName">
-                                    <option value="all">All</option>                                    
+                                    <option value="all">Todos</option>                                    
                                 </select>    
                             </div>
                             <div class="mb-3">
-                                <label for="postfilterSeriesNumber" class="form-label">Series number:</label>
+                                <label for="postfilterSeriesNumber" class="form-label">Número de serie:</label>
                                 <input type="number" step="1" class="form-control" id="postfilterSeriesNumber" name="postfilterSeriesNumber">                                
                             </div>
                             <div class="mb-3">
@@ -261,15 +261,15 @@
                                 <input type="number" step="0.1" class="form-control" id="postfilterFWHM" name="postfilterFWHM">                                
                             </div>
                             <div class="mb-3">
-                                <label for="postfilterNoise" class="form-label">Noise[%]:</label>
+                                <label for="postfilterNoise" class="form-label">Ruido[%]:</label>
                                 <input type="number" step="1" min="0" max="100" class="form-control" id="postfilterNoise" name="postfilterNoise">                                
                             </div>
                             <div class="mb-3">
                                 <input type="checkbox" class="form-check-input" id="postfilterEnabled" name="postfilterEnabled">
-                                <label for="postfilterEnabled" class="form-check-label">Enabled</label>
+                                <label for="postfilterEnabled" class="form-check-label">Activada</label>
                             </div>                   
                             <div class="modal-footer">
-                                <button type="submit" id="deviceManagerSubmit" class="btn btn-danger" data-bs-dismiss="modal">Send</button>
+                                <button type="submit" id="deviceManagerSubmit" class="btn btn-danger" data-bs-dismiss="modal">Enviar</button>
                             </div>
                         </form>
                     </div>
@@ -279,7 +279,7 @@
 
         <!-- Title -->
         <div class="row">
-            <h1 class="display-6 text-center">Configuration</h1>
+            <h1 class="display-6 text-center">Configuración</h1>
         </div>
 
         
@@ -288,25 +288,25 @@
             <div class="col">
                 <div class="card h-100">
                     <div class="card-header">
-                        General configuration
+                        Configuración general
                     </div>
                     <div class="card-body">     
                         <div class="d-flex flex-column h-100">
                             <div class="grid-container">                            
-                                <div class="grid-item">Client ID:</div>
+                                <div class="grid-item">ID cliente:</div>
                                 <div class="grid-item" id="clientID"></div>                            
-                                <div class="grid-item">Server URL:</div>
+                                <div class="grid-item">URL del servidor:</div>
                                 <div class="grid-item" id="serverURL">10.0.0.51:5001</div>
-                                <div class="grid-item">Admin user:</div>
+                                <div class="grid-item">Nombre de usuario administrador:</div>
                                 <div class="grid-item">···········</div>
-                                <div class="grid-item">Admin pass:</div>
+                                <div class="grid-item">Contraseña administrador:</div>
                                 <div class="grid-item">···········</div>
-                                <div class="grid-item">Mirror Mode: </div>
+                                <div class="grid-item">Modo espejo: </div>
                                 <div class="grid-item"><input type="checkbox" class="form-check-input" id="mirrorMode" name="mirrorMode" disabled></div>                                                          
                             </div>
                             <div class="flex-grow-1 h-100"></div>
                             <div class="col text-end">
-                                <button type="button" id="editLocalConfig" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#localConfigModal">Edit</button>
+                                <button type="button" id="editLocalConfig" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#localConfigModal">Editar</button>
                             </div>                       
                         </div>
                     </div>
@@ -317,21 +317,21 @@
             <div class="col">
                 <div class="card h-100">
                     <div class="card-header">
-                      Local DICOM Application
+                      Aplicación DICOM local
                     </div>
                     <div class="card-body">
                         <div class="d-flex flex-column h-100">
                             <div class="grid-container">                            
                                 <div class="grid-item">AE Title:</div>
                                 <div class="grid-item" id="localAET"></div>
-                                <div class="grid-item">IP Address:</div>
+                                <div class="grid-item">Dirección IP:</div>
                                 <div class="grid-item" id="localIP"></div>
-                                <div class="grid-item">Port:</div>
+                                <div class="grid-item">Puerto:</div>
                                 <div class="grid-item" id="localPort"></div>                          
                             </div>
                             <div class="flex-grow-1 h-100"></div>
                             <div class="col text-end">
-                                <button type="button" id="editLocalDevice" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#localDeviceModal">Edit</button>
+                                <button type="button" id="editLocalDevice" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#localDeviceModal">Editar</button>
                             </div>
                         </div>                            
                         
@@ -346,7 +346,7 @@
             <div class="col">
                 <div class="card">   
                     <div class="card-header">
-                        Remote DICOM devices
+                        Dispositivos DICOM remotos
                       </div>
                     <div class="card-body">
                         <table id="devices" class="display compact" style="width:100%">
@@ -354,9 +354,9 @@
                         </table>
                         <div class="row pt-2">            
                             <div class="col text-end">
-                                <button type="button" id="newDevice" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#deviceModal">New</button>
-                                <button type="button" id="editDevice" class="btn btn-outline-dark">Edit</button>
-                                <button type="button" id="deleteDevice" class="btn btn-outline-dark">Delete</button>                  
+                                <button type="button" id="newDevice" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#deviceModal">Nuevo</button>
+                                <button type="button" id="editDevice" class="btn btn-outline-dark">Editar</button>
+                                <button type="button" id="deleteDevice" class="btn btn-outline-dark">Eliminar</button>                  
                             </div>
                         </div>
                     </div>                    
@@ -369,7 +369,7 @@
             <div class="col">
                 <div class="card">   
                     <div class="card-header">
-                        Radiopharmaceuticals
+                        Radiofármacos
                       </div>
                     <div class="card-body">
                         <table id="radiopharmaceuticals" class="display compact" style="width:100%">
@@ -377,9 +377,9 @@
                         </table>
                         <div class="row pt-2">            
                             <div class="col text-end">
-                                <button type="button" id="newRadiopharmaceutical" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#radiopharmaceuticalModal">New</button>
-                                <button type="button" id="editRadiopharmaceutical" class="btn btn-outline-dark">Edit</button>
-                                <button type="button" id="deleteRadiopharmaceutical" class="btn btn-outline-dark">Delete</button>                  
+                                <button type="button" id="newRadiopharmaceutical" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#radiopharmaceuticalModal">Nuevo</button>
+                                <button type="button" id="editRadiopharmaceutical" class="btn btn-outline-dark">Editar</button>
+                                <button type="button" id="deleteRadiopharmaceutical" class="btn btn-outline-dark">Eliminar</button>                  
                             </div>
                         </div>
                     </div>                    
@@ -392,7 +392,7 @@
             <div class="col">
                 <div class="card">   
                     <div class="card-header">
-                        Post-processing configuration
+                        Configuración de post-procesado
                       </div>
                     <div class="card-body">
                         <table id="postfilterSettings" class="display compact" style="width:100%">
@@ -400,9 +400,9 @@
                         </table>
                         <div class="row pt-2">            
                             <div class="col text-end">
-                                <button type="button" id="newPostfilter" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#postfilterModal">New</button>
-                                <button type="button" id="editPostfilter" class="btn btn-outline-dark">Edit</button>
-                                <button type="button" id="deletePostfilter" class="btn btn-outline-dark">Delete</button>                  
+                                <button type="button" id="newPostfilter" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#postfilterModal">Nuevo</button>
+                                <button type="button" id="editPostfilter" class="btn btn-outline-dark">Editar</button>
+                                <button type="button" id="deletePostfilter" class="btn btn-outline-dark">Eliminar</button>                  
                             </div>
                         </div>
                     </div>                    

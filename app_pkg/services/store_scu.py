@@ -103,7 +103,7 @@ class StoreSCU(AE):
                             datasets.append(instance.filename)
 
                     logger.info(f'sending DICOMs for task {task.id}')
-                    task.status_msg = 'sending DICOMs'
+                    task.status_msg = 'enviando DICOMs'
                     db.session.commit()
                     
                     # Send datasets to each destination

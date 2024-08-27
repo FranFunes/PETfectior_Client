@@ -7,25 +7,25 @@ $(document).ready(function () {
     var tasks_table = $('#tasks').DataTable({
         ajax: "/get_tasks_table",
         columns: [
+            { data: 'task_id', title: 'ID. Tarea', name: 'task_id'},
             { data: 'PatientName', title: 'Patient' },
-            { data: 'StudyDate', title: 'Date', type: 'date' },
+            { data: 'StudyDate', title: 'Fecha', type: 'date' },
             {
                 data: 'status_msg',
-                title: 'State',
+                title: 'Estado',
                 render: function (data, type, row) {
                     if (row.status === 'failed') {
                         return data + ' <i class="fa fa-search" title="More details" style="cursor: pointer;"></i>';
                     }
                     return data;
                 }
-            },
-            { data: 'source', title: 'Source' },
-            { data: 'destinations', title: 'Destinations' },
+            },            
+            { data: 'source', title: 'Origen' },
+            { data: 'destinations', title: 'Destino' },
             { data: 'description', title: 'Series' },
             { data: 'imgs', title: 'Imgs' },
-            { data: 'started', title: 'Started' },
-            { data: 'updated', title: 'Last update' },
-            { data: 'task_id', title: 'Task ID', name: 'task_id'}
+            { data: 'started', title: 'Comienzo' },
+            { data: 'updated', title: 'Actualizado' },
         ],
         order: [[9, 'desc']],
         language: {

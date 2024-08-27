@@ -156,7 +156,7 @@ class Compilator():
                                 started = timing,
                                 updated = timing,
                                 current_step = 'compilator',
-                                status_msg = 'receiving',
+                                status_msg = 'recibiendo',
                                 step_state = 0,
                                 expected_imgs = self.instances_in_series(dataset),
                                 task_series = Series.query.get(series_uid),
@@ -187,9 +187,9 @@ class Compilator():
                             except Exception as e:
                                 logger.error(f"fetch_task_data failed for task {task.id}")
                                 logger.error(traceback.format_exc())
-                                task.status_msg = 'Failed - task data not found'
-                                task.full_status_msg = """The original DICOM files of this task were not found. Please delete
-                                the task and start it again by sending the original DICOM series from the remote device."""
+                                task.status_msg = 'Fallo - faltan imgs'
+                                task.full_status_msg = """Los archivos DICOM originales de esta tarea no se encontraron.
+                                Por favor eliminala y reiniciala enviando los DICOM originales desde el dispositivo remoto"""
                                 task.step_state = -1    
                             else:
                                 status, msg = self.task_status(datasets, 
@@ -197,7 +197,7 @@ class Compilator():
                                                         task.updated)
                                 if status == 'abort':
                                     logger.info(f"Task {task.id} timed out")
-                                    task.status_msg = 'Failed - timed out'
+                                    task.status_msg = 'Fallo - incompleto'
                                     task.full_status_msg = msg
                                     task.step_state = -1                        
                                 
@@ -251,8 +251,8 @@ class Compilator():
                 logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances completed by n_imgs criteria.")
                 return 'completed', ''
             elif series_timed_out:
-                msg = f"""Only {len(datasets)} images were received after a waiting period of {timeout} seconds. 
-                Only series with {min_instances} or more images can be processed."""
+                msg = f"""Solo {len(datasets)} imágenes se recibieron luego de un período de espera de {timeout} segundos. 
+                Sólo series con {min_instances} o más imágenes pueden ser procesadas."""
                 logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances doesn't meet minimum instances criteria and waiting period has expired.")
                 return 'abort', msg
             else:
@@ -262,15 +262,15 @@ class Compilator():
         if series_timed_out:
             if len(datasets) <  min_instances:
                 logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances doesn't meet minimum instances criteria and waiting period has expired.")
-                msg = f"""Only {len(datasets)} images were received after a waiting period of {timeout} seconds. Only series with {min_instances}
-                or more images can be processed."""
+                msg = f"""Sólo {len(datasets)} imágenes fueron recibidas luego de un período de espera de {timeout} segundos. 
+                Sólo se pueden procesar series con {min_instances} o más imágenes pueden ser procesadas."""
                 return 'abort', msg            
             if self.check_for_contiguity(datasets):
                 logger.info(f"series {datasets[0].SeriesInstanceUID} completed by contiguity criteria.")
                 return 'completed',''
             else:
-                msg = f"""The series can't be processed because separation between consecutive slices
-                is greater than {config.slice_gap_tolerance} (or there are missing slices)"""
+                msg = f"""La serie no puede ser procesada porque la separación entre cortes consecutivos es 
+                mayor que {config.slice_gap_tolerance} (o hay cortes faltantes)"""
                 logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances didn't meet contiguity criteria and waiting period has expired.")
                 return 'abort', msg
         else:            

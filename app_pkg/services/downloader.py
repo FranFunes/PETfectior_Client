@@ -106,7 +106,7 @@ class SeriesDownloader():
 
                     # Reconstruct the filename from task_id and client_id
                     fname = task.id + '_' + config.client_id + '.zip'
-                    task.status_msg = 'downloading'
+                    task.status_msg = 'descargando'
                     db.session.commit()
 
                     # Download fname                
@@ -118,21 +118,22 @@ class SeriesDownloader():
                         copy(fpath, local_fname)
                     except FileNotFoundError as e:
                         logger.error('Download error: file ' + fpath + ' not found')
-                        task.status_msg = 'download failed'
-                        task.full_status_msg = """Download error file: the application didn't receive the expected results file from
-                        the remote processing server. Check Downloader error logs for more details."""
+                        task.status_msg = 'descarga fallida'
+                        task.full_status_msg = """Error al descargar el archivo procesado del servidor remoto: la aplicación no
+                        recibió los archivos esperados del servidor remoto. Verificar los mensajes de error del Downloader para
+                        mayor información"""                        
                         task.step_state = -1                        
                     except Exception as e:
                         logger.error('Unknown error during download')
                         logger.error(traceback.format_exc())
-                        task.status_msg = 'download failed'
-                        task.full_status_msg = """Download error file: an unknown error occured while the application was downloading the results file from
-                        the remote processing server. Full error details: \n\n """ + repr(e)
+                        task.status_msg = 'descarga fallida'
+                        task.full_status_msg = """Error desconocido al descargar el archivo procesado del servidor remoto.
+                        Mensaje de error completo:\n\n """ + repr(e)
                         task.step_state = -1
                     else:                    
                         # If download was successful, flag step as completed
                         task.current_step = self.next_step
-                        task.status_msg = 'download ok'
+                        task.status_msg = 'descarga ok'
                         task.step_state = 1
                         logger.info(f"{fname} downloaded successfully")
                         # Delete file from vpn shared folder

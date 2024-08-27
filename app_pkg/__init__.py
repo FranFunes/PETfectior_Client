@@ -20,6 +20,6 @@ db = SQLAlchemy(application, metadata=metadata)
 migrate = Migrate(application, db)
 login = LoginManager(application)
 login.login_view = 'login'
-login.login_message = "Login as administrator to view this section"
+login.login_message = "Inicie sesión como administrador para ver esta sección"
 
 from app_pkg import routes
