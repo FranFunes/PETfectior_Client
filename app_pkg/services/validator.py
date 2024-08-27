@@ -368,18 +368,17 @@ class Validator():
         logger.info('checking model for these reconstruction settings:\n' + json.dumps(data, indent = 2))
 
         if not os.getenv("SERVER_INTERACTION") == "True":
-            return True, "Server interaction disabled"
+            return True, "Interacción con el servidor deshabilitada (modo debug)"
         
         post_rsp = requests.post('http://' + c.server_url + '/check_model', json = data)
 
         messages = {
-            "Ok": "The task has been validated by the server",
-            "Radiopharmaceutical Inactive": f"""You don't have an active license for the radiopharmaceutical 
+            "Ok": "La tarea ha sido validada por el servidor",
+            "Radiopharmaceutical Inactive": f"""No cuentas con una licencia activa para el radiofármaco
                                                 {ss.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical}""",
-            "Client Inactive": "You don't have an active license",
-            "Not avialable Model": f"""There are no processing algorithms
-                                        trained for these reconstruction settings 
-                                        or radiopharmaceutical {ss.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical}."""
+            "Client Inactive": "No tienes una licencia activate",
+            "Not avialable Model": f"""No hay algoritmos de procesamiento entrenados para estos parámetros de reconstrucción
+             o este radiofármaco."""
         }
 
         return post_rsp.json()['response'], messages[post_rsp.json()['reason']]
