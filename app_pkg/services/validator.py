@@ -114,19 +114,19 @@ class Validator():
 
                     # Read task id from the input queue
                     task = Task.query.get(self.input_queue.get())
-                    task.status_msg = 'validating'
+                    task.status_msg = 'validando'
                     db.session.commit()
 
                     # Set destinations for this task
                     destinations = self.set_destinations(task)
                     if not destinations:
                         logger.error(f"task {task.id} destination is unknown.")
-                        task.status_msg = 'failed - no destination'
+                        task.status_msg = 'failed - destino desconocido'
                         task.step_state = -1
-                        task.full_status_msg = """The processing for this task can't continue because there are no destinations
-                        set for the resulting series. Please check remote DICOM devices configuration and make sure that at least
-                        one device is marked as destination, or the mirror mode is active and the source device of this task's
-                        series is known to PETfectior."""                         
+                        task.full_status_msg = """El procesamiento de esta tarea no puede continuar porque no hay destinos
+                        configurados para las series resultantes. Por favor verifique la configuración de los dispositivos
+                        DICOM remotos y asegúrese de que al menos un dispositivo esté marcado como destino, o que el modo
+                        espejo esté activo y que el dispositivo origen de esta tarea esté declarado en PETfectior."""
                     else:
                         for dest in destinations:
                             if not dest in task.destinations:
@@ -136,10 +136,10 @@ class Validator():
                         valid, msg = self.check_dicom_parameters(recon_settings)
                         if not valid:
                             logger.info(f"task {task.id} completed but there is missing dicom information.")
-                            task.status_msg = 'failed - missing info'
-                            task.step_state = -1    
-                            task.full_status_msg = """The processing for this task can't continue because there is missing
-                            or invalid information in the DICOM header. """ + msg                            
+                            task.status_msg = 'fallo - info DICOM'
+                            task.step_state = -1
+                            task.full_status_msg = """El procesamiento de esta tarea no puede continuear porque hay
+                            información faltante o inválida en el encabezado DICOM. """ + msg                  
                         else:
                             # Check if the radiopharmaceutical is known and use it for this task
                             rf_str = recon_settings.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical
@@ -147,12 +147,13 @@ class Validator():
                                   if rf_str in r.synonyms]
                             if not rf:
                                 logger.info(f"unknown radiopharmaceutical {rf_str} for task {task.id}")
-                                task.status_msg = 'failed - unknown radiopharmaceutical'
+                                task.status_msg = 'fallo - radiofármaco desconocido'
                                 task.step_state = -1    
-                                task.full_status_msg = f"""The DICOM headers for this task has {rf_str} in the Radiopharmaceutical field,
-                                which is not recognized. Please use the Config menu to add a new radiopharmaceutical with this string
-                                included in the DICOM header, or add this string to an existent radiopharmaceutical (use comma-separated 
-                                values)"""
+                                task.full_status_msg = f"""El encabezado DICOM de esta tarea tiene un valor desconocido ({rf_str})
+                                en el campo Radiopharmaceutical. Por favor, use el menú Config para añadir un nuevo radiofármaco incluyendo
+                                esta identificación en el encabezado DICOM, o añada esta identificación a un radiofármaco ya existente 
+                                (usar valores separados por coma), y luego reintente este paso.                                
+                                """    
                             else:
                                 task.task_radiopharmaceutical = rf[0]
                                 db.session.commit()
@@ -163,37 +164,37 @@ class Validator():
                                     assert model_available
                                 except AssertionError:                            
                                     logger.info(f"server rejected the task {task.id}: " + message)
-                                    task.status_msg = 'fail - rejected'
+                                    task.status_msg = 'fallo - rechazada'
                                     task.step_state = -1    
-                                    task.full_status_msg = "The remote processing server rejected this task for this reason:\n" + message
+                                    task.full_status_msg = "El servidor remoto rechazó esta tarea por la siguiente razón:\n" + message                                    
                                 except ConnectionError as e:                            
                                     logger.info(f"server connection failed.")
                                     logger.info(traceback.format_exc())
-                                    task.status_msg = 'failed - server connection'    
-                                    task.full_status_msg = """There is no connection with the remote processing server.
-                                    Please check the internet connection from the device where this applications runs.
-                                    If it is ok and this message still appears, please contact support."""
+                                    task.status_msg = 'fallo - conexión con el servidor'    
+                                    task.full_status_msg = """No hay conexión con el servidor remoto. Por favor verifique
+                                    la conexión a internet del dispositivo donde corre esta aplicación. Si tiene conexión
+                                    y este mensaje sigue apareciendo, contacte a soporte."""
                                     task.step_state = -1
                                 except (JSONDecodeError, KeyError) as e:                           
                                     logger.info(f"the server returned an incorrect JSON object during /check_model.")
                                     logger.info(traceback.format_exc())
-                                    task.status_msg = 'failed - server response'    
-                                    task.full_status_msg = """The remote processing server sent a message that couldn't
-                                    be understood. Please contact support."""
+                                    task.status_msg = 'fallo - servidor'    
+                                    task.full_status_msg = """El servidor remoto envío un mensaje que no pudo ser
+                                    entendido. Por favor contacte a soporte."""
                                     task.step_state = -1 
                                 except AttributeError as e:
                                     logger.info(f"missing dicom information for task {task.id}.")
                                     logger.info(traceback.format_exc())
-                                    task.status_msg = 'failed - missing info'    
-                                    task.full_status_msg = """The processing for this task can't continue because there is missing
-                                    or invalid information in the DICOM header. """  
+                                    task.status_msg = 'fallo - info DICOM'    
+                                    task.full_status_msg = """El procesamiento de esta tarea no puede continuar porque hay 
+                                    información faltante o inválida en el encabezado DICOM. """
                                     task.step_state = -1 
                                 except Exception as e:
                                     logger.error(f"unknown error during check_model.")                                
                                     logger.error(traceback.format_exc())
-                                    task.status_msg = 'failed - server interaction'    
-                                    task.full_status_msg = """An unknown error occurred when checking the task data with
-                                    the remote processing server. Please contact support."""  
+                                    task.status_msg = 'fallo - servidor'    
+                                    task.full_status_msg = """Ocurrió un error desconocido al verificar la tarea con el
+                                    servidor remoto. Por favor contacte a soporte."""
                                     task.step_state = -1   
 
                                 else:
@@ -205,7 +206,7 @@ class Validator():
 
                                     # Flag step as completed                                
                                     task.current_step = self.next_step
-                                    task.status_msg = 'validated'
+                                    task.status_msg = 'validada'
                                     task.step_state = 1
                                     logger.info(f"Task {task.id} validated.")
                                 
@@ -260,7 +261,7 @@ class Validator():
         try:
             dataset.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical
         except:
-            msg = "Radiopharmaceutical unavailable"
+            msg = "Falta el campo Radiopharmaceutical"
             logger.error(msg)
             return False, msg
 
@@ -269,7 +270,7 @@ class Validator():
         try:
             assert dataset.Manufacturer in ['SIEMENS','GE MEDICAL SYSTEMS']
         except:
-            msg = dataset.Manufacturer + " manufacturer is not supported"
+            msg = "el fabricante " + dataset.Manufacturer + " no está soportado"
             logger.error(msg)
             return False, msg
         
@@ -277,33 +278,33 @@ class Validator():
             try:
                 dataset.ConvolutionKernel
             except:
-                msg = "SIEMENS dataset does not have the ConvolutionKernel field"
+                msg = "Falta el campo ConvolutionKernel en encabezado SIEMENS"
                 logger.error(msg)
                 return False, msg
             try:
                 dataset.ReconstructionMethod
             except:
-                msg = "SIEMENS dataset does not have the ReconstructionMethod field"
+                msg = "Falta el campo ReconstructionMethod en encabezado SIEMENS"
                 logger.error(msg)
                 return False, msg            
         elif dataset.Manufacturer=='GE MEDICAL SYSTEMS':        
             try:
                 dataset[0x000910B2]
             except Exception as e:
-                msg = "GE MEDICAL SYSTEMS dataset does not have the 0x000910B2 field"
+                msg = "Falta el campo 0x000910B2 en encabezado GE MEDICAL SYSTEMS"
                 logger.error(msg)
                 logger.error(traceback.format_exc())
                 return False, msg
             try:
                 dataset[0x000910B3]
             except:
-                msg = "GE MEDICAL SYSTEMS dataset does not have the 0x000910B3 field"
+                msg = "Falta el campo 0x000910B3 en encabezado GE MEDICAL SYSTEMS"
                 logger.error(msg)
                 return False, msg               
             try:
                 dataset[0x000910BA]
             except:
-                msg = "GE MEDICAL SYSTEMS dataset does not have the 0x000910BA field"
+                msg = "Falta el campo 0x000910BA en encabezado GE MEDICAL SYSTEMS"
                 logger.error(msg)
                 return False, msg          
             
@@ -315,13 +316,13 @@ class Validator():
                 try:
                     dataset[0x000910BB]
                 except:
-                    msg = "GE MEDICAL SYSTEMS dataset is filtered and  does not have the 0x000910BB field"
+                    msg = "Falta el campo 0x000910BB en encabezado GE MEDICAL SYSTEMS filtrado"                    
                     logger.error(msg)
                     return False, msg
                 try:
                     dataset[0x000910DC]
                 except:
-                    msg = "GE MEDICAL SYSTEMS dataset is filtered and does not have the 0x000910DC field"
+                    msg = "Falta el campo 0x000910DC en encabezado GE MEDICAL SYSTEMS filtrado"
                     logger.error(msg)
                     return False, msg
         

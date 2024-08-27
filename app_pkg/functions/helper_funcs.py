@@ -37,7 +37,7 @@ def process(task_id):
         os.remove(zip_filename)
 
         # Flag step as completed     
-        task.status_msg = 'processed'
+        task.status_msg = 'procesado'
         task.current_step = 'downloader'
         task.step_state = 1
         db.session.commit()
