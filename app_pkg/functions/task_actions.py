@@ -11,12 +11,12 @@ def delete_task(id):
     if not t:
         return f"Task {id} doesn't exist", 500    
     if not t.step_state in [-1,2]:
-        return "Only completed or failed tasks can be deleted", 500    
+        return "Sólo las tareas completadas o fallidas pueden ser eliminadas", 500    
     
     logger.info(f"trying to delete task {id}")
     db.session.delete(t)
     db.session.commit()
-    return f"Task {id} deleted succesfully", 200
+    return f"Tarea {id} eliminada exitosamente", 200
 
 def restart_task(id):
 

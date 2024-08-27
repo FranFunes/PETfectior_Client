@@ -121,20 +121,23 @@ def get_app_config():
         shared_path = c.shared_path     
         username = current_user.username
         password = current_user.password
+
+        data = {
+            "mirror_mode": mirror_mode,
+            "server_url": server_url,
+            "shared_path": shared_path,
+            "client_id": client_id,
+            "username": username,
+            "password": password
+        }
+
+        return data
     except Exception as e:
         logger.error("can't access config in database")
-        logger.error(traceback.format_exc())     
+        logger.error(traceback.format_exc())  
+        return 'Error al consultar la base de datos', 500   
                 
-    data = {
-        "mirror_mode": mirror_mode,
-        "server_url": server_url,
-        "shared_path": shared_path,
-        "client_id": client_id,
-        "username": username,
-        "password": password
-    }
-
-    return data
+    
 
 @application.route('/get_local_device')
 @login_required
@@ -145,16 +148,16 @@ def get_local_device():
         ae_title = c.store_scp_aet
         port = c.store_scp_port
         address = c.ip_address
+        device = {'ae_title': ae_title, 'address': address, 'port':port}
+        data = {
+            "data": device
+        }
+        return data
     except Exception as e:
         logger.error("can't access config in database")
         logger.error(traceback.format_exc())
+        return 'Error al consultar la base de datos', 500  
     
-    device = {'ae_title': ae_title, 'address': address, 'port':port}
-    data = {
-        "data": device
-    }
-
-    return data
 
 @application.route('/get_pet_models')
 @login_required
@@ -166,7 +169,7 @@ def get_pet_models():
     except Exception as e:
         logger.error("can't access pet models in database")
         logger.error(traceback.format_exc())
-        return {'message': "can't access pet models in database"}, 500
+        return {'message': "Error al consultar los modelos de PET en la base de datos"}, 500
 
     
 @application.route('/radiopharmaceuticals', methods=['GET', 'POST'])
@@ -184,7 +187,7 @@ def radiopharmaceuticals():
             return {"data": rfs}, 200
         except Exception as e:
             logger.error(traceback.format_exc())
-            return jsonify(message = "Error while querying recon settings"), 500
+            return jsonify(message = "Error al consultar los radiofármacos en la base de datos"), 500
 
     elif request.method == 'POST':
                 
@@ -252,47 +255,56 @@ def manage_app_config():
         current_user.username = request.json["username"]
         current_user.password = request.json["password"]
         db.session.commit()
-        return {"message":"App config was updated successfully"}        
+        return {"message":"Configuración actualizada correctamente"}        
     except OperationalError as e:
         logger.error("can't access config in database")
-        return jsonify(message = 'Error: database is not available'), 500     
+        return jsonify(message = 'Error: la base de datos no está disponible'), 500     
 
 @application.route('/manage_local_device', methods=['GET', 'POST'])
 @login_required
 def manage_local_device():   
+    
     try:
+        # Check IP address
+        address = request.json["address"]
+        ipaddress.ip_address(address) # throws ValueError if not valid IP address
         c = AppConfig.query.first()
         c.store_scp_aet = request.json["ae_title"]
-        c.ip_address = request.json["address"]
+        c.ip_address = request.json["address"]        
         c.store_scp_port = request.json.get("port", c.store_scp_port)
         db.session.commit()
         # Try to restart DICOM services with the new configuration
         services['Dicom Listener'].restart()
         services['StoreSCU'].restart()
-        return {"message":"Local device was updated successfully"}        
+        return {"message":"Dispositivo DICOM local actualizado exitosamente"}
+    except ValueError:
+        logger.info('IP address not formatted properly')
+        return {"message":"Error: la dirección IP no es válida"}, 500          
     except OperationalError as e:
         logger.error("can't access config in database")
         return jsonify(message = 'Error: database is not available'), 500     
     except OSError as e:
         logger.error("port already in use")
-        return jsonify(message = 'Error: port already in use'), 500
+        return jsonify(message = f'Error: el puerto {c.store_scp_port} ya está en uso'), 500
 
 @application.route('/get_remote_devices')
 @login_required
 def get_remote_devices():
 
-    devices = [{"name":d.name, 
-                "ae_title":d.ae_title,
-                "address":d.address + ":" + str(d.port),
-                "is_destination":d.is_destination} 
-               for d in Device.query.all()]
-
-    data = {
-        "data": devices
-    }
-
-    return data
-
+    try:
+        devices = [{"name":d.name, 
+                    "ae_title":d.ae_title,
+                    "address":d.address + ":" + str(d.port),
+                    "is_destination":d.is_destination} 
+                for d in Device.query.all()]
+        data = {
+            "data": devices
+        }
+        return data
+    except Exception as e:
+        logger.error("can't access devices in database")
+        logger.error(traceback.format_exc())
+        return {'message': "Error al consultar los dispositivos remotos en la base de datos"}, 500
 
 @application.route('/manage_remote_devices', methods=['GET', 'POST'])
 @login_required
@@ -310,8 +322,7 @@ def manage_remote_devices():
         return jsonify(message = "Error al leer la base de datos"), 500    
            
     action = request.json["action"]
-    if action == "delete":
-        
+    if action == "delete":        
         # Delete device and associated filters     
         try:   
             assert d
@@ -326,8 +337,7 @@ def manage_remote_devices():
             logger.error('uknown error when searching database')
             logger.error(traceback.format_exc())
             return jsonify(message = "Error al leer la base de datos"), 500    
-    
-    
+        
     # Check if IP is formatted correctly
     address = request.json["address"]
     try:
@@ -388,17 +398,17 @@ def ping_remote_device():
 
     ping_result = ping(request.json['address'], count = 2)
     if ping_result:
-        return jsonify(message = request.json['address'] + ' is reacheable!!!'), 200
+        return jsonify(message = request.json['address'] + ' es alcanzable!!!'), 200
     else:
-        return jsonify(message = request.json['address'] + ' is unreacheable!!!'), 500
+        return jsonify(message = request.json['address'] + ' no es alcanzable!!!'), 500
     
 @application.route('/echo_remote_device', methods=['GET', 'POST'])
 def echo_remote_device():       
     echo_response = services['Dicom Listener'].echo(request.json)
     if echo_response == 0:
-        return jsonify(message = f"DICOM ECHO to {request.json['ae_title']}@{request.json['address']}:{request.json['port']} succesful"), 200
+        return jsonify(message = f"DICOM ECHO a {request.json['ae_title']}@{request.json['address']}:{request.json['port']} exitoso"), 200
     else:
-        return jsonify(message = f"DICOM ECHO to {request.json['ae_title']}@{request.json['address']}:{request.json['port']} failed"), 500
+        return jsonify(message = f"DICOM ECHO a {request.json['ae_title']}@{request.json['address']}:{request.json['port']} fallido"), 500
 
 @application.route('/recon_settings', methods=['GET', 'POST'])
 @login_required
@@ -414,7 +424,7 @@ def recon_settings():
             return jsonify(data = recons), 200
         except Exception as e:
             logger.error(traceback.format_exc())
-            return jsonify(message = "Error while querying recon settings"), 500
+            return jsonify(message = "Error al leer los post filtros de la base de datos"), 500
 
     elif request.method == 'POST':
                 
