@@ -111,26 +111,26 @@ class SeriesUnpacker():
                     # Decompress files                
                     extract_dir = os.path.join(config.unzip_dir, zip_fname)
                     logger.info(f"Decompressing {filename} to {extract_dir}")
-                    task.status_msg = 'decompressing'    
+                    task.status_msg = 'descomprimiendo'    
                     db.session.commit()
                     try:
                         unpack_archive(filename, extract_dir)
                         logger.info(f"{filename} decompressed successfully")
-                        task.status_msg = 'decompression ok'
+                        task.status_msg = 'descompresión ok'
                         db.session.commit()
                     except Exception as e:
                         logger.error(f"Could not decompress file {filename}")
                         logger.error(traceback.format_exc())
-                        task.status_msg = 'decompression failed'     
+                        task.status_msg = 'falló la descompresión'     
                         task.step_state = -1
-                        task.full_status_msg = """An unknown error ocurred while trying to decompress image data sent by the
-                        remote processing server. Full error message follows: \n\n""" + repr(e)                     
+                        task.full_status_msg = """Ocurrió un error desconocido al intentar descomprimir los datos de imagen
+                        enviados por el servidor remoto. Mensaje de error completo: \n\n""" + repr(e)                   
                     else:                        
                         # List decompressed files
                         filelist = os.listdir(extract_dir)
 
                         # Apply postfilters
-                        task.status_msg = 'applying postfilters'
+                        task.status_msg = 'aplicando postfiltros'
                         db.session.commit()                        
                         try:
                             voxel_size = np.array([templates[0].PixelSpacing[0],templates[0].PixelSpacing[1],templates[0].SliceThickness])
@@ -138,26 +138,26 @@ class SeriesUnpacker():
                         except FileNotFoundError as e:
                             logger.error(f"Failed when reading {extract_dir}")
                             logger.error(traceback.format_exc())                                                        
-                            task.status_msg = f"failed - .npy not found"
+                            task.status_msg = f"fallo - .npy no encontrado"
                             task.step_state = -1
-                            task.full_status_msg = """A .npy file is expected in the data sent by the server, and it was not found.
-                            Please contact support."""   
+                            task.full_status_msg = """Se espera un archivo .npy en los datos enviados por el servidor, pero no
+                            fue encontrado. Por favor contacte a soporte."""  
                         except ValueError as e:
                             logger.info(e)
                             logger.error(traceback.format_exc())                                                        
-                            task.status_msg = f"failed - .npy not found"
+                            task.status_msg = f"fallo - postfiltro "
                             task.step_state = -1
-                            task.full_status_msg = """There are no post-filter settings available for this combination of PET model
-                            and radiopharmaceutical"""  
+                            task.full_status_msg = """No hay ningún postfiltro configurado para esta combinación de equipo y
+                            radiofármaco. Por favor, configurar al menos uno en la pestaña Config."""
                         except Exception as e:
                             logger.error(f"Failed when filtering {extract_dir}")
                             logger.error(traceback.format_exc())                                                        
-                            task.status_msg = f"failed - postfilter" 
+                            task.status_msg = f"fallo - postfiltro "
                             task.step_state = -1
-                            task.full_status_msg = """An unknown error occurred while trying to apply postfilter to the result image.
-                            Full error message follows:\n\n""" + repr(e)   
+                            task.full_status_msg = """Ocurrió un error inesperado al intentar aplicar el postfiltro a la imagen
+                            resultado. Mensaje de error completo:\n\n""" + repr(e)
                         else:
-                            task.status_msg = 'building dicoms' 
+                            task.status_msg = 'creando dicoms' 
                             db.session.commit()                            
                             success = 0
                             stored_ok = 0
@@ -178,7 +178,7 @@ class SeriesUnpacker():
                                     logger.error(traceback.format_exc())
 
                             logger.info(f"{stored_ok} dicoms stored succesfully")                        
-                            task.status_msg = f"building dicoms {success}/{len(series)}" 
+                            task.status_msg = f"creación dicoms {success}/{len(series)}" 
                             db.session.commit()
 
                             # Check if all the expected instances have been correctly stored
@@ -188,7 +188,7 @@ class SeriesUnpacker():
                                 logger.info(f"{task.id}: all expected instances succesfully stored in database")                              
                                 task.current_step = self.next_step
                                 task.step_state = 1    
-                                task.status_msg = f"storing results ok"
+                                task.status_msg = f"resultados guardados"
 
                                 # Delete temporary files
                                 os.remove(filename)
@@ -197,11 +197,10 @@ class SeriesUnpacker():
                                 # Flag step as failed
                                 logger.info(f"{task.id}: not all expected instances stored")
                                 logger.info(f"{task.id}: expected {len(series) * len(task.instances)}, stored {stored_ok}")
-                                task.status_msg = f"failed - dicom storage failed"                             
+                                task.status_msg = f"fallo - escritura dicom"                             
                                 task.step_state = -1
-                                task.full_status_msg = f"""{len(series) * len(task.instances)} resulting images were expected for this
-                                task, but only {stored_ok} were succesfully written to disk and database"""       
-
+                                task.full_status_msg = f"""Se esperaban {len(series) * len(task.instances)} imágenes para esta tarea,
+                                pero sólo {stored_ok} fueron escritas en el disco y en la base de datos."""    
                     db.session.commit()
                 else:
                     sleep(1)

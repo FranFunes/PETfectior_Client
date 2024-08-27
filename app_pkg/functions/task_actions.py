@@ -24,28 +24,28 @@ def restart_task(id):
     if not t:
         return f"Task {id} doesn't exist", 500     
     if not t.step_state in [-1,2]:
-        return "Only completed or failed tasks can be restarted", 500 
+        return "Solo las tareas completadas o fallidas pueden reiniciarse", 500 
     logger.info(f"restarting task {id}")
-    t.status_msg = "restarting..."
+    t.status_msg = "reiniciando..."
     t.current_step = 'compilator'
     t.step_state = 0
     db.session.commit()
-    return f"Task {id} restarted succesfully", 200
+    return f"Tarea {id} reiniciada exitosamente", 200
 
 def retry_last_step(id):
 
     t = Task.query.get(id)
     if not t:
-        return f"Task {id} doesn't exist", 500    
+        return f"La tarea {id} no existe", 500    
     if not t.step_state in [-1,2]:
-        return "Only completed or failed tasks can be modified", 500
+        return "Solo las tareas completadas o fallidas pueden modificarse", 500
     if t.current_step == 'compilator':
         return restart_task(id)
     logger.info(f"retrying step for task {id}")
-    t.status_msg = "retrying..."
+    t.status_msg = "Reintentando..."
     t.step_state = 1 
     db.session.commit()
-    return f"Retrying last step for task {id} ", 200
+    return f"Reintentando el último paso de la tarea {id} ", 200
 
 def delete_finished():    
 
@@ -55,7 +55,7 @@ def delete_finished():
                                             args = (tasks,), name = 'delete_finished_thread')   
     db.session.close()
     processing_thread.start()
-    return "Finished tasks are being cleared in the background", 200
+    return "Las tareas finalizadas están siendo eliminadas en segundo plano", 200
 
 def delete_finished_background(tasks):    
     with application.app_context():
@@ -77,7 +77,7 @@ def delete_failed():
                                             args = (tasks,), name = 'delete_failed_thread')   
     db.session.close()
     processing_thread.start()
-    return "Failed tasks are being cleared in the background", 200
+    return "Las tareas fallidas están siendo eliminadas en segundo plano", 200
     
 def delete_failed_background(tasks):
     with application.app_context():

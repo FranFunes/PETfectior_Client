@@ -79,9 +79,9 @@ $(document).ready(function () {
         columns: [            
             { data: 'id', visible: false },
             { data: 'description', title:'Nombre de la serie' },
-            { data: 'mode', title:'Asignacion de nombre'},
-            { data: 'model', title:'Modelo PET'},
-            { data: 'radiopharmaceutical', title:'Radiofármaco'},
+            { data: 'mode', title:'Asignacion de nombre', render: (data) => data == 'replace' ? 'reemplazar' : 'agregar'},
+            { data: 'model', title:'Modelo PET', render: (data) => data == 'all' ? 'Todos' : data },
+            { data: 'radiopharmaceutical', title:'Radiofármaco', render: (data) => data == 'all' ? 'Todos' : data },
             { data: 'series_number', title:'Número de serie', name: "series_number"},
             { data: 'fwhm', title: 'FWHM' },
             { data: 'noise', title: 'Ruido %' },
@@ -92,9 +92,9 @@ $(document).ready(function () {
         ordering: false,
         info: false,
         language: {
-            "emptyTable": `No filter settings configured.
-            Processed images will be sent as they are, without any post-filter.
-            Use "New" button to configure one or more custom 3D isotropic gaussian filters.`
+            "emptyTable": `No hay filtros configurados. Las imágenes procesadas se enviarán
+            como estan, sin ningún post-filtro. Use el botón "Nuevo" para configurar uno o más
+            post-filtros gaussianos 3D isotrópicos`
           }
     });
 
@@ -110,6 +110,9 @@ $(document).ready(function () {
         paging: false,
         ordering: false,
         info: false,
+        language: {
+            "emptyTable": "No hay radiofármacos configurados."
+          },
         initComplete: function () {
             // Initialize radiopharmaceuticals names in filter settings modal
             for (let rf of rf_table.column("name:name").data().toArray()) {

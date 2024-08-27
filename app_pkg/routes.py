@@ -23,7 +23,7 @@ def login():
     if request.method == 'POST':
         user = User.query.filter_by(username = request.form['username']).first()
         if user is None or not user.password == request.form['password']:
-            flash('Incorrect user or password')            
+            flash('Usuario o contraseña incorrectos')            
             return redirect(url_for('login'))        
         login_user(user, remember = False)
         return redirect('tasks')
