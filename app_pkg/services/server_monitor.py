@@ -23,7 +23,7 @@ class ServerMonitor():
         self.last_connection = None
         self.last_disconnection = None
         self.connected = False
-        self.state = 'Unknown'  
+        self.state = 'Desconocido'  
         
     def start(self):
 
@@ -113,27 +113,27 @@ class ServerMonitor():
                                     
             if self.connected:              
                 # Refresh connection state  
-                self.state = self.state + ' (refreshing...)' 
+                self.state = self.state + ' (actualizando...)' 
                 self.connected, etime = self.ping()
                 if self.connected:
                     self.total_uptime_seconds += self.clock + etime 
                     self.current_state_duration += self.clock + etime
-                    self.state = 'Alive'    
+                    self.state = 'Activo'    
                 else:
                     self.total_disconnections += 1
                     self.current_state_duration = etime
-                    self.state = 'Not available'                                     
+                    self.state = 'No disponible'                                     
             else:
                 # Refresh connection state  
-                self.state = self.state + ' (refreshing...)' 
+                self.state = self.state + ' (actualizando...)' 
                 self.connected, etime = self.ping()
                 if self.connected:
                     self.current_state_duration = etime
-                    self.state = 'Alive'
+                    self.state = 'Activo'
                 else:
                     self.total_downtime_seconds += self.clock + etime
                     self.current_state_duration += self.clock + etime
-                    self.state = 'Not available' 
+                    self.state = 'No disponible' 
                     
             sleep(self.clock)
 
