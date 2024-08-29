@@ -46,14 +46,14 @@ class SeriesDownloader():
             # Create "processed" folder if it doesn't exist
             os.makedirs(os.path.join(config.shared_mount_point, 'processed'), exist_ok = True)
 
-            if not self.get_status() == 'Running':
+            if not self.get_status() == 'Corriendo':
                 # Start the thread
                 self.main_thread = threading.Thread(target = self.main, args = ())        
                 self.main_thread.start()
                 logger.info('started')
-                return "Downloader started successfully"
+                return "Downloader inició exitosamente"
             else:
-                return "Downloader is already running"
+                return "Downloader ya está corriendo"
             
         except AssertionError:
             logger.error(f"Downloader can't start ({config.shared_mount_point} is not a valid directory or is not existent)")
@@ -77,24 +77,24 @@ class SeriesDownloader():
             # Stop the thread
             self.main_thread.join()
             logger.info("Downloader stopped")
-            return "Downloader stopped"
+            return "Downloader detenido"
         except Exception as e:
             logger.error("Downloader could not be stopped")
             logger.error(traceback.format_exc())
-            return "Downloader could not be stopped"
+            return "Downloader no pudo ser detenido"
 
     def get_status(self):
 
         try:
             assert self.main_thread.is_alive()            
         except AttributeError:
-            return 'Not started'
+            return 'No iniciado'
         except AssertionError:
-            return 'Stopped'
+            return 'Detenido'
         except:
-            return 'Unknown'
+            return 'Desconocido'
         else:
-            return 'Running'
+            return 'Corriendo'
         
     def main(self):
 

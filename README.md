@@ -62,7 +62,7 @@ petfectior-client  | 2024-02-07 18:08:03,062 - INFO in task_manager @ start: Tas
 6. Verificar que la interfaz web haya iniciado correctamente ingresando, desde un navegador web en cualquier dispositivo de la red local, al sitio:<br>
 *http://server_ip:8000/config*
 donde *server_ip* es la dirección del dispositivo donde se instaló la aplicación
-7. En la pestaña "Processes" verificar que todos los procesos estén corriendo en estado 'Running' (excepto Server Monitor, que por defecto no inicia)
+7. En la pestaña "Processes" verificar que todos los procesos estén corriendo en estado 'Corriendo' (excepto Server Monitor, que por defecto no inicia)
 8. Iniciar el Server Monitor y verificar, en el indicador de conexión con el servidor, que el estado sea 'Alive'. Se recomienda monitorear este estado durante unos minutos
 y luego detener el proceso para no sobrecargar al cliente y al servidor.
 

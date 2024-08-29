@@ -13,3 +13,22 @@
 .my-btn {
   border-color: #212529;
 }
+
+/* Ensure the body takes up the full viewport height */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Flex-grow the main content so that it pushes the footer to the bottom */
+.content-wrapper {
+  flex: 1;
+}
+
+/* Make the footer sticky at the bottom */
+footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+}
