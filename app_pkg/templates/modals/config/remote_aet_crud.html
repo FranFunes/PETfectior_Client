@@ -1,0 +1,51 @@
+<!-- Modal for remote device CRUD -->
+<div class="modal fade" id="deviceModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h4 class="modal-title">Nuevo dispositivo</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- Modal body -->
+            <div class="modal-body">
+                <form id="deviceManagerForm">
+                    <div class="mb-3 mt-3" id="deviceNameDiv">
+                        <label for="deviceManagerName" class="form-label">Nombre</label>
+                        <input type="text" class="form-control" id="deviceManagerName" name="deviceManagerName">
+
+                    </div>
+                    <div class="mb-3">
+                        <label for="deviceManagerIP" class="form-label">Dirección IP</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="deviceManagerIP" name="deviceManagerIP">
+                            <button class="btn btn-primary test-button" id="pingRemoteDevice">Ping </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="deviceManagerPort" class="form-label">Puerto</label>
+                        <input type="text" class="form-control" id="deviceManagerPort" name="deviceManagerPort">
+                    </div>
+                    <div class="mb-3">
+                        <label for="deviceManagerAET" class="form-label">AE Title</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="deviceManagerAET" name="deviceManagerAET">
+                            <button class="btn btn-primary test-button" id="echoRemoteDevice">Echo</button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <input type="checkbox" class="form-check-input" id="deviceManagerIsDest"
+                            name="deviceManagerIsDest">
+                        <label for="deviceManagerIsDest" class="form-check-label">Usar como destino</label>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" id="deviceManagerSubmit" class="btn btn-danger"
+                            data-bs-dismiss="modal">Enviar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

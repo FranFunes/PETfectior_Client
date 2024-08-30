@@ -4,26 +4,8 @@
     
     <div class="container-sm pt-3">
         
-        <!-- Modal for showing errors details -->
-        <div class="modal fade" id="errorDetailsModal">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-            
-                    <!-- Modal Header -->
-                    <div class="modal-header">
-                    <h4 class="modal-title">Detalles del error</h4>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-            
-                    <!-- Modal body -->
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <p id="errorMsg" style="text-align: justify;"></p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        {% include 'modals/error_details.html' %}
+        
         
         <div class="row">
             <h1 class="display-6 text-center">Estado de las tareas</h1>

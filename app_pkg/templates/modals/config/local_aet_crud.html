@@ -1,0 +1,33 @@
+<!-- Modal for local device CRUD -->
+<div class="modal fade" id="localDeviceModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h4 class="modal-title">Aplicación DICOM local</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- Modal body -->
+            <div class="modal-body">
+                <form id="localDeviceManagerForm">
+                    <div class="mb-3">
+                        <label for="localDeviceManagerIP" class="form-label">Dirección IP:</label>
+                        <input type="text" class="form-control" id="localDeviceManagerIP"
+                            name="localDeviceManagerIP">
+                    </div>
+                    <div class="mb-3">
+                        <label for="localDeviceManagerAET" class="form-label">AE Title:</label>
+                        <input type="text" class="form-control" id="localDeviceManagerAET"
+                            name="localDeviceManagerAET">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" id="localDeviceManagerSubmit" class="btn btn-danger"
+                            data-bs-dismiss="modal">Enviar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

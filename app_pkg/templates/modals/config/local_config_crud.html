@@ -1,0 +1,53 @@
+<!-- Modal for local config CRUD -->
+<div class="modal fade" id="localConfigModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h4 class="modal-title">Configuración de la aplicación local</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- Modal body -->
+            <div class="modal-body">
+                <form id="localAppConfigForm">
+                    <div class="mb-3">
+                        <label for="localConfigClientID" class="form-label">ID del cliente:</label>
+                        <input type="text" class="form-control" id="localConfigClientID" name="localConfigClientID">
+                    </div>
+                    <div class="mb-3">
+                        <label for="localConfigServerURL" class="form-label">URL del servidor:</label>
+                        <input type="text" class="form-control" id="localConfigServerURL"
+                            name="localConfigServerURL">
+                    </div>
+                    <div class="mb-3">
+                        <label for="localConfigSharedPath" class="form-label">Ruta compartida:</label>
+                        <input type="text" class="form-control" id="localConfigSharedPath"
+                            name="localConfigSharedPath">
+                    </div>
+                    <div class="mb-3">
+                        <label for="localConfigAdminUser" class="form-label">Nombre de usuario
+                            administrador:</label>
+                        <input type="text" class="form-control" id="localConfigAdminUser"
+                            name="localConfigAdminUser">
+                    </div>
+                    <div class="mb-3">
+                        <label for="localConfigAdminPass" class="form-label">Contraseña del administrador:</label>
+                        <input type="text" class="form-control" id="localConfigAdminPass"
+                            name="localConfigAdminPass">
+                    </div>
+                    <div class="mb-3">
+                        <input type="checkbox" class="form-check-input" id="localConfigMirrorMode"
+                            name="localConfigMirrorMode">
+                        <label for="localConfigMirrorMode" class="form-check-label">Modo espejo</label>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" id="localAppConfigSubmit" class="btn btn-danger"
+                            data-bs-dismiss="modal">Enviar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

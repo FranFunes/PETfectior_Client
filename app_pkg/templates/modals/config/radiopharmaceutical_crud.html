@@ -1,0 +1,43 @@
+<!-- Modal for radiopharmaceuticals CRUD -->
+<div class="modal fade" id="radiopharmaceuticalModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h4 class="modal-title">Agregar radiofármaco</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- Modal body -->
+            <div class="modal-body">
+                <form id="radiopharmaceuticalForm">
+                    <div class="mb-3" id="radiopharmaceuticalNameDiv">
+                        <label for="radiopharmaceuticalName" class="form-label">Nombre</label>
+                        <input type="text" class="form-control" id="radiopharmaceuticalName"
+                            name="radiopharmaceuticalName">
+
+                    </div>
+                    <div class="mb-3">
+                        <label for="radiopharmaceuticalSynonyms" class="form-label">Nombres con los que aparece en
+                            el encabezado DICOM
+                            (incluya todos los posibles, separados con coma)</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="radiopharmaceuticalSynonyms"
+                                name="radiopharmaceuticalSynonyms">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="radiopharmaceuticalHalflife" class="form-label">Vida media (en minutos)</label>
+                        <input type="number" step="0.1" class="form-control" id="radiopharmaceuticalHalflife"
+                            name="radiopharmaceuticalHalflife">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" id="radiopharmaceuticalSubmit" class="btn btn-danger"
+                            data-bs-dismiss="modal">Enviar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

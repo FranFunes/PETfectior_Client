@@ -1,0 +1,66 @@
+<!-- Modal for post filter settings CRUD -->
+<div class="modal fade" id="postfilterModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h4 class="modal-title">Nuevo post-filtro</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- Modal body -->
+            <div class="modal-body">
+                <form id="postfilterManagerForm">
+                    <div class="mb-3" id="seriesdescriptionDiv">
+                        <label for="postfilterDescription" class="form-label">Nombre de la serie:</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="postfilterDescription"
+                                name="postfilterDescription">
+                            <select class="form-control" id="postfilterMode">
+                                <option value="append">Añadir al original</option>
+                                <option value="replace">Reemplazar el original</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="postfilterModelName" class="form-label">Aplicar a este modelo de PET:</label>
+                        <select class="form-control" id="postfilterModelName">
+                            <option value="all">Todos</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="postfilterRFName" class="form-label">Aplicar a estos radiofármacos:</label>
+                        <select class="form-control" id="postfilterRFName">
+                            <option value="all">Todos</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="postfilterSeriesNumber" class="form-label">Número de serie:</label>
+                        <input type="number" step="1" class="form-control" id="postfilterSeriesNumber"
+                            name="postfilterSeriesNumber">
+                    </div>
+                    <div class="mb-3">
+                        <label for="postfilterFWHM" class="form-label">FWHM[mm]:</label>
+                        <input type="number" step="0.1" class="form-control" id="postfilterFWHM"
+                            name="postfilterFWHM">
+                    </div>
+                    <div class="mb-3">
+                        <label for="postfilterNoise" class="form-label">Ruido[%]:</label>
+                        <input type="number" step="1" min="0" max="100" class="form-control" id="postfilterNoise"
+                            name="postfilterNoise">
+                    </div>
+                    <div class="mb-3">
+                        <input type="checkbox" class="form-check-input" id="postfilterEnabled"
+                            name="postfilterEnabled">
+                        <label for="postfilterEnabled" class="form-check-label">Activada</label>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" id="deviceManagerSubmit" class="btn btn-danger"
+                            data-bs-dismiss="modal">Enviar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
