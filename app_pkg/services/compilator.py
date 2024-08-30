@@ -38,7 +38,7 @@ class Compilator():
 
         """
                 
-        if not self.get_status() == 'Running':
+        if not self.get_status() == 'Corriendo':
             # Set an event to stop the thread later 
             self.stop_event = threading.Event()
 
@@ -47,9 +47,9 @@ class Compilator():
                                                 args = (), name = 'Compilator')        
             self.main_thread.start()
             logger.info('Compilator started')
-            return 'Compilator started successfully'
+            return 'Compilator inició exitosamente'
         else:
-            return 'Compilator is already running'
+            return 'Compilator ya está corriendo'
 
     def stop(self):
 
@@ -62,10 +62,10 @@ class Compilator():
             self.stop_event.set()
             self.main_thread.join()
             logger.info("stopped")
-            return "Compilator stopped"
+            return "Compilator detenido"
         except:
             logger.info("stopped")
-            return "Compilator could not be stopped"
+            return "Compilator no se pudo detener"
 
 
     def get_status(self):
@@ -73,13 +73,13 @@ class Compilator():
         try:
             assert self.main_thread.is_alive()            
         except AttributeError:
-            return 'Not started'
+            return 'No iniciado'
         except AssertionError:
-            return 'Stopped'
+            return 'Detenido'
         except:
-            return 'Unknown'
+            return 'Desconocido'
         else:
-            return 'Running'
+            return 'Corriendo'
 
     def main(self):
 

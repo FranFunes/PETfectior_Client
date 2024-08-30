@@ -23,7 +23,7 @@ class ServerMonitor():
         self.last_connection = None
         self.last_disconnection = None
         self.connected = False
-        self.state = 'Unknown'  
+        self.state = 'Desconocido'  
         
     def start(self):
 
@@ -44,14 +44,14 @@ class ServerMonitor():
             logger.error("can't start, AppConfig not available")            
             return "Server Monitor can't be started: database not available"
                 
-        if not self.get_status() == 'Running':
+        if not self.get_status() == 'Corriendo':
             # Start the main thread if all conditions are fullfilled              
             self.main_thread = threading.Thread(target = self.main, args = ()) 
             self.main_thread.start()
             logger.info('Server monitor started')
-            return "Server monitor started successfully"
+            return "Server monitor inició exitosamente"
         else:
-            return "Server monitor is already running"
+            return "Server monitor ya está corriendo"
 
     def stop(self):
 
@@ -64,24 +64,24 @@ class ServerMonitor():
             self.stop_event.set()
             self.main_thread.join()
             logger.info("Server monitor stopped")
-            return "Server monitor stopped!"
+            return "Server detenido"
         except Exception as e:
             logger.error("Server monitor stop failed")
             logger.error(traceback.format_exc())
-            return "Server monitor could not be stopped!"
+            return "Server monitor no pudo ser detenido"
     
     def get_status(self):
 
         try:
             assert self.main_thread.is_alive()            
         except AttributeError:
-            return 'Not started'
+            return 'No iniciado'
         except AssertionError:
-            return 'Stopped'
+            return 'Detenido'
         except:
-            return 'Unknown'
+            return 'Desconocido'
         else:
-            return 'Running'
+            return 'Corriendo'
 
     def ping(self):
         
@@ -113,27 +113,27 @@ class ServerMonitor():
                                     
             if self.connected:              
                 # Refresh connection state  
-                self.state = self.state + ' (refreshing...)' 
+                self.state = self.state + ' (actualizando...)' 
                 self.connected, etime = self.ping()
                 if self.connected:
                     self.total_uptime_seconds += self.clock + etime 
                     self.current_state_duration += self.clock + etime
-                    self.state = 'Alive'    
+                    self.state = 'Activo'    
                 else:
                     self.total_disconnections += 1
                     self.current_state_duration = etime
-                    self.state = 'Not available'                                     
+                    self.state = 'No disponible'                                     
             else:
                 # Refresh connection state  
-                self.state = self.state + ' (refreshing...)' 
+                self.state = self.state + ' (actualizando...)' 
                 self.connected, etime = self.ping()
                 if self.connected:
                     self.current_state_duration = etime
-                    self.state = 'Alive'
+                    self.state = 'Activo'
                 else:
                     self.total_downtime_seconds += self.clock + etime
                     self.current_state_duration += self.clock + etime
-                    self.state = 'Not available' 
+                    self.state = 'No disponible' 
                     
             sleep(self.clock)
 

@@ -136,14 +136,14 @@ class StoreSCU(AE):
         # Set an event to stop the thread later 
         self.stop_event = threading.Event()
 
-        if not self.get_status() == 'Running':
+        if not self.get_status() == 'Corriendo':
             # Create and start the thread
             self.main_thread = threading.Thread(target = self.main, args = ())        
             self.main_thread.start()        
             logger.info(f'StoreSCU started with ae_title {self.ae_title}')
-            return "Dicom send started successfully"
+            return "Dicom send inició exitosamente"
         else:
-            return "Dicom send is already running"
+            return "Dicom send ya está corriendo"
 
     def stop(self):
 
@@ -156,10 +156,10 @@ class StoreSCU(AE):
             self.stop_event.set()
             self.main_thread.join()
             logger.info("StoreSCU stopped")
-            return "StoreSCU stopped"
+            return "StoreSCU detenido"
         except:
             logger.error("StoreSCU could not be stopped")
-            return "StoreSCU could not be stopped"
+            return "StoreSCU no pudo ser detenido"
 
     def restart(self):
 
@@ -171,10 +171,10 @@ class StoreSCU(AE):
         try:
             assert self.main_thread.is_alive()            
         except AttributeError:
-            return 'Not started'
+            return 'No iniciado'
         except AssertionError:
-            return 'Stopped'
+            return 'Detenido'
         except:
-            return 'Unknown'
+            return 'Desconocido'
         else:
-            return 'Running'
+            return 'Corriendo'

@@ -45,14 +45,14 @@ class SeriesPacker():
             logger.error(f'destination {config.zip_dir} directory could not be created')
             return "Packer can't be started: storage access error"
                 
-        if not self.get_status() == 'Running':
+        if not self.get_status() == 'Corriendo':
             # Create and start the thread if all conditions are fullfilled
             self.main_thread = threading.Thread(target = self.main, args = ())        
             self.main_thread.start()
             logger.info('SeriesPacker started')
-            return "Packer started successfully"
+            return "Packer inició exitosamente"
         else:
-            return "Packer is already running"
+            return "Packer ya está corriendo"
 
     def stop(self):
 
@@ -65,24 +65,24 @@ class SeriesPacker():
             self.stop_event.set()
             self.main_thread.join()
             logger.info("SeriesPacker stopped")
-            return "Packer stopped!"
+            return "Packer detenido"
         except Exception as e:
             logger.error("SeriesPacker stop failed")
             logger.error(traceback.format_exc())
-            return "Packer could not be stopped!"
+            return "Packer no pudo ser detenido"
     
     def get_status(self):
 
         try:
             assert self.main_thread.is_alive()            
         except AttributeError:
-            return 'Not started'
+            return 'No iniciado'
         except AssertionError:
-            return 'Stopped'
+            return 'Detenido'
         except:
-            return 'Unknown'
+            return 'Desconocido'
         else:
-            return 'Running'
+            return 'Corriendo'
 
     def main(self):
 

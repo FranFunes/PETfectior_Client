@@ -1,5 +1,17 @@
 $(document).ready(function () {
 
+    // Calculate the scrollY height
+    function calculateScrollY() {
+        var windowHeight = $(window).height();
+        var footerHeight = $('footer').outerHeight() || 0; // Footer height
+        var tableOffsetTop = $('#tasks').offset().top || 0; // Table's top position
+
+        // Calculate the scrollY value        
+        var scrollY = windowHeight - footerHeight - (tableOffsetTop - $(window).scrollTop());        
+        scrollY = scrollY - 80
+        return scrollY + 'px';
+    }
+
     var scrollTop = 0;
     var scrollingContainer;
     var selectedRowId = null;
@@ -37,7 +49,7 @@ $(document).ready(function () {
         processing: false,
         paging: false,
         scrollX: true,
-        scrollY: '500px',
+        scrollY: calculateScrollY(),
         searching: false,
         info: false,
         select: {
@@ -46,10 +58,9 @@ $(document).ready(function () {
             info: false,
         },
         initComplete: function () {
-
+            
+            // Keep track of scrolling position for table refresh
             scrollingContainer = $(tasks_table.table().node()).parent('div.dataTables_scrollBody');
-
-            // Update scrollTop on scroll
             scrollingContainer.on('scroll', function() {
                 scrollTop = scrollingContainer.scrollTop();
             });

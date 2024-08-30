@@ -50,14 +50,14 @@ class SeriesUnpacker():
             logger.error(f'destination {config.unzip_dir} directory could not be created')
             return "Unpacker can't be started: storage access error"
          
-        if not self.get_status() == 'Running':
+        if not self.get_status() == 'Corriendo':
             # Create and start the thread
             self.main_thread = threading.Thread(target = self.main, args = ())        
             self.main_thread.start()
             logger.info('Unpacker started')
-            return "Unpacker started successfully"
+            return "Unpacker inició exitosamente"
         else:
-            return "Unpacker is already running"
+            return "Unpacker ya está corriendo"
 
 
     def stop(self):
@@ -71,24 +71,24 @@ class SeriesUnpacker():
             self.stop_event.set()
             self.main_thread.join()
             logger.info("SeriesUnpacker stopped")
-            return "SeriesUnpacker stopped"            
+            return "SeriesUnpacker detenido"            
         except Exception as e:
             logger.error("SeriesUnpacker stop failed")
             logger.error(traceback.format_exc())
-            return "SeriesUnpacker could not be stopped"
+            return "SeriesUnpacker no pudo ser detenido"
 
     def get_status(self):
 
         try:
             assert self.main_thread.is_alive()            
         except AttributeError:
-            return 'Not started'
+            return 'No iniciado'
         except AssertionError:
-            return 'Stopped'
+            return 'Detenido'
         except:
-            return 'Unknown'
+            return 'Desconocido'
         else:
-            return 'Running'
+            return 'Corriendo'
 
 
     def main(self):

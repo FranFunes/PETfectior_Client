@@ -42,14 +42,14 @@ class SeriesUploader():
             # Create "to_process folder" if it doesn't exist
             os.makedirs(os.path.join(config.shared_mount_point, 'to_process'), exist_ok = True)
 
-            if not self.get_status() == 'Running':
+            if not self.get_status() == 'Corriendo':
                 # Start the thread
                 self.main_thread = threading.Thread(target = self.main, args = ())        
                 self.main_thread.start()
                 logger.info('Uploader started')
-                return "Uploader started successfully"
+                return "Uploader inició exitosamente"
             else:
-                return "Uploader is already running"
+                return "Uploader ya está corriendo"
             
         except AssertionError:
             logger.error(f"Uploader can't start ({config.shared_mount_point} is not a valid directory or is not existent)")
@@ -73,24 +73,24 @@ class SeriesUploader():
             # Stop the thread
             self.main_thread.join()
             logger.info("Uploader stopped")
-            return "Uploader stopped"
+            return "Uploader detenido"
         except Exception as e:
             logger.error("Uploader could not be stopped")
             logger.error(traceback.format_exc())
-            return "Uploader could not be stopped"
+            return "Uploader no pudo ser detenido"
 
     def get_status(self):
 
         try:
             assert self.main_thread.is_alive()            
         except AttributeError:
-            return 'Not started'
+            return 'No iniciado'
         except AssertionError:
-            return 'Stopped'
+            return 'Detenido'
         except:
-            return 'Unknown'
+            return 'Desconocido'
         else:
-            return 'Running'
+            return 'Corriendo'
 
     def main(self):
 

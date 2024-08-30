@@ -75,17 +75,17 @@ class StoreSCP(AE):
         handlers = [(evt.EVT_C_STORE, self.handle_store, [self.queue, self.store_dest]), (evt.EVT_C_ECHO, self.handle_echo)]   
 
         # Start listening for incoming association requests
-        if not self.get_status() == 'Running':
+        if not self.get_status() == 'Corriendo':
             try:
                 self.server = self.start_server(address = (self.address, port), ae_title = ae_title, evt_handlers=handlers, block = False)     
                 logger.info(f'Starting Store SCP: {ae_title}@{self.address}:{port}')
-                return "Dicom Listener started successfully"
+                return "Dicom Listener inició exitosamente"
             except Exception as e:
                 logger.error(f'Failed when starting StoreSCP {ae_title}@{self.address}:{port}')
                 logger.error(traceback.format_exc())
                 return "Dicom Listener could not be started"
         else:
-            return 'Dicom Listener is already running'
+            return 'Dicom Listener ya está corriendo'
 
     def stop(self):
 
@@ -111,9 +111,9 @@ class StoreSCP(AE):
     def get_status(self):
 
         if not hasattr(self,"server"):
-            state = 'Not started'
+            state = 'No iniciado'
         else:
-            state = 'Stopped'
+            state = 'Detenido'
             # Create an AE and send a C - ECHO to ourselves            
             ae = AE()            
             
@@ -130,7 +130,7 @@ class StoreSCP(AE):
                 if status:                                        
                     try:
                         assert status.Status == 0                        
-                        state = 'Running'
+                        state = 'Corriendo'
                     except:
                         pass
                 else:

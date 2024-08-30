@@ -33,7 +33,7 @@ class TaskManager():
 
         """
                 
-        if not self.get_status() == 'Running':
+        if not self.get_status() == 'Corriendo':
             # Set an event to stop the thread later 
             self.stop_event = threading.Event()
 
@@ -42,9 +42,9 @@ class TaskManager():
                                                 args = (), name = 'task_manager')        
             self.main_thread.start()
             logger.info('task manager started')
-            return 'Task Manager started successfully'
+            return 'Task Manager inició exitosamente'
         else:
-            return 'Task Manager is already running'
+            return 'Task Manager ya está corriendo'
 
     def stop(self):
 
@@ -57,10 +57,10 @@ class TaskManager():
             self.stop_event.set()
             self.main_thread.join()
             logger.info("stopped")
-            return "Task Manager stopped"
+            return "Task Manager detenido"
         except:
             logger.info("stopped")
-            return "Task Manager could not be stopped"
+            return "Task Manager no pudo ser detenido"
 
 
     def get_status(self):
@@ -68,13 +68,13 @@ class TaskManager():
         try:
             assert self.main_thread.is_alive()            
         except AttributeError:
-            return 'Not started'
+            return 'No iniciado'
         except AssertionError:
-            return 'Stopped'
+            return 'Detenido'
         except:
-            return 'Unknown'
+            return 'Desconocido'
         else:
-            return 'Running'
+            return 'Corriendo'
 
     def main(self):
 

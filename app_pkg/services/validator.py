@@ -47,7 +47,7 @@ class Validator():
             logger.error("can't start, AppConfig not available")            
             return "Validator can't be started: database not available"
 
-        if not self.get_status() == 'Running':
+        if not self.get_status() == 'Corriendo':
             # Set an event to stop the thread later 
             self.stop_event = threading.Event()
 
@@ -56,9 +56,9 @@ class Validator():
                                                 args = (), name = 'Validator')        
             self.main_thread.start()
             logger.info('started')
-            return 'Validator started successfully'
+            return 'Validator inició exitosamente'
         else:
-            return 'Validator is already running'
+            return 'Validator ya está corriendo'
 
     def stop(self):
 
@@ -71,10 +71,10 @@ class Validator():
             self.stop_event.set()
             self.main_thread.join()
             logger.info("stopped")
-            return "Validator stopped"
+            return "Validator detenido"
         except:
             logger.info("stopped")
-            return "Validator could not be stopped"
+            return "Validator no pudo ser detenido"
 
 
     def get_status(self):
@@ -82,13 +82,13 @@ class Validator():
         try:
             assert self.main_thread.is_alive()            
         except AttributeError:
-            return 'Not started'
+            return 'No iniciado'
         except AssertionError:
-            return 'Stopped'
+            return 'Detenido'
         except:
-            return 'Unknown'
+            return 'Desconocido'
         else:
-            return 'Running'
+            return 'Corriendo'
 
     def main(self):
 

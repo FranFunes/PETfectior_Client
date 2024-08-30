@@ -39,24 +39,24 @@ def logout():
 @application.route('/index')
 @application.route('/tasks')
 def tasks():    
-    return render_template('tasks.html')
+    return render_template('tasks.html', module = 'tasks')
 
 @application.route('/config')
 @login_required
 def config():
 
-    return render_template('config.html')
+    return render_template('config.html', module = 'config')
 
 @application.route('/dashboard')
 @login_required
 def dashboard():
 
-    return render_template('dashboard.html')
+    return render_template('dashboard.html', module = 'dashboard')
 
 @application.route('/logs')
 def logs():    
     
-    return render_template('logs.html')
+    return render_template('logs.html', module='logs')
 
 ###################################################################################
 ###########################           TASKS          ##############################
