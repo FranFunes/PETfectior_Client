@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="es">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PETfectior Client &mdash; documentación de PETfectior - 0.1</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/petfectior.css?v=284fb656" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=5ba375e5"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+        <script src="_static/translations.js?v=efdbd0b9"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Índice" href="genindex.html" />
+    <link rel="search" title="Búsqueda" href="search.html" />
+    <link rel="next" title="Manual de usuario" href="user/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            PETfectior
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Buscar documentos" aria-label="Buscar documentos" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contenidos:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="user/index.html">Manual de usuario</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference/index.html">Referencia</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">PETfectior</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">PETfectior Client</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> Ver código fuente de la página</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="petfectior-client">
+<h1>PETfectior Client<a class="headerlink" href="#petfectior-client" title="Enlace permanente a este encabezado"></a></h1>
+<section id="que-es-petfectior">
+<h2>¿Qué es PETfectior?<a class="headerlink" href="#que-es-petfectior" title="Enlace permanente a este encabezado"></a></h2>
+<p>PETfectior es una aplicación para eliminación de ruido en imágenes de Tomografía por Emisión de Positrones
+(PET). Actualmente, se encuentra en proceso de registro ante ANMAT para poder ser distribuído
+como un producto médico.</p>
+</section>
+<section id="que-es-petfectior-client">
+<h2>¿Qué es PETfectior Client?<a class="headerlink" href="#que-es-petfectior-client" title="Enlace permanente a este encabezado"></a></h2>
+<p>PETfectior funciona con una lógica cliente-servidor: las imágenes a procesar deben ser enviadas, a través
+de internet, desde el equipo, workstation o red informática del usuario final (cliente) a un servidor
+de procesamiento centralizado.
+PETfectior Client funciona como intermediario entre la red del cliente y el servidor de procesamiento, y
+cumple las siguientes funciones:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Simplifica el flujo de trabajo exponiendo una interfaz DICOM hacia la red del cliente.
+El usuario final solo tiene que enviar por DICOM las imágenes a procesar a esta interfaz,
+y recibirá las imágenes procesadas, también por DICOM.</p></li>
+<li><p>Valida las imágenes recibidas, asegurándose que el servidor remoto sea capaz de procesarlas.</p></li>
+<li><p>Extrae del DICOM recibido los valores de píxel y los metadatos necesarios para el procesamiento,
+eliminando todos los datos identificatorios del paciente.</p></li>
+<li><p>Envía los datos extraídos al servidor remoto para su procesamiento.</p></li>
+<li><p>Recibe los datos procesados, genera los objetos DICOM, y los envía a los nodos de destino.</p></li>
+<li><p>Proporciona una interfaz gráfica de usuario, accesible desde cualquier navegador web de la red, para
+el seguimiento de las tareas enviadas, el monitoreo y configuración de la herramienta, y el rastreo
+y solución de errores.</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="guia-de-usuario">
+<h2>Guía de usuario<a class="headerlink" href="#guia-de-usuario" title="Enlace permanente a este encabezado"></a></h2>
+<p>El <a class="reference internal" href="user/index.html"><span class="doc">Manual de usuario</span></a> es el documento de referencia que el usuario final debe consultar para saber cómo
+instalar, configurar y usar la herramienta.</p>
+</section>
+<section id="referencia">
+<h2>Referencia<a class="headerlink" href="#referencia" title="Enlace permanente a este encabezado"></a></h2>
+<p>La <a class="reference internal" href="reference/index.html"><span class="doc">Referencia</span></a> contiene una descripción de la lógica y el funciomiento interno de los diferentes módulos
+de código que componen la aplicación, apuntando principalmente a facilitar el proceso de auditorías de
+código por parte de terceros.</p>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Pie de página">
+        <a href="user/index.html" class="btn btn-neutral float-right" title="Manual de usuario" accesskey="n" rel="next">Siguiente <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Derechos de autor 2024, Francisco Funes / Mauro Namías / Federico Matorras.</p>
+  </div>
+
+  Compilado con <a href="https://www.sphinx-doc.org/">Sphinx</a> usando un
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">tema</a>
+    proporcionado por <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="es">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flujo de trabajo de procesamiento &mdash; documentación de PETfectior - 0.1</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/petfectior.css?v=284fb656" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=5ba375e5"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+        <script src="../_static/translations.js?v=efdbd0b9"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Índice" href="../genindex.html" />
+    <link rel="search" title="Búsqueda" href="../search.html" />
+    <link rel="next" title="Servicios - implementación" href="modules.html" />
+    <link rel="prev" title="Referencia" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            PETfectior
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Buscar documentos" aria-label="Buscar documentos" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contenidos:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../user/index.html">Manual de usuario</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Referencia</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Flujo de trabajo de procesamiento</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#envio-de-imagenes-a-procesar">Envío de imágenes a procesar</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#recepcion-de-imagenes-dicom">Recepción de imágenes DICOM</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#compilator">Compilator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#validator">Validator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#packer">Packer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#uploader">Uploader</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#descarga-de-imagenes-procesadas">Descarga de imágenes procesadas</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#downloader">Downloader</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#unpacker">Unpacker</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#envio-de-imagenes-dicom">Envío de imágenes DICOM</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.html">Servicios - implementación</a></li>
+<li class="toctree-l2"><a class="reference internal" href="database.html">Base de datos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html">API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deployment.html">Entorno de funcionamiento</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PETfectior</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Referencia</a></li>
+      <li class="breadcrumb-item active">Flujo de trabajo de procesamiento</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/reference/workflow.rst.txt" rel="nofollow"> Ver código fuente de la página</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="flujo-de-trabajo-de-procesamiento">
+<h1>Flujo de trabajo de procesamiento<a class="headerlink" href="#flujo-de-trabajo-de-procesamiento" title="Enlace permanente a este encabezado"></a></h1>
+<p>El procesamiento de los estudios se divide en varias etapas, llevadas a cabo por diferentes <strong>servicios</strong>
+(implementados como python threads), que corren en paralelo, y se organiza en objetos <strong>Task</strong>, cada
+uno de los cuales representa una tarea. La tarea es la unidad mínima de información que se enviará a
+procesar, y se corresponde con una serie DICOM PET. Los servicios intercambian entre sí información de
+las tareas a procesar a través de colas python (Queues).</p>
+<p>A continuación se describe cada una de estas etapas de procesamiento y el servicio correspondiente.</p>
+<section id="envio-de-imagenes-a-procesar">
+<h2>Envío de imágenes a procesar<a class="headerlink" href="#envio-de-imagenes-a-procesar" title="Enlace permanente a este encabezado"></a></h2>
+<section id="recepcion-de-imagenes-dicom">
+<h3>Recepción de imágenes DICOM<a class="headerlink" href="#recepcion-de-imagenes-dicom" title="Enlace permanente a este encabezado"></a></h3>
+<p>La aplicación implementa un servicio DICOM Storage Service Class Provider, que escucha en un puerto TCP
+esperando que otra aplicación DICOM en la red del cliente le envíe imágenes PET (no acepta ninguna otra
+modalidad). Cuando recibe una imagen (instancia) PET:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Verifica que existan ciertos campos mandatorios en el encabezado DICOM, y extrae los necesarios para
+continuar el procesamiento.</p></li>
+<li><p>Guarda en base de datos información DICOM a nivel de instancia, serie, estudio y paciente
+(creando los elementos que no existan o actualizándolos si ya existen)</p></li>
+<li><p>Guarda el archivo DICOM en disco.</p></li>
+<li><p>Pone los datos DICOM extraídos, junto con los datos del dispositivo de origen, en la cola de salida.</p></li>
+</ol>
+</div></blockquote>
+<p>Se puede consultar la implementación, y la función que procesa</p>
+</section>
+<section id="compilator">
+<h3>Compilator<a class="headerlink" href="#compilator" title="Enlace permanente a este encabezado"></a></h3>
+<p>Este servicio se encarga de agrupar (compilar) las instancias individuales pasadas por el Store SCP en series
+DICOM completas, y asociarle a cada serie una tarea. Instancias repetidas se asignan a tareas distintas.
+Luego de 5 segundos de inactividad, el proceso revisa si alguna de las tareas está lista para ser enviada
+al paso siguiente. Para eso, debe cumplir algunos criterios:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Debe tener una cantidad mínima de imágenes (configurable en base de datos).</p></li>
+<li><p>Deben haberse recibido la cantidad esperada de imágenes (leída del campo DICOM NumberOfSlices) si es
+conocida, o bien las imágenes recibidas deben ser contiguas (sin huecos mayores a cierta dimensión
+configurable en base de datos).</p></li>
+</ul>
+</div></blockquote>
+<p>Las tareas listas se ponen en la cola de salida. Las que estén incompletas e inactivas por más de cierto
+tiempo (configurable en base de datos), se abortan.</p>
+</section>
+<section id="validator">
+<h3>Validator<a class="headerlink" href="#validator" title="Enlace permanente a este encabezado"></a></h3>
+<p>Este servicio verifica que la tarea pueda ser procesada por el servidor remoto. Para eso, debe cumplir los
+siguientes criterios:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Debe haberse fijado el destino final (DICOM) de las imágenes procesadas.</p></li>
+<li><p>La información del encabezado DICOM debe estar completa.</p></li>
+<li><p>El radiofármaco debe ser conocido.</p></li>
+<li><p>El servidor remoto debe validar la licencia de uso para ese radiofármaco y la existencia de un algoritmo
+de procesamiento adecuado. Esto se hace a través de una API HTTP expuesta por el servidor a tal fin.</p></li>
+</ul>
+</div></blockquote>
+<p>Las tareas validadas se ponen en la cola de salida. Las que no cumplen alguno de los criterios se abortan.</p>
+</section>
+<section id="packer">
+<h3>Packer<a class="headerlink" href="#packer" title="Enlace permanente a este encabezado"></a></h3>
+<p>Este servicio extrae los valores de voxel de la imagen a procesar en un numpy array, los guarda en
+un archivo {task_id}.npy junto con un archivo metadata.json con los metadatos necesarios para el procesamiento
+y genera un archivo comprimido para enviar al servidor.</p>
+</section>
+<section id="uploader">
+<h3>Uploader<a class="headerlink" href="#uploader" title="Enlace permanente a este encabezado"></a></h3>
+<p>Este servicio copia el archivo comprimido a una carpeta compartida con el servidor remoto a través de una
+VPN establecida a tal fin. Luego, envía un mensaje a la API del servidor, para iniciar el procesamiento.</p>
+</section>
+</section>
+<section id="descarga-de-imagenes-procesadas">
+<h2>Descarga de imágenes procesadas<a class="headerlink" href="#descarga-de-imagenes-procesadas" title="Enlace permanente a este encabezado"></a></h2>
+<p>Cuando el servidor finaliza un procesamiento, escribe un archivo lo indica a PETfectior Client a través de un request a la
+<a class="reference internal" href="api.html"><span class="doc">API</span></a>, que dispara la descarga de los datos procesados de esa tarea.</p>
+<section id="downloader">
+<h3>Downloader<a class="headerlink" href="#downloader" title="Enlace permanente a este encabezado"></a></h3>
+<p>Este servicio copia el archivo {task_id}.zip escrito por el servidor con los resultados, desde la carpeta
+compartida al almacenamiento local.</p>
+</section>
+<section id="unpacker">
+<h3>Unpacker<a class="headerlink" href="#unpacker" title="Enlace permanente a este encabezado"></a></h3>
+<p>Este servicio descomprime el archivo {task_id}.zip con los datos de pixel procesados, aplica diferentes
+filtros de suavizado configurados por el cliente, y genera una o más series de objetos DICOM correspondientes
+al paciente y estudio originalmente vinculados a la tarea.
+Los filtros de suavizado son de tipo gaussiano, isotrópicos, puede ser configurados por el cliente a través
+de la interfaz de usuario, y su configuración se almacena en base de datos.
+Una vez reconstruidos los objetos DICOM, se colocan en la cola de salida para ser enviados.</p>
+</section>
+<section id="envio-de-imagenes-dicom">
+<h3>Envío de imágenes DICOM<a class="headerlink" href="#envio-de-imagenes-dicom" title="Enlace permanente a este encabezado"></a></h3>
+<p>Este servicio envía los objetos DICOM generados en el paso anterior a los destinados configurados para cada
+tarea.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Pie de página">
+        <a href="index.html" class="btn btn-neutral float-left" title="Referencia" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Anterior</a>
+        <a href="modules.html" class="btn btn-neutral float-right" title="Servicios - implementación" accesskey="n" rel="next">Siguiente <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Derechos de autor 2024, Francisco Funes / Mauro Namías / Federico Matorras.</p>
+  </div>
+
+  Compilado con <a href="https://www.sphinx-doc.org/">Sphinx</a> usando un
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">tema</a>
+    proporcionado por <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
