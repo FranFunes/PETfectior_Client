@@ -263,7 +263,7 @@ class Compilator():
             if len(datasets) <  min_instances:
                 logger.info(f"series {datasets[0].SeriesInstanceUID} with {len(datasets)} instances doesn't meet minimum instances criteria and waiting period has expired.")
                 msg = f"""Sólo {len(datasets)} imágenes fueron recibidas luego de un período de espera de {timeout} segundos. 
-                Sólo se pueden procesar series con {min_instances} o más imágenes pueden ser procesadas."""
+                Sólo se pueden procesar series con {min_instances} o más imágenes."""
                 return 'abort', msg            
             if self.check_for_contiguity(datasets):
                 logger.info(f"series {datasets[0].SeriesInstanceUID} completed by contiguity criteria.")

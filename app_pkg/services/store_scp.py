@@ -1,6 +1,9 @@
+import logging, os, traceback, pydicom
+from typing import Callable
+from queue import Queue
 from pynetdicom import AE, evt, AllStoragePresentationContexts, VerificationPresentationContexts
 from pynetdicom._globals import DEFAULT_TRANSFER_SYNTAXES
-import logging, os, traceback, pydicom
+from pydicom import Dataset
 from app_pkg import application
 from app_pkg.db_models import AppConfig
 
@@ -13,29 +16,38 @@ pydicom.config.convert_wrong_length_to_UN = True
 class StoreSCP(AE):    
 
     """ 
-        The main class for creating and managing DICOM Store Service Class Provider.
-        Inherits from pynetdicom AE class, so it has similar functionality.
-        Some properties and methods are added to simplify its usage as a DICOM Store SCP:
-    
-        Properties:
-            · scp_queue: received datasets are put into this queue. Another process is responsable
-              for consuming this queue.            
-                       
-        Methods:
-            · start: starts the server.
-            · stop: stops the server (after all current transfers and existing associations are cleared up).
-    
-    """
+        Esta clase permite crear y manejar un servicio DICOM Store Service Class Provider,
+        para poder recibir objetos DICOM de otros equipos.
+        Hereda de `pynetdicom.AE <https://pydicom.github.io/pynetdicom/stable/reference/generated/pynetdicom.ae.ApplicationEntity.html#pynetdicom.ae.ApplicationEntity>`_ ,
+        por lo que comparte muchas de sus funcionalidades.
 
-    def __init__(self, input_queue, c_store_handler, ae_title = 'PETFECTIOR', store_dest = 'incoming', address = '0.0.0.0', *args, **kwargs):
+        Aquí se describen solo aquellos atributos/métodos que se agregan a dicha clase.
 
+        El comportamiento está definido principalmente por el parámetro `c_store_handler`, con una función
+        a la que se pasará cada uno de los objetos recibidos. En este función, la clase
+        
+
+    """    
+
+    def __init__(self, input_queue: Queue, 
+                 c_store_handler: Callable, 
+                 ae_title:str = 'PETFECTIOR',
+                 store_dest:str = 'incoming', *args, **kwargs) -> None:
+        """
+            
+            :param input_queue: objeto Queue.queue donde se pondrán los objetos pydicom.Dataset recibidos para su
+                                posterior procesamiento.
+            :param c_store_handler: función de procesamiento de cada objeto pydicom.Dataset recibido
+            :param store_dest: raíz de la estructura de directorios donde se almacenarán los DICOMS recibidos.
+        
+        
+        """
         super().__init__(ae_title, *args,**kwargs)
 
         # Set class properties
-        self.address = address
         self.queue = input_queue
         self.store_dest =  store_dest   
-        self.handle_store = c_store_handler     
+        self.store_handler = c_store_handler     
 
         # Add presentation contexts with specified transfer syntaxes
         for context in AllStoragePresentationContexts:
@@ -59,37 +71,46 @@ class StoreSCP(AE):
         
         self.handle_echo = handle_echo
 
-    def start(self):        
+    def start(self) -> str:        
 
-        """    
+        """
 
-        Starts the DICOM Store Service Class Provider.
+            Inicia el thread donde corre el DICOM Store Service Class Provider.
 
-        """                      
+            :return: str descriptivo del resultado.
+        
+        """
+
         with application.app_context():
             config = AppConfig.query.first()
             ae_title = config.store_scp_aet
             port = config.store_scp_port
 
-
-        handlers = [(evt.EVT_C_STORE, self.handle_store, [self.queue, self.store_dest]), (evt.EVT_C_ECHO, self.handle_echo)]   
+        handlers = [(evt.EVT_C_STORE, self.store_handler, [self.queue, self.store_dest]), (evt.EVT_C_ECHO, self.handle_echo)]   
 
         # Start listening for incoming association requests
         if not self.get_status() == 'Corriendo':
             try:
-                self.server = self.start_server(address = (self.address, port), ae_title = ae_title, evt_handlers=handlers, block = False)     
-                logger.info(f'Starting Store SCP: {ae_title}@{self.address}:{port}')
+                self.server = self.start_server(address = ('0.0.0.0', port), ae_title = ae_title, evt_handlers=handlers, block = False)     
+                logger.info(f'Starting Store SCP: {ae_title}@0.0.0.0:{port}')
                 return "Dicom Listener inició exitosamente"
             except Exception as e:
-                logger.error(f'Failed when starting StoreSCP {ae_title}@{self.address}:{port}')
+                logger.error(f'Failed when starting StoreSCP {ae_title}@0.0.0.0:{port}')
                 logger.error(traceback.format_exc())
                 return "Dicom Listener could not be started"
         else:
             return 'Dicom Listener ya está corriendo'
 
-    def stop(self):
+    def stop(self) -> str:
 
-        """ Stops the SCP """ 
+        """
+
+            Detiene el thread donde corre el DICOM Store Service Class Provider.
+
+            :return: str descriptivo del resultado.
+        
+        """
+
         try:               
             self.server.shutdown()
             logger.info("Store SCP stopped")
@@ -98,9 +119,10 @@ class StoreSCP(AE):
             logger.error("Store SCP could not be stopped")
             return 'Dicom Listener could not be stopped!'
 
+    def restart(self) -> None:
 
-    def restart(self):
-        
+        """ Reinicia el thread donde corre el DICOM Store Service Class Provider. """
+
         try:
             self.stop()
         except Exception as e: 
@@ -109,6 +131,8 @@ class StoreSCP(AE):
         self.start()
 
     def get_status(self):
+
+        """Devuelve un string descriptivo del estado del thread principal."""
 
         if not hasattr(self,"server"):
             state = 'No iniciado'
@@ -143,10 +167,16 @@ class StoreSCP(AE):
         
         return state
     
-    def echo(self, device: dict) -> int:
+    def echo(self, device: dict) -> int | Dataset:
 
         """
-            device: dict with address, port and ae_title
+
+            Verifica la conexión con un dispositivo DICOM remoto, mediante un mensaje
+            DICOM C-ECHO.
+
+            :return: -1 si la conexión no fue exitosa
+            :return: pydicom.Dataset con la respuesta del dispositivo remoto, 
+                     si la conexión fue exitosa
 
         """
         try:

@@ -11,3 +11,4 @@ series_to_unpack/
 unpacked_series/
 bkp_volumes
 db_backup
+docs/build
