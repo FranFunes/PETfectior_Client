@@ -6,11 +6,8 @@ Referencia
    :maxdepth: 3
 
    workflow
-
-.. toctree::
-   :maxdepth: 2
-
    modules
    database
    api
    deployment
+
