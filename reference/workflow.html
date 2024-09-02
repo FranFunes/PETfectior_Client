@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="es">
+<html class="writer-html5" lang="es" data-content_root="../">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -15,10 +15,10 @@
   
         <script src="../_static/jquery.js?v=5d32c60e"></script>
         <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=5ba375e5"></script>
-        <script src="../_static/doctools.js?v=888ff710"></script>
-        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
-        <script src="../_static/translations.js?v=efdbd0b9"></script>
+        <script src="../_static/documentation_options.js?v=9c9b61ad"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../_static/translations.js?v=d190bf04"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Índice" href="../genindex.html" />
     <link rel="search" title="Búsqueda" href="../search.html" />
@@ -100,7 +100,7 @@
            <div itemprop="articleBody">
              
   <section id="flujo-de-trabajo-de-procesamiento">
-<h1>Flujo de trabajo de procesamiento<a class="headerlink" href="#flujo-de-trabajo-de-procesamiento" title="Enlace permanente a este encabezado"></a></h1>
+<h1>Flujo de trabajo de procesamiento<a class="headerlink" href="#flujo-de-trabajo-de-procesamiento" title="Link to this heading"></a></h1>
 <p>El procesamiento de los estudios se divide en varias etapas, llevadas a cabo por diferentes <strong>servicios</strong>
 (implementados como python threads), que corren en paralelo, y se organiza en objetos <strong>Task</strong>, cada
 uno de los cuales representa una tarea. La tarea es la unidad mínima de información que se enviará a
@@ -108,9 +108,9 @@ procesar, y se corresponde con una serie DICOM PET. Los servicios intercambian e
 las tareas a procesar a través de colas python (Queues).</p>
 <p>A continuación se describe cada una de estas etapas de procesamiento y el servicio correspondiente.</p>
 <section id="envio-de-imagenes-a-procesar">
-<h2>Envío de imágenes a procesar<a class="headerlink" href="#envio-de-imagenes-a-procesar" title="Enlace permanente a este encabezado"></a></h2>
+<h2>Envío de imágenes a procesar<a class="headerlink" href="#envio-de-imagenes-a-procesar" title="Link to this heading"></a></h2>
 <section id="recepcion-de-imagenes-dicom">
-<h3>Recepción de imágenes DICOM<a class="headerlink" href="#recepcion-de-imagenes-dicom" title="Enlace permanente a este encabezado"></a></h3>
+<h3>Recepción de imágenes DICOM<a class="headerlink" href="#recepcion-de-imagenes-dicom" title="Link to this heading"></a></h3>
 <p>La aplicación implementa un servicio DICOM Storage Service Class Provider, que escucha en un puerto TCP
 esperando que otra aplicación DICOM en la red del cliente le envíe imágenes PET (no acepta ninguna otra
 modalidad). Cuando recibe una imagen (instancia) PET:</p>
@@ -127,7 +127,7 @@ continuar el procesamiento.</p></li>
 <p>Se puede consultar la implementación, y la función que procesa</p>
 </section>
 <section id="compilator">
-<h3>Compilator<a class="headerlink" href="#compilator" title="Enlace permanente a este encabezado"></a></h3>
+<h3>Compilator<a class="headerlink" href="#compilator" title="Link to this heading"></a></h3>
 <p>Este servicio se encarga de agrupar (compilar) las instancias individuales pasadas por el Store SCP en series
 DICOM completas, y asociarle a cada serie una tarea. Instancias repetidas se asignan a tareas distintas.
 Luego de 5 segundos de inactividad, el proceso revisa si alguna de las tareas está lista para ser enviada
@@ -144,7 +144,7 @@ configurable en base de datos).</p></li>
 tiempo (configurable en base de datos), se abortan.</p>
 </section>
 <section id="validator">
-<h3>Validator<a class="headerlink" href="#validator" title="Enlace permanente a este encabezado"></a></h3>
+<h3>Validator<a class="headerlink" href="#validator" title="Link to this heading"></a></h3>
 <p>Este servicio verifica que la tarea pueda ser procesada por el servidor remoto. Para eso, debe cumplir los
 siguientes criterios:</p>
 <blockquote>
@@ -159,28 +159,28 @@ de procesamiento adecuado. Esto se hace a través de una API HTTP expuesta por e
 <p>Las tareas validadas se ponen en la cola de salida. Las que no cumplen alguno de los criterios se abortan.</p>
 </section>
 <section id="packer">
-<h3>Packer<a class="headerlink" href="#packer" title="Enlace permanente a este encabezado"></a></h3>
+<h3>Packer<a class="headerlink" href="#packer" title="Link to this heading"></a></h3>
 <p>Este servicio extrae los valores de voxel de la imagen a procesar en un numpy array, los guarda en
 un archivo {task_id}.npy junto con un archivo metadata.json con los metadatos necesarios para el procesamiento
 y genera un archivo comprimido para enviar al servidor.</p>
 </section>
 <section id="uploader">
-<h3>Uploader<a class="headerlink" href="#uploader" title="Enlace permanente a este encabezado"></a></h3>
+<h3>Uploader<a class="headerlink" href="#uploader" title="Link to this heading"></a></h3>
 <p>Este servicio copia el archivo comprimido a una carpeta compartida con el servidor remoto a través de una
 VPN establecida a tal fin. Luego, envía un mensaje a la API del servidor, para iniciar el procesamiento.</p>
 </section>
 </section>
 <section id="descarga-de-imagenes-procesadas">
-<h2>Descarga de imágenes procesadas<a class="headerlink" href="#descarga-de-imagenes-procesadas" title="Enlace permanente a este encabezado"></a></h2>
+<h2>Descarga de imágenes procesadas<a class="headerlink" href="#descarga-de-imagenes-procesadas" title="Link to this heading"></a></h2>
 <p>Cuando el servidor finaliza un procesamiento, escribe un archivo lo indica a PETfectior Client a través de un request a la
 <a class="reference internal" href="api.html"><span class="doc">API</span></a>, que dispara la descarga de los datos procesados de esa tarea.</p>
 <section id="downloader">
-<h3>Downloader<a class="headerlink" href="#downloader" title="Enlace permanente a este encabezado"></a></h3>
+<h3>Downloader<a class="headerlink" href="#downloader" title="Link to this heading"></a></h3>
 <p>Este servicio copia el archivo {task_id}.zip escrito por el servidor con los resultados, desde la carpeta
 compartida al almacenamiento local.</p>
 </section>
 <section id="unpacker">
-<h3>Unpacker<a class="headerlink" href="#unpacker" title="Enlace permanente a este encabezado"></a></h3>
+<h3>Unpacker<a class="headerlink" href="#unpacker" title="Link to this heading"></a></h3>
 <p>Este servicio descomprime el archivo {task_id}.zip con los datos de pixel procesados, aplica diferentes
 filtros de suavizado configurados por el cliente, y genera una o más series de objetos DICOM correspondientes
 al paciente y estudio originalmente vinculados a la tarea.
@@ -189,7 +189,7 @@ de la interfaz de usuario, y su configuración se almacena en base de datos.
 Una vez reconstruidos los objetos DICOM, se colocan en la cola de salida para ser enviados.</p>
 </section>
 <section id="envio-de-imagenes-dicom">
-<h3>Envío de imágenes DICOM<a class="headerlink" href="#envio-de-imagenes-dicom" title="Enlace permanente a este encabezado"></a></h3>
+<h3>Envío de imágenes DICOM<a class="headerlink" href="#envio-de-imagenes-dicom" title="Link to this heading"></a></h3>
 <p>Este servicio envía los objetos DICOM generados en el paso anterior a los destinados configurados para cada
 tarea.</p>
 </section>
