@@ -555,13 +555,16 @@ def get_modules_names():
 @application.route('/get_app_logs', methods = ['GET','POST'])
 def get_app_logs():
 
-    if not request.json['ignore']:
+    try:        
+        if request.json['ignore']:
+            return {"data": []}
+        
         df = pd.read_csv(os.path.join(os.environ['LOGGING_FILEPATH'],'output.log'), sep=';', names = ['datetime','level','module','function','message'])
         df['datetime'] = df['datetime'].map(lambda x: datetime.strptime(x,'%Y-%m-%d %H:%M:%S,%f'))
-
+        
         # Filter by level
         if request.json['levels']:
-            df = df[df.apply(lambda x:x.level in request.json['levels'], axis = 1)] 
+            df = df[df.apply(lambda x:x.level in request.json['levels'], axis = 1)]
 
         # Filter by date
         if request.json['dateSelector'] == 'range':
@@ -577,11 +580,14 @@ def get_app_logs():
             df = df[df.module == request.json['process']]
 
         data = df.to_dict('records')
-    else:
-        data = []
 
-    return {"data": data}
+        return {"data": data}
 
+    except Exception as e:
+        logger.error("can't show app logs")
+        logger.error(traceback.format_exc())
+        return {"data": []}        
+   
 @application.route('/get_dicom_logs', methods = ['GET','POST'])
 def get_dicom_logs():
 
