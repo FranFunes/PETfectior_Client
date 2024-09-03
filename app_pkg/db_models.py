@@ -193,7 +193,7 @@ class AppConfig(db.Model):
     ip_address = db.Column(db.String(12), default = '')
     mirror_mode = db.Column(db.Boolean, default=False)
     server_url = db.Column(db.String(64), default=os.getenv('SERVER_ADDRESS') + ':' + os.getenv('SERVER_PORT') )
-    shared_path = db.Column(db.String(128), default=os.getenv('SHARED_PATH') or '//10.87.141.15/Proyectos/PETfectior')
+    shared_path = db.Column(db.String(128), default=os.getenv('SHARED_PATH') or '//nas-ia.redfcdn.com/Proyectos/PETfectior')
     shared_mount_point = db.Column(db.String(128), default=os.getenv('SHARED_MOUNT_POINT') or 'shared')
     zip_dir = db.Column(db.String(128), default=os.path.join('temp','packed_series'))
     unzip_dir = db.Column(db.String(128), default=os.path.join('temp','unpacked_series'))

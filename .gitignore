@@ -5,9 +5,10 @@ data
 temp
 app.db
 incoming
-vpn/config
+vpn/config*
 docker-compose-no-vpn.yml
 series_to_unpack/
 unpacked_series/
 bkp_volumes
 db_backup
+docs/build
