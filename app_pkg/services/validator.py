@@ -1,4 +1,4 @@
-import threading, logging, os, requests, json, traceback
+import threading, logging, os, requests, json, traceback, re
 from requests import ConnectionError, JSONDecodeError
 from time import sleep
 from datetime import datetime
@@ -330,16 +330,17 @@ class Validator():
 
     def check_model(self, task: Task) -> bool:
 
-
         ss = Dataset.from_json(task.recon_settings)
                 
         if ss.Manufacturer == 'SIEMENS':
             recon_method = ss.ReconstructionMethod
-            iterations_index = recon_method.find('i')
-            subset_index = recon_method.find('s')
-            space_index = recon_method.find(' ')
-            iterations = int(recon_method[space_index+1:iterations_index])
-            subsets = int(recon_method[iterations_index+1:subset_index])            
+            match = re.search(r'(\d+)i(\d+)s', recon_method)
+            try:
+                iterations = int(match.group(1))
+                subsets = int(match.group(2))
+            except:
+                return False, f"""No se encontraron las iteraciones y subsets 
+                en el campo ReconstructionMethod {recon_method} de Siemens """
         elif ss.Manufacturer == 'GE MEDICAL SYSTEMS':
             if type(ss[0x000910B2].value) == bytes:
                 iterations = int.from_bytes(ss[0x000910B2].value, "little")  
@@ -352,7 +353,7 @@ class Validator():
                 subsets = ss[0x000910B3].value
         else:
             logger.info(f"no models for manufacturer {ss.Manufacturer}")      
-            return False, f"{ss.Manufacturer} is not supported"
+            return False, f"El fabricante {ss.Manufacturer} no es soportado"
         
         c = AppConfig.query.first()
         data = {

@@ -1,4 +1,4 @@
-import logging, threading, os, requests, traceback
+import logging, threading, os, requests, traceback, re
 from time import sleep
 from shutil import copy
 from pydicom.dataset import Dataset
@@ -192,12 +192,9 @@ class SeriesUploader():
 
         if ss.Manufacturer == 'SIEMENS':
             recon_method = ss.ReconstructionMethod
-            iterations_index = recon_method.find('i')
-            subset_index = recon_method.find('s')
-            space_index = recon_method.find(' ')
-            iterations = int(recon_method[space_index+1:iterations_index])
-            subsets = int(recon_method[iterations_index+1:subset_index])
-            
+            match = re.search(r'(\d+)i(\d+)s', recon_method)
+            iterations = int(match.group(1))
+            subsets = int(match.group(2))            
         elif ss.Manufacturer == 'GE MEDICAL SYSTEMS':
             if type(ss[0x000910B2].value) == bytes:
                 iterations = int.from_bytes(ss[0x000910B2].value, "little")  
