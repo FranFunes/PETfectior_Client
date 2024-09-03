@@ -27,12 +27,11 @@ class StoreSCP(AE):
     
     """
 
-    def __init__(self, input_queue, c_store_handler, ae_title = 'PETFECTIOR', store_dest = 'incoming', address = '0.0.0.0', *args, **kwargs):
+    def __init__(self, input_queue, c_store_handler, ae_title = 'PETFECTIOR', store_dest = 'incoming', *args, **kwargs):
 
         super().__init__(ae_title, *args,**kwargs)
 
         # Set class properties
-        self.address = address
         self.queue = input_queue
         self.store_dest =  store_dest   
         self.handle_store = c_store_handler     
@@ -77,11 +76,11 @@ class StoreSCP(AE):
         # Start listening for incoming association requests
         if not self.get_status() == 'Corriendo':
             try:
-                self.server = self.start_server(address = (self.address, port), ae_title = ae_title, evt_handlers=handlers, block = False)     
-                logger.info(f'Starting Store SCP: {ae_title}@{self.address}:{port}')
+                self.server = self.start_server(address = ('0.0.0.0', port), ae_title = ae_title, evt_handlers=handlers, block = False)     
+                logger.info(f'Starting Store SCP: {ae_title}@0.0.0.0:{port}')
                 return "Dicom Listener inició exitosamente"
             except Exception as e:
-                logger.error(f'Failed when starting StoreSCP {ae_title}@{self.address}:{port}')
+                logger.error(f'Failed when starting StoreSCP {ae_title}@0.0.0.0:{port}')
                 logger.error(traceback.format_exc())
                 return "Dicom Listener could not be started"
         else:
