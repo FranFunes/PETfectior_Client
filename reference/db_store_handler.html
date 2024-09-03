@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="es" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>app_pkg.functions.db_store_handler &mdash; documentación de PETfectior - 0.1</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/petfectior.css?v=284fb656" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=9c9b61ad"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../_static/translations.js?v=d190bf04"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Índice" href="../genindex.html" />
+    <link rel="search" title="Búsqueda" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            PETfectior
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Buscar documentos" aria-label="Buscar documentos" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contenidos:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../user/index.html">Manual de usuario</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Referencia</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PETfectior</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">app_pkg.functions.db_store_handler</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/reference/db_store_handler.rst.txt" rel="nofollow"> Ver código fuente de la página</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="app-pkg-functions-db-store-handler">
+<h1>app_pkg.functions.db_store_handler<a class="headerlink" href="#app-pkg-functions-db-store-handler" title="Link to this heading"></a></h1>
+<dl class="py function" id="module-app_pkg.functions.db_store_handler">
+<span id="module-db-store-handler"></span><dt class="sig sig-object py" id="app_pkg.functions.db_store_handler.db_store_handler">
+<span class="sig-prename descclassname"><span class="pre">app_pkg.functions.db_store_handler.</span></span><span class="sig-name descname"><span class="pre">db_store_handler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pydicom.github.io/pynetdicom/stable/reference/generated/pynetdicom.events.Event.html#pynetdicom.events.Event" title="(en pynetdicom versión 2.1.0)"><span class="pre">Event</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_queue</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/queue.html#queue.Queue" title="(en Python versión 3.12)"><span class="pre">Queue</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">root_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(en Python versión 3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(en Python versión 3.12)"><span class="pre">int</span></a></span></span><a class="headerlink" href="#app_pkg.functions.db_store_handler.db_store_handler" title="Link to this definition"></a></dt>
+<dd><p id="function-db-store-handler">Función para asociar al evento C-STORE en el <a class="reference internal" href="store_scp.html#dicom-storage-service-class-provider"><span class="std std-ref">DICOM Storage Service Class Provider</span></a>. Para cada objeto DICOM recibido:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Extrae y decodifica el objeto DICOM enviado.</p></li>
+<li><p>Verifica que el campo SOPClassUID sea 1.2.840.10008.5.1.4.1.1.128 (Positron Emission Tomography Image Storage); de lo contrario, lo ignora.</p></li>
+<li><p>Verifica que estén presentes todos los campos mandatorios (ver <a class="reference internal" href="#function-extract-from-dataset"><span class="std std-ref">extract_from_dataset</span></a>).</p></li>
+<li><p>Guarda el archivo en disco (si no existe ya) y actualiza la base de datos (ver <a class="reference internal" href="#function-store-dataset"><span class="std std-ref">store_dataset</span></a>).</p></li>
+<li><p>Pone en la <a class="reference external" href="https://docs.python.org/3/library/queue.html#queue.Queue" title="(en Python versión 3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">queue.Queue</span></code></a> de salida un <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(en Python versión 3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a> con la siguiente estructura:</p>
+<ul>
+<li><p>dataset: <a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> <cite>new_ds</cite> generado por <a class="reference internal" href="#function-extract-from-dataset"><span class="std std-ref">extract_from_dataset</span></a>.</p></li>
+<li><p>recon_ds: <a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> <cite>recon_ds</cite> generado por <a class="reference internal" href="#function-extract-from-dataset"><span class="std std-ref">extract_from_dataset</span></a>.</p></li>
+<li><p>address: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(en Python versión 3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> con la dirección IP del dispositivo que inició la asociación y envío los DICOMS.</p></li>
+<li><p>ae_title: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(en Python versión 3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> con el AE Title de la aplicación que inició la asociación y envío los DICOMS.</p></li>
+</ul>
+</li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parámetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event</strong> – <a class="reference external" href="https://pydicom.github.io/pynetdicom/stable/reference/generated/pynetdicom.events.Event.html#pynetdicom.events.Event" title="(en pynetdicom versión 2.1.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Event</span></code></a> pasado al handler cuando se recibe un nuevo objeto DICOM para almacenar.</p></li>
+<li><p><strong>output_queue</strong> – <a class="reference external" href="https://docs.python.org/3/library/queue.html#queue.Queue" title="(en Python versión 3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">queue.Queue</span></code></a> donde se pasarán los resultados al próximo paso de procesamiento.</p></li>
+<li><p><strong>root_dir</strong> – raíz del directorio donde se guardarán los objetos DICOM recibidos.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Devuelve<span class="colon">:</span></dt>
+<dd class="field-even"><p>0xC210 si el objeto DICOM no tiene SOP Class UID o no se puede decodificar.</p>
+</dd>
+<dt class="field-odd">Devuelve<span class="colon">:</span></dt>
+<dd class="field-odd"><p>0xA700 si el objeto DICOM no tiene algún campo mandatorio.</p>
+</dd>
+<dt class="field-even">Devuelve<span class="colon">:</span></dt>
+<dd class="field-even"><p>0xA700 si ocurre un error al guardar el objeto DICOM en disco o en base de datos.</p>
+</dd>
+<dt class="field-odd">Devuelve<span class="colon">:</span></dt>
+<dd class="field-odd"><p>0x0000 si el objeto DICOM se guardo correctamente o si fue ignorado por SOP Class UID incorrecto.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app_pkg.functions.db_store_handler.extract_from_dataset">
+<span class="sig-prename descclassname"><span class="pre">app_pkg.functions.db_store_handler.</span></span><span class="sig-name descname"><span class="pre">extract_from_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><span class="pre">Dataset</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(en Python versión 3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(en Python versión 3.12)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><span class="pre">Dataset</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><span class="pre">Dataset</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#app_pkg.functions.db_store_handler.extract_from_dataset" title="Link to this definition"></a></dt>
+<dd><p id="function-extract-from-dataset">Verifica que un objeto DICOM contenga ciertos campos mandatorios y los extrae junto con
+otros opcionales.</p>
+<dl class="simple">
+<dt>Campos mandatorios:</dt><dd><ul class="simple">
+<li><p>StudyInstanceUID</p></li>
+<li><p>SeriesInstanceUID</p></li>
+<li><p>SOPInstanceUID</p></li>
+<li><p>ImagePositionPatient</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parámetros<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ds</strong> – <a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> para procesar, o <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(en Python versión 3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> con path al archivo DICOM.</p>
+</dd>
+<dt class="field-even">Devuelve<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(en Python versión 3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> con dos <a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> (new_ds, recon_ds) con los siguientes campos (si están disponibles):</p>
+<dl class="simple">
+<dt>new_ds:</dt><dd><ul class="simple">
+<li><p>StudyInstanceUID</p></li>
+<li><p>SeriesInstanceUID</p></li>
+<li><p>SOPInstanceUID</p></li>
+<li><p>ImagePositionPatient</p></li>
+<li><p>NumberOfSlices</p></li>
+<li><p>PatientName</p></li>
+<li><p>StudyDate</p></li>
+<li><p>SeriesDescription</p></li>
+</ul>
+</dd>
+<dt>recon_ds:</dt><dd><ul class="simple">
+<li><p>PixelSpacing</p></li>
+<li><p>ReconstructionMethod</p></li>
+<li><p>Manufacturer</p></li>
+<li><p>ManufacturerModelName</p></li>
+<li><p>SliceThickness</p></li>
+<li><p>ConvolutionKernel</p></li>
+<li><p>PatientWeight</p></li>
+<li><p>ActualFrameDuration</p></li>
+<li><p>RadiopharmaceuticalInformationSequence</p></li>
+<li><p>0x000910B3</p></li>
+<li><p>0x000910B2</p></li>
+<li><p>0x000910BA</p></li>
+<li><p>0x000910BB</p></li>
+<li><p>0x000910DC</p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AttributeError" title="(en Python versión 3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AttributeError</span></code></a> si falta alguno de los campos mandatorios.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app_pkg.functions.db_store_handler.store_dataset">
+<span class="sig-prename descclassname"><span class="pre">app_pkg.functions.db_store_handler.</span></span><span class="sig-name descname"><span class="pre">store_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><span class="pre">Dataset</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">root_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(en Python versión 3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(en Python versión 3.12)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">-</span></span><span class="m"><span class="pre">1</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#app_pkg.functions.db_store_handler.store_dataset" title="Link to this definition"></a></dt>
+<dd><p id="function-store-dataset">Genera o actualiza en base de datos los objetos correspondientes a un objeto DICOM:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference internal" href="database.html#class-db-table-patient"><span class="std std-ref">Patient</span></a></p></li>
+<li><p><a class="reference internal" href="database.html#class-db-table-study"><span class="std std-ref">Study</span></a></p></li>
+<li><p><a class="reference internal" href="database.html#class-db-table-series"><span class="std std-ref">Series</span></a></p></li>
+<li><p><a class="reference internal" href="database.html#class-db-table-instance"><span class="std std-ref">Instance</span></a></p></li>
+</ul>
+</div></blockquote>
+<p>Si la instancia no existía previamente en base de datos, además se guarda el objeto DICOM en el almacenamiento.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parámetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ds</strong> – <a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> para procesar.</p></li>
+<li><p><strong>root_dir</strong> – raíz del directorio en el disco donde se guardarán los archivos DICOM.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Devuelve<span class="colon">:</span></dt>
+<dd class="field-even"><p>1 si la instancia ya existía y la actualización de la base de datos fue exitosa.</p>
+</dd>
+<dt class="field-odd">Devuelve<span class="colon">:</span></dt>
+<dd class="field-odd"><p>0 si la instancia no existía y las operaciones en base de datos y en disco fueron exitosas.</p>
+</dd>
+<dt class="field-even">Devuelve<span class="colon">:</span></dt>
+<dd class="field-even"><p>-1 si ocurre algún error en las operaciones en base de datos o en disco.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app_pkg.functions.db_store_handler.db_create_update_patient">
+<span class="sig-prename descclassname"><span class="pre">app_pkg.functions.db_store_handler.</span></span><span class="sig-name descname"><span class="pre">db_create_update_patient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><span class="pre">Dataset</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="database.html#app_pkg.db_models.Patient" title="app_pkg.db_models.Patient"><span class="pre">Patient</span></a></span></span><a class="headerlink" href="#app_pkg.functions.db_store_handler.db_create_update_patient" title="Link to this definition"></a></dt>
+<dd><p id="function-db-create-update-patient">Genera o actualiza en base de datos un objeto <a class="reference internal" href="database.html#class-db-table-patient"><span class="std std-ref">Patient</span></a> a partir de
+la información contenida en el <a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> de entrada.
+Si ya existe un objeto con ese PatientID, se actualiza el PatientName del objeto ya existente.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parámetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ds</strong> – <a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> para procesar.</p></li>
+<li><p><strong>root_dir</strong> – raíz del directorio en el disco donde se guardarán los archivos DICOM.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Devuelve<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="database.html#class-db-table-patient"><span class="std std-ref">Patient</span></a> con el objeto generado o modificado.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app_pkg.functions.db_store_handler.db_create_update_study">
+<span class="sig-prename descclassname"><span class="pre">app_pkg.functions.db_store_handler.</span></span><span class="sig-name descname"><span class="pre">db_create_update_study</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><span class="pre">Dataset</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(en Python versión 3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="database.html#app_pkg.db_models.Study" title="app_pkg.db_models.Study"><span class="pre">Study</span></a></span></span><a class="headerlink" href="#app_pkg.functions.db_store_handler.db_create_update_study" title="Link to this definition"></a></dt>
+<dd><p id="function-db-create-update-study">Genera o actualiza en base de datos un objeto <a class="reference internal" href="database.html#class-db-table-study"><span class="std std-ref">Study</span></a> a partir de
+la información contenida en el <a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> de entrada.
+Si ya existe un objeto con ese StudyInstanceUID, se actualizan los campos StudyDate, StudyDescription, PatientWeight,
+PatientSize, y PatientAge del objeto ya existente.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parámetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ds</strong> – <a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> para procesar.</p></li>
+<li><p><strong>path</strong> – directorio donde se almacena el estudio en disco.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Devuelve<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="database.html#class-db-table-study"><span class="std std-ref">Study</span></a> con el objeto generado o modificado.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app_pkg.functions.db_store_handler.db_create_update_series">
+<span class="sig-prename descclassname"><span class="pre">app_pkg.functions.db_store_handler.</span></span><span class="sig-name descname"><span class="pre">db_create_update_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><span class="pre">Dataset</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(en Python versión 3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="database.html#app_pkg.db_models.Series" title="app_pkg.db_models.Series"><span class="pre">Series</span></a></span></span><a class="headerlink" href="#app_pkg.functions.db_store_handler.db_create_update_series" title="Link to this definition"></a></dt>
+<dd><p id="function-db-create-update-series">Genera o actualiza en base de datos un objeto <a class="reference internal" href="database.html#class-db-table-series"><span class="std std-ref">Series</span></a> a partir de
+la información contenida en el <a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> de entrada.
+Si ya existe un objeto con ese SeriesInstanceUID, se actualizan los campos SeriesDate, SeriesTime, SeriesDescription,
+Modality, y SeriesNumber del objeto ya existente.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parámetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ds</strong> – <a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> para procesar.</p></li>
+<li><p><strong>path</strong> – directorio donde se almacena la serie en disco.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Devuelve<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="database.html#class-db-table-series"><span class="std std-ref">Series</span></a> con el objeto generado o modificado.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app_pkg.functions.db_store_handler.db_create_instance">
+<span class="sig-prename descclassname"><span class="pre">app_pkg.functions.db_store_handler.</span></span><span class="sig-name descname"><span class="pre">db_create_instance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><span class="pre">Dataset</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(en Python versión 3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="database.html#app_pkg.db_models.Instance" title="app_pkg.db_models.Instance"><span class="pre">Instance</span></a></span></span><a class="headerlink" href="#app_pkg.functions.db_store_handler.db_create_instance" title="Link to this definition"></a></dt>
+<dd><p id="function-db-create-instance">Genera en base de datos un objeto <a class="reference internal" href="database.html#class-db-table-instance"><span class="std std-ref">Instance</span></a> a partir de
+la información contenida en el <a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> de entrada.
+Genera ValueError si ya existe un objeto con ese SOPInstanceUID en base de datos.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parámetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ds</strong> – <a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> para procesar.</p></li>
+<li><p><strong>filename</strong> – directorio donde se almacena la instancia en disco.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Devuelve<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="database.html#class-db-table-instance"><span class="std std-ref">Instance</span></a> con el objeto generado.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(en Python versión 3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ValueError</span></code></a> si la instancia ya existe.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Derechos de autor 2024, Francisco Funes / Mauro Namías / Federico Matorras.</p>
+  </div>
+
+  Compilado con <a href="https://www.sphinx-doc.org/">Sphinx</a> usando un
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">tema</a>
+    proporcionado por <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

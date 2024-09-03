@@ -1,22 +1,21 @@
 Flujo de trabajo de procesamiento
 =================================
 
-El procesamiento de los estudios se divide en varias etapas, llevadas a cabo por diferentes **servicios**
-(implementados como python threads), que corren en paralelo, y se organiza en objetos **Task**, cada
-uno de los cuales representa una tarea. La tarea es la unidad mínima de información que se enviará a
-procesar, y se corresponde con una serie DICOM PET. Los servicios intercambian entre sí información de
-las tareas a procesar a través de colas python (Queues).
-
-A continuación se describe cada una de estas etapas de procesamiento y el servicio correspondiente.
+| El procesamiento de los estudios se divide en varias etapas, llevadas a cabo por diferentes **servicios**
+  (implementados como python threads), que corren en paralelo, y se organiza en objetos **Task**, cada
+  uno de los cuales representa una tarea. La tarea es la unidad mínima de información que se enviará a
+  procesar, y se corresponde con una serie DICOM PET. Los servicios intercambian entre sí información de
+  las tareas a procesar a través de colas python (Queues).
+| A continuación se describe cada una de estas etapas de procesamiento y el servicio correspondiente.
 
 Envío de imágenes a procesar
 ----------------------------
 
 Recepción de imágenes DICOM
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-La aplicación implementa un servicio DICOM Storage Service Class Provider, que escucha en un puerto TCP
-esperando que otra aplicación DICOM en la red del cliente le envíe imágenes PET (no acepta ninguna otra
-modalidad). Cuando recibe una imagen (instancia) PET:
+La aplicación implementa un servicio :ref:`dicom-storage-service-class-provider`, que escucha en un puerto TCP
+esperando que otra aplicación DICOM en la red del cliente le envíe imágenes PET (las imágenes de otras modalidades
+son ignoradas). Cuando recibe una imagen (instancia) PET:
 
  1. Verifica que existan ciertos campos mandatorios en el encabezado DICOM, y extrae los necesarios para
     continuar el procesamiento.
@@ -24,8 +23,6 @@ modalidad). Cuando recibe una imagen (instancia) PET:
     (creando los elementos que no existan o actualizándolos si ya existen)
  3. Guarda el archivo DICOM en disco.
  4. Pone los datos DICOM extraídos, junto con los datos del dispositivo de origen, en la cola de salida.
-
-Se puede consultar la implementación, y la función que procesa
 
 Compilator
 ~~~~~~~~~~~

@@ -22,7 +22,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Índice" href="../genindex.html" />
     <link rel="search" title="Búsqueda" href="../search.html" />
-    <link rel="next" title="Servicios - implementación" href="modules.html" />
+    <link rel="next" title="Estructura de la base de datos" href="database.html" />
     <link rel="prev" title="Referencia" href="index.html" /> 
 </head>
 
@@ -66,8 +66,7 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="modules.html">Servicios - implementación</a></li>
-<li class="toctree-l2"><a class="reference internal" href="database.html">Base de datos</a></li>
+<li class="toctree-l2"><a class="reference internal" href="database.html">Estructura de la base de datos</a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html">API</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deployment.html">Entorno de funcionamiento</a></li>
 </ul>
@@ -101,19 +100,21 @@
              
   <section id="flujo-de-trabajo-de-procesamiento">
 <h1>Flujo de trabajo de procesamiento<a class="headerlink" href="#flujo-de-trabajo-de-procesamiento" title="Link to this heading"></a></h1>
-<p>El procesamiento de los estudios se divide en varias etapas, llevadas a cabo por diferentes <strong>servicios</strong>
+<div class="line-block">
+<div class="line">El procesamiento de los estudios se divide en varias etapas, llevadas a cabo por diferentes <strong>servicios</strong>
 (implementados como python threads), que corren en paralelo, y se organiza en objetos <strong>Task</strong>, cada
 uno de los cuales representa una tarea. La tarea es la unidad mínima de información que se enviará a
 procesar, y se corresponde con una serie DICOM PET. Los servicios intercambian entre sí información de
-las tareas a procesar a través de colas python (Queues).</p>
-<p>A continuación se describe cada una de estas etapas de procesamiento y el servicio correspondiente.</p>
+las tareas a procesar a través de colas python (Queues).</div>
+<div class="line">A continuación se describe cada una de estas etapas de procesamiento y el servicio correspondiente.</div>
+</div>
 <section id="envio-de-imagenes-a-procesar">
 <h2>Envío de imágenes a procesar<a class="headerlink" href="#envio-de-imagenes-a-procesar" title="Link to this heading"></a></h2>
 <section id="recepcion-de-imagenes-dicom">
 <h3>Recepción de imágenes DICOM<a class="headerlink" href="#recepcion-de-imagenes-dicom" title="Link to this heading"></a></h3>
-<p>La aplicación implementa un servicio DICOM Storage Service Class Provider, que escucha en un puerto TCP
-esperando que otra aplicación DICOM en la red del cliente le envíe imágenes PET (no acepta ninguna otra
-modalidad). Cuando recibe una imagen (instancia) PET:</p>
+<p>La aplicación implementa un servicio <a class="reference internal" href="store_scp.html#dicom-storage-service-class-provider"><span class="std std-ref">DICOM Storage Service Class Provider</span></a>, que escucha en un puerto TCP
+esperando que otra aplicación DICOM en la red del cliente le envíe imágenes PET (las imágenes de otras modalidades
+son ignoradas). Cuando recibe una imagen (instancia) PET:</p>
 <blockquote>
 <div><ol class="arabic simple">
 <li><p>Verifica que existan ciertos campos mandatorios en el encabezado DICOM, y extrae los necesarios para
@@ -124,7 +125,6 @@ continuar el procesamiento.</p></li>
 <li><p>Pone los datos DICOM extraídos, junto con los datos del dispositivo de origen, en la cola de salida.</p></li>
 </ol>
 </div></blockquote>
-<p>Se puede consultar la implementación, y la función que procesa</p>
 </section>
 <section id="compilator">
 <h3>Compilator<a class="headerlink" href="#compilator" title="Link to this heading"></a></h3>
@@ -201,7 +201,7 @@ tarea.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Pie de página">
         <a href="index.html" class="btn btn-neutral float-left" title="Referencia" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Anterior</a>
-        <a href="modules.html" class="btn btn-neutral float-right" title="Servicios - implementación" accesskey="n" rel="next">Siguiente <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="database.html" class="btn btn-neutral float-right" title="Estructura de la base de datos" accesskey="n" rel="next">Siguiente <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

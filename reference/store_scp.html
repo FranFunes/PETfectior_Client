@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="es" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DICOM Storage Service Class Provider &mdash; documentación de PETfectior - 0.1</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/petfectior.css?v=284fb656" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=9c9b61ad"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../_static/translations.js?v=d190bf04"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Índice" href="../genindex.html" />
+    <link rel="search" title="Búsqueda" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            PETfectior
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Buscar documentos" aria-label="Buscar documentos" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contenidos:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../user/index.html">Manual de usuario</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Referencia</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PETfectior</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">DICOM Storage Service Class Provider</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/reference/store_scp.rst.txt" rel="nofollow"> Ver código fuente de la página</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="dicom-storage-service-class-provider">
+<span id="id1"></span><h1>DICOM Storage Service Class Provider<a class="headerlink" href="#dicom-storage-service-class-provider" title="Link to this heading"></a></h1>
+<p>Este servicio se implementa mediante la siguiente clase, que a su vez se configura usando un handler adecuado
+para el evento C-STORE:</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="app_pkg.services.store_scp.StoreSCP">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">app_pkg.services.store_scp.</span></span><span class="sig-name descname"><span class="pre">StoreSCP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_queue</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/queue.html#queue.Queue" title="(en Python versión 3.12)"><span class="pre">Queue</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_store_handler</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(en Python versión 3.12)"><span class="pre">Callable</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ae_title</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(en Python versión 3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'PETFECTIOR'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_dest</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(en Python versión 3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'incoming'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#app_pkg.services.store_scp.StoreSCP" title="Link to this definition"></a></dt>
+<dd><p>Esta clase permite crear y manejar un servicio DICOM Store Service Class Provider,
+para poder recibir objetos DICOM de otros equipos.
+Hereda de <a class="reference external" href="https://pydicom.github.io/pynetdicom/stable/reference/generated/pynetdicom.ae.ApplicationEntity.html#pynetdicom.ae.ApplicationEntity">pynetdicom.AE</a> ,
+por lo que comparte muchas de sus funcionalidades.</p>
+<p>Aquí se describen solo aquellos atributos/métodos que se agregan a dicha clase.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="app_pkg.services.store_scp.StoreSCP.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_queue</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/queue.html#queue.Queue" title="(en Python versión 3.12)"><span class="pre">Queue</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_store_handler</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(en Python versión 3.12)"><span class="pre">Callable</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ae_title</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(en Python versión 3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'PETFECTIOR'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_dest</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(en Python versión 3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'incoming'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(en Python versión 3.12)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#app_pkg.services.store_scp.StoreSCP.__init__" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parámetros<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_queue</strong> – <a class="reference external" href="https://docs.python.org/3/library/queue.html#queue.Queue" title="(en Python versión 3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">queue.Queue</span></code></a> donde se pondrán los objetos <a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> generados para su
+posterior procesamiento.</p></li>
+<li><p><strong>c_store_handler</strong> – función de procesamiento de cada <a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> recibido.</p></li>
+<li><p><strong>store_dest</strong> – raíz de la estructura de directorios donde se almacenarán los <a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="app_pkg.services.store_scp.StoreSCP.echo">
+<span class="sig-name descname"><span class="pre">echo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(en Python versión 3.12)"><span class="pre">dict</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(en Python versión 3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><span class="pre">Dataset</span></a></span></span><a class="headerlink" href="#app_pkg.services.store_scp.StoreSCP.echo" title="Link to this definition"></a></dt>
+<dd><p>Verifica la conexión con un dispositivo DICOM remoto, mediante un mensaje
+DICOM C-ECHO.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Devuelve<span class="colon">:</span></dt>
+<dd class="field-odd"><p>-1 si la conexión no fue exitosa</p>
+</dd>
+<dt class="field-even">Devuelve<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> con la respuesta del dispositivo remoto, 
+si la conexión fue exitosa</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p>Para controlar cómo una Application Entity maneja los diferentes eventos DICOM que
+ocurren durante una asociación, <a class="reference external" href="https://pydicom.github.io/pynetdicom/stable/">pynetdicom</a>
+permite vincular un handler a cada tipo de evento (ver <a class="reference external" href="https://pydicom.github.io/pynetdicom/stable/examples/storage.html#storage-scp">Storage SCP</a> ).
+En nuestro caso, se usa la función <a class="reference internal" href="db_store_handler.html#function-db-store-handler"><span class="std std-ref">db_store_handler</span></a>, cuya documentación se puede revisar para más detalles.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Derechos de autor 2024, Francisco Funes / Mauro Namías / Federico Matorras.</p>
+  </div>
+
+  Compilado con <a href="https://www.sphinx-doc.org/">Sphinx</a> usando un
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">tema</a>
+    proporcionado por <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
