@@ -24,7 +24,9 @@ extensions = [
 ]
 
 intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
     'pynetdicom': ('https://pydicom.github.io/pynetdicom/stable/', None),
+    'pydicom': ('https://pydicom.github.io/pydicom/stable/', None)
 }
 
 templates_path = ['_templates']

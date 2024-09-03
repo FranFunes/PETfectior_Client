@@ -17,6 +17,14 @@ task_instance = db.Table('task_instance',
                             db.Column('sop_instance_uid', db.String(64), db.ForeignKey('instance.SOPInstanceUID')))
 
 class Patient(db.Model):
+
+    """
+        .. _class-db-table-patient:
+
+        Representación en base de datos de la jerarquía Patient en la estructura propia de DICOM. 
+
+    """
+
     PatientID = db.Column(db.String(64), primary_key=True)
     PatientName = db.Column(db.String(64), index=True)
 
@@ -29,6 +37,13 @@ class Patient(db.Model):
         return f'<Patient {self.PatientName}>'
 
 class Study(db.Model):
+
+    """
+        .. _class-db-table-study:
+
+        Representación en base de datos de la jerarquía Study en la estructura propia de DICOM. 
+
+    """
 
     StudyInstanceUID = db.Column(db.String(64), primary_key=True)
     StudyDate = db.Column(db.DateTime, index=True)    
@@ -49,6 +64,13 @@ class Study(db.Model):
         return f'<Study {self.StudyDescription} from {self.PatientID}>'
     
 class Series(db.Model):
+
+    """
+        .. _class-db-table-series:
+
+        Representación en base de datos de la jerarquía Series en la estructura propia de DICOM. 
+
+    """
 
     SeriesInstanceUID = db.Column(db.String(64), primary_key=True)
     SeriesDate = db.Column(db.DateTime, index=True)
@@ -84,6 +106,13 @@ event.listen(Study, 'before_delete', clear_storage)
 event.listen(Series, 'before_delete', clear_storage)
 
 class Instance(db.Model):
+
+    """
+        .. _class-db-table-instance:
+
+        Representación en base de datos de la jerarquía Instance en la estructura propia de DICOM. 
+
+    """
 
     SOPInstanceUID = db.Column(db.String(64), primary_key=True)
     SOPClassUID = db.Column(db.String(64), index=True)   

@@ -23,10 +23,6 @@ class StoreSCP(AE):
 
         Aquí se describen solo aquellos atributos/métodos que se agregan a dicha clase.
 
-        El comportamiento está definido principalmente por el parámetro `c_store_handler`, con una función
-        a la que se pasará cada uno de los objetos recibidos. En este función, la clase
-        
-
     """    
 
     def __init__(self, input_queue: Queue, 
@@ -35,10 +31,10 @@ class StoreSCP(AE):
                  store_dest:str = 'incoming', *args, **kwargs) -> None:
         """
             
-            :param input_queue: objeto Queue.queue donde se pondrán los objetos pydicom.Dataset recibidos para su
+            :param input_queue: :class:`queue.Queue` donde se pondrán los objetos :class:`~pydicom.dataset.Dataset` generados para su
                                 posterior procesamiento.
-            :param c_store_handler: función de procesamiento de cada objeto pydicom.Dataset recibido
-            :param store_dest: raíz de la estructura de directorios donde se almacenarán los DICOMS recibidos.
+            :param c_store_handler: función de procesamiento de cada :class:`~pydicom.dataset.Dataset` recibido.
+            :param store_dest: raíz de la estructura de directorios donde se almacenarán los :class:`~pydicom.dataset.Dataset`.
         
         
         """
@@ -175,7 +171,7 @@ class StoreSCP(AE):
             DICOM C-ECHO.
 
             :return: -1 si la conexión no fue exitosa
-            :return: pydicom.Dataset con la respuesta del dispositivo remoto, 
+            :return: :class:`~pydicom.dataset.Dataset` con la respuesta del dispositivo remoto, 
                      si la conexión fue exitosa
 
         """
