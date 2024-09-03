@@ -76,7 +76,7 @@ def get_tasks_table():
                 'status_msg':t.status_msg,
                 'status_full_msg':t.full_status_msg,
                 'updated': t.updated.strftime('%d/%m/%Y %H:%M:%S'),
-                'task_id': t.id} for t in Task.query.all()]
+                'task_id': t.id} for t in Task.query.filter_by(visible=True)]
     except Exception as e:
         logger.error("can't access database")
         logger.error(traceback.format_exc())

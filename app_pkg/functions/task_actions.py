@@ -53,6 +53,9 @@ def delete_finished():
     logger.info(f"deleting {len(tasks)} finished tasks")        
     processing_thread = threading.Thread(target = delete_finished_background, 
                                             args = (tasks,), name = 'delete_finished_thread')   
+    for t in tasks:
+        t.visible = False
+        db.session.commit()
     db.session.close()
     processing_thread.start()
     return "Las tareas finalizadas están siendo eliminadas en segundo plano", 200
@@ -65,6 +68,8 @@ def delete_finished_background(tasks):
                     db.session.delete(t)
                     db.session.commit()        
             except Exception as e:
+                t.visible = True
+                db.session.commit()
                 logger.error("Error occurred when trying to delete finished tasks")
                 logger.error(traceback.format_exc())    
         clear_database()
@@ -75,6 +80,9 @@ def delete_failed():
     logger.info(f"deleting {len(tasks)} failed tasks")
     processing_thread = threading.Thread(target = delete_failed_background, 
                                             args = (tasks,), name = 'delete_failed_thread')   
+    for t in tasks:
+        t.visible = False
+        db.session.commit()
     db.session.close()
     processing_thread.start()
     return "Las tareas fallidas están siendo eliminadas en segundo plano", 200
@@ -87,6 +95,8 @@ def delete_failed_background(tasks):
                     db.session.delete(t)
                     db.session.commit()        
             except Exception as e:
+                t.visible = True
+                db.session.commit()
                 logger.error("Error occurred when trying to delete failed tasks")
                 logger.error(traceback.format_exc())
         clear_database()
