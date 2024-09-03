@@ -131,6 +131,7 @@ class Task(db.Model):
     status_msg = db.Column(db.Text())
     full_status_msg = db.Column(db.Text())
     expected_imgs = db.Column(db.Integer)
+    visible = db.Column(db.Boolean, default=True) # Task should be shown on frontend
     
     # One-to-many relationships (as child)
     series = db.Column(db.String(64), db.ForeignKey('series.SeriesInstanceUID')) 
