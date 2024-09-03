@@ -50,9 +50,10 @@ def retry_last_step(id):
 def delete_finished():    
 
     tasks = Task.query.filter_by(step_state = 2).all()
+    tasks_ids = [t.id for t in tasks]
     logger.info(f"deleting {len(tasks)} finished tasks")        
     processing_thread = threading.Thread(target = delete_finished_background, 
-                                            args = (tasks,), name = 'delete_finished_thread')   
+                                            args = (tasks_ids,), name = 'delete_finished_thread')   
     for t in tasks:
         t.visible = False
         db.session.commit()
@@ -60,9 +61,10 @@ def delete_finished():
     processing_thread.start()
     return "Las tareas finalizadas están siendo eliminadas en segundo plano", 200
 
-def delete_finished_background(tasks):    
+def delete_finished_background(tasks_ids):    
     with application.app_context():
-        for t in tasks:
+        for id in tasks_ids:
+            t = Task.query.get(id)
             try:
                 if t.step_state == 2:
                     db.session.delete(t)
@@ -77,9 +79,10 @@ def delete_finished_background(tasks):
 def delete_failed():
 
     tasks = Task.query.filter_by(step_state = -1).all()
+    tasks_ids = [t.id for t in tasks]
     logger.info(f"deleting {len(tasks)} failed tasks")
     processing_thread = threading.Thread(target = delete_failed_background, 
-                                            args = (tasks,), name = 'delete_failed_thread')   
+                                            args = (tasks_ids,), name = 'delete_failed_thread')   
     for t in tasks:
         t.visible = False
         db.session.commit()
@@ -87,9 +90,10 @@ def delete_failed():
     processing_thread.start()
     return "Las tareas fallidas están siendo eliminadas en segundo plano", 200
     
-def delete_failed_background(tasks):
+def delete_failed_background(tasks_ids):
     with application.app_context():
-        for t in tasks:
+        for id in tasks_ids:
+            t = Task.query.get(id)
             try:
                 if t.step_state == -1:
                     db.session.delete(t)
