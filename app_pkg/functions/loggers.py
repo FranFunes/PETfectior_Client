@@ -28,7 +28,7 @@ def dicom_logger():
 def app_logger():
 
     # Create the folder for the output file
-    logging_dir = os.environ.get('LOGGING_FILEPATH', default = 'data/logs')
+    logging_dir = os.environ.get('LOGGING_FILEPATH')
     logging_fpath = os.path.join(logging_dir, 'output.log')
     os.makedirs(logging_dir, exist_ok = True)
 

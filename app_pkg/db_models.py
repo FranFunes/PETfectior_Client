@@ -188,7 +188,7 @@ class AppConfig(db.Model):
     min_instances_in_series = db.Column(db.Integer, default=47)
     slice_gap_tolerance = db.Column(db.Float, default=0.025)
     series_timeout = db.Column(db.Integer, default=30)
-    store_scp_port = db.Column(db.Integer, default=11115)
+    store_scp_port = db.Column(db.Integer, default=os.getenv('DICOM_LISTENER_PORT'))
     store_scp_aet = db.Column(db.String(64), default='PETFECTIOR')
     ip_address = db.Column(db.String(12), default = '')
     mirror_mode = db.Column(db.Boolean, default=False)

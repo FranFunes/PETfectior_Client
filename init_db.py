@@ -17,6 +17,8 @@ with application.app_context():
     if c:
         # Patch server url to use the URL instead of a fixed IP address.
         c.server_url = os.getenv('SERVER_ADDRESS') + ':' + os.getenv('SERVER_PORT')
+        # Patch DICOM listener port
+        c.store_scp_port = os.getenv('DICOM_LISTENER_PORT')
         
     rf = Radiopharmaceutical.query.first()
     if not rf:
