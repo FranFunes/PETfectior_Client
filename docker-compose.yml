@@ -40,7 +40,7 @@ services:
       - DAC_READ_SEARCH
     volumes:
       - app_images:/home/petfectior/incoming
-      - app_logs:${LOGGING_FILEPATH}
+      - app_logs:/home/petfectior/data/logs
     restart: unless-stopped
     env_file:
       - .env

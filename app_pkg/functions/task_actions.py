@@ -162,16 +162,18 @@ def clear_storage():
         st_path = os.path.join('incoming', st)
         st_db = Study.query.filter_by(stored_in = st_path).first()
         if not st_db:
-            logger.info(f'Deleting non-db study {st_path}')
-            rmtree(st_path)
+            if os.path.isdir(st_path):
+                logger.info(f'Deleting non-db study {st_path}')
+                rmtree(st_path)
         else:            
             series = os.listdir(st_path)
             for ss in series:
                 ss_path = os.path.join(st_path, ss)
                 ss_db = Series.query.filter_by(stored_in = ss_path).first()
                 if not ss_db:
-                    logger.info(f'Deleting non-db series {ss_path}')     
-                    rmtree(ss_path)
+                    if os.path.isdir(ss_path):
+                        logger.info(f'Deleting non-db series {ss_path}')     
+                        rmtree(ss_path)
 
 
     
