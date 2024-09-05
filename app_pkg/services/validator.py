@@ -498,7 +498,7 @@ class Validator():
                 "Radiofarmaco": ss.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical,
                 "HalfLife": ss.RadiopharmaceuticalInformationSequence[0].RadionuclideHalfLife
         }        
-        logger.info('checking model for these reconstruction settings:\n' + json.dumps(data, indent = 2))
+        logger.info(f'checking model for task {task.id} and these reconstruction settings:\n' + json.dumps(data, indent = 2))
 
         if not os.getenv("SERVER_INTERACTION") == "True":
             return True, "Interacción con el servidor deshabilitada (modo debug)"
