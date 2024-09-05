@@ -91,14 +91,15 @@ class ServerMonitor():
         ping_url = 'http://' + server_url + '/' + self.ping_route
         start = datetime.now()
         try:
-            page = requests.get(ping_url, timeout = 5)
+            requests.get(ping_url, timeout = 5)
             logger.debug(f'Connection succesful!')
             stop = datetime.now()
             etime = (stop - start).seconds
             return True, etime        
         
         except Exception as e:
-            logger.debug(f'Connection failed: {repr(e)}')
+            logger.error(f'Connection to server failed')
+            logger.error(traceback.format_exc())
             stop = datetime.now()
             etime = (stop - start).seconds
 

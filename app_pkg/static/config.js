@@ -57,7 +57,7 @@ $(document).ready(function () {
             { data: 'name', title:'Nombre' },
             { data: 'ae_title', title: 'AE Title' },
             { data: 'address', title: 'Dirección IP' },
-            { data: 'is_destination', title: 'Usar como destino' }
+            { data: 'is_destination', title: 'Usar como destino', render: (data) => data ? 'Sí' : 'No' }
         ],
         searching: false,
         paging: false,

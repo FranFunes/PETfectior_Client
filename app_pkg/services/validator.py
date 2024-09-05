@@ -132,8 +132,7 @@ class Validator():
                             if not dest in task.destinations:
                                 task.destinations.append(dest)
                         # Check if dicom information is complete
-                        recon_settings = Dataset.from_json(task.recon_settings)
-                        valid, msg = self.check_dicom_parameters(recon_settings)
+                        valid, msg = self.check_dicom_parameters(task)
                         if not valid:
                             logger.info(f"task {task.id} completed but there is missing dicom information.")
                             task.status_msg = 'fallo - info DICOM'
@@ -142,7 +141,7 @@ class Validator():
                             información faltante o inválida en el encabezado DICOM. """ + msg                  
                         else:
                             # Check if the radiopharmaceutical is known and use it for this task
-                            rf_str = recon_settings.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical
+                            rf_str = Dataset.from_json(task.recon_settings).RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical
                             rf = [r for r in Radiopharmaceutical.query.all() 
                                   if rf_str in r.synonyms]
                             if not rf:
@@ -200,8 +199,8 @@ class Validator():
                                 else:
                                     # Add this PET device name to the database
                                     names = [m.name for m in PetModel.query.all()]
-                                    if not recon_settings.ManufacturerModelName in names:
-                                        model = PetModel(name = recon_settings.ManufacturerModelName)
+                                    if not Dataset.from_json(task.recon_settings).ManufacturerModelName in names:
+                                        model = PetModel(name = Dataset.from_json(task.recon_settings).ManufacturerModelName)
                                         db.session.add(model)                          
 
                                     # Flag step as completed                                
@@ -243,38 +242,39 @@ class Validator():
 
         return destinations
     
-    def check_dicom_parameters(self, dataset: Dataset) -> bool:
+    def check_dicom_parameters(self, task: Task) -> bool:
 
         """
         
-            Checks if dataset has the required fields to be sent to the server
+            Checks if task recon settings has the required fields to be sent to the server
 
         """
+
+        dataset = Dataset.from_json(task.recon_settings)
         fields = ['PixelSpacing','SliceThickness','Manufacturer','RadiopharmaceuticalInformationSequence']
         for field in fields:
             try:
                 dataset[field]
             except:
-                msg = field + " unavailable"
+                msg = field + " no disponible"
                 logger.error(msg)
                 return False, msg
-        try:
-            dataset.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical
-        except:
-            msg = "Falta el campo Radiopharmaceutical"
-            logger.error(msg)
-            return False, msg
 
-        
-        
         try:
-            assert dataset.Manufacturer in ['SIEMENS','GE MEDICAL SYSTEMS']
+            assert dataset.Manufacturer in ['SIEMENS', 'GE MEDICAL SYSTEMS', 'CPS', 'Mediso', 'UIH', 'Philips','Philips Medical Systems']
         except:
             msg = "el fabricante " + dataset.Manufacturer + " no está soportado"
             logger.error(msg)
             return False, msg
-        
-        if dataset.Manufacturer=='SIEMENS':  
+
+        # SIEMENS
+        if dataset.Manufacturer=='SIEMENS':
+            try:
+                dataset.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical
+            except:
+                msg = "Falta el campo Radiopharmaceutical en encabezado SIEMENS"
+                logger.error(msg)
+                return False, msg
             try:
                 dataset.ConvolutionKernel
             except:
@@ -286,8 +286,16 @@ class Validator():
             except:
                 msg = "Falta el campo ReconstructionMethod en encabezado SIEMENS"
                 logger.error(msg)
-                return False, msg            
-        elif dataset.Manufacturer=='GE MEDICAL SYSTEMS':        
+                return False, msg   
+        
+        # GE
+        if dataset.Manufacturer=='GE MEDICAL SYSTEMS': 
+            try:
+                dataset.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical
+            except:
+                msg = "Falta el campo Radiopharmaceutical en encabezado GE MEDICAL SYSTEMS"
+                logger.error(msg)
+                return False, msg       
             try:
                 dataset[0x000910B2]
             except Exception as e:
@@ -326,21 +334,128 @@ class Validator():
                     logger.error(msg)
                     return False, msg
         
+        # CPS
+        if dataset.Manufacturer == 'CPS':
+            try:
+                # Patch Radiopharmaceutical with Radionuclide for this maker
+                rf_seq = dataset.RadiopharmaceuticalInformationSequence[0]
+                rf_seq = rf_seq.RadionuclideCodeSequence[0]
+                dataset.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical = dataset.RadiopharmaceuticalInformationSequence[0]. \
+                                                                                        RadionuclideCodeSequence[0].CodeMeaning
+                # Update recon_settings
+                task.recon_settings = dataset.to_json()
+                db.session.commit()
+                logger.info('Se parcheo el campo Radiopharmaceutical en header CPS')
+            except:
+                msg = "Error al extraer el nombre del Radionucleído en encabezado CPS"
+                logger.error(msg)
+                logger.error(traceback.format_exc())
+                return False, msg                  
+            try:
+                dataset.ReconstructionMethod
+            except:
+                msg = "Falta el campo ReconstructionMethod en encabezado CPS"
+                logger.error(msg)
+                return False, msg               
+            try:
+                dataset.ConvolutionKernel
+            except:
+                msg = "Falta el campo ConvolutionKernel en encabezado CPS"
+                logger.error(msg)
+                return False, msg
+        
+        # Mediso
+        if dataset.Manufacturer == 'Mediso':
+            try:
+                # Patch Radiopharmaceutical with Radionuclide for this maker
+                rf_seq = dataset.RadiopharmaceuticalInformationSequence[0]
+                rf_seq = rf_seq.RadionuclideCodeSequence[0]
+                dataset.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical = dataset.RadiopharmaceuticalInformationSequence[0]. \
+                                                                                        RadionuclideCodeSequence[0].CodeMeaning
+                # Update recon_settings
+                task.recon_settings = dataset.to_json()
+                db.session.commit()
+                logger.info('Se parcheo el campo Radiopharmaceutical en header Mediso')
+            except:
+                msg = "Error al extraer el nombre del Radionucleído en encabezado CPS"
+                logger.error(msg)
+                logger.error(traceback.format_exc())
+                return False, msg
+            try:
+                dataset.ReconstructionMethod
+            except:
+                msg = "Falta el campo ReconstructionMethod en encabezado Mediso"
+                logger.error(msg)
+                return False, msg
+            try:
+                # Patch ConvolutionKernel
+                match = re.search(r"@\s*(\d*\.?\d+)\s*m{0,2},", dataset.ReconstructionMethod)
+                postfilter = float(match.group(1))
+                dataset.ConvolutionKernel = postfilter
+                task.recon_settings = dataset.to_json()
+                db.session.commit()
+            except:
+                msg = f"Error al leer el postfiltro de Mediso en el campo ReconstructionMethod {dataset.ReconstructionMethod}"
+                logger.error(msg)
+                logger.error(traceback.format_exc())
+                return False, msg
+        
+        # UIH
+        if dataset.Manufacturer == 'UIH':
+            try:
+                recon_settings = dataset[0x00671021][0]             
+                recon_alg = recon_settings[0x00189749][0]             
+                iterations = recon_alg[0x00189739].value                       
+                subsets = recon_alg[0x00189740].value   
+            except Exception as e:
+                msg = f"Falta algún en encabezado UIH: {repr(e)}"
+                logger.error(msg)
+                logger.error(traceback.format_exc())
+                return False, msg
+
+        # Philips
+        if dataset.Manufacturer in ['Philips','Philips Medical Systems']:
+            pass
+
         return True, ""
 
     def check_model(self, task: Task) -> bool:
 
         ss = Dataset.from_json(task.recon_settings)
-                
+        
+        # SIEMENS
         if ss.Manufacturer == 'SIEMENS':
-            recon_method = ss.ReconstructionMethod
-            match = re.search(r'(\d+)i(\d+)s', recon_method)
+            recon_method = ss.ReconstructionMethod      
+            match = re.search(r'(\d+)i(\d+)s', recon_method, re.IGNORECASE)
             try:
                 iterations = int(match.group(1))
                 subsets = int(match.group(2))
             except:
                 return False, f"""No se encontraron las iteraciones y subsets 
-                en el campo ReconstructionMethod {recon_method} de Siemens """
+                en el campo ReconstructionMethod {recon_method} de Siemens """        
+        # CPS
+        elif ss.Manufacturer == 'CPS':                    
+            try:
+                recon_method = ss.ReconstructionMethod      
+                match = re.search(r'(\d+)i(\d+)s', recon_method, re.IGNORECASE)
+                iterations = int(match.group(1))
+                subsets = int(match.group(2))
+            except:
+                return False, f"""No se encontraron las iteraciones y subsets 
+                en el campo ReconstructionMethod {recon_method} de CPS"""
+
+        # Mediso        
+        elif ss.Manufacturer == 'Mediso':            
+            try:                
+                recon_method = ss.ReconstructionMethod      
+                match = re.search(r'i(\d+)s(\d+)', recon_method, re.IGNORECASE)
+                iterations = int(match.group(1))
+                subsets = int(match.group(2))                
+            except:
+                return False, f"""No se encontraron las iteraciones y subsets 
+                en el campo ReconstructionMethod {recon_method} de Mediso """
+
+        # GE  
         elif ss.Manufacturer == 'GE MEDICAL SYSTEMS':
             if type(ss[0x000910B2].value) == bytes:
                 iterations = int.from_bytes(ss[0x000910B2].value, "little")  
@@ -351,9 +466,25 @@ class Validator():
                 subsets = int.from_bytes(ss[0x000910B3].value, "little")  
             else:
                 subsets = ss[0x000910B3].value
+        
+        # UIH
+        elif ss.Manufacturer == 'UIH':
+            recon_settings = ss[0x00671021][0]             
+            recon_alg = recon_settings[0x00189749][0]             
+            iterations = recon_alg[0x00189739].value                       
+            subsets = recon_alg[0x00189740].value
+        
+        # Philips  
+        elif ss.Manufacturer == 'Philips':
+            iterations = 0
+            subsets = 0        
+        elif ss.Manufacturer == 'Philips Medical Systems':
+            iterations = 0
+            subsets = 0
+                
         else:
-            logger.info(f"no models for manufacturer {ss.Manufacturer}")      
-            return False, f"El fabricante {ss.Manufacturer} no es soportado"
+            logger.info(f"manufacturer {ss.Manufacturer} not supported")      
+            return False, f"El fabricante {ss.Manufacturer} no está soportado"
         
         c = AppConfig.query.first()
         data = {
@@ -367,7 +498,7 @@ class Validator():
                 "Radiofarmaco": ss.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical,
                 "HalfLife": ss.RadiopharmaceuticalInformationSequence[0].RadionuclideHalfLife
         }        
-        logger.info('checking model for these reconstruction settings:\n' + json.dumps(data, indent = 2))
+        logger.info(f'checking model for task {task.id} and these reconstruction settings:\n' + json.dumps(data, indent = 2))
 
         if not os.getenv("SERVER_INTERACTION") == "True":
             return True, "Interacción con el servidor deshabilitada (modo debug)"
@@ -378,7 +509,7 @@ class Validator():
             "Ok": "La tarea ha sido validada por el servidor",
             "Radiopharmaceutical Inactive": f"""No cuentas con una licencia activa para el radiofármaco
                                                 {ss.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical}""",
-            "Client Inactive": "No tienes una licencia activate",
+            "Client Inactive": "No tienes una licencia activa",
             "Not avialable Model": f"""No hay algoritmos de procesamiento entrenados para estos parámetros de reconstrucción
              o este radiofármaco."""
         }

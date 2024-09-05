@@ -95,8 +95,7 @@ class Instance(db.Model):
     SeriesInstanceUID = db.Column(db.String(64), db.ForeignKey('series.SeriesInstanceUID'))     
 
     def __repr__(self):
-        return f'<Instance {self.SOPInstanceUID} from {self.PatientID} stored at {self.filename}>'
-   
+        return f'<Instance {self.SOPInstanceUID} from {self.PatientID} stored at {self.filename}>'   
     
 class Device(db.Model):
 
@@ -107,8 +106,7 @@ class Device(db.Model):
     is_destination = db.Column(db.Boolean, default=False)
     
     def __repr__(self):
-        return f'<Device {self.name}: {self.ae_title}@{self.address}>'
-    
+        return f'<Device {self.name}: {self.ae_title}@{self.address}>'    
 
 class Source(db.Model):
 
@@ -181,8 +179,7 @@ class AppLog(db.Model):
     msg = db.Column(db.String(256))
     
     def __repr__(self):
-        return f"{self.timestamp.strftime('%Y/%m/%d %H:%M:%S')} | {self.level} | {self.module} | {self.function} | {self.msg}"
-    
+        return f"{self.timestamp.strftime('%Y/%m/%d %H:%M:%S')} | {self.level} | {self.module} | {self.function} | {self.msg}"    
 
 class AppConfig(db.Model):    
     client_id = db.Column(db.String(64), default='GenericClient', primary_key=True)    
