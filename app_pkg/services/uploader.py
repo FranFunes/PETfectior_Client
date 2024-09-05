@@ -1,4 +1,4 @@
-import logging, threading, os, requests, traceback
+import logging, threading, os, requests, traceback, re
 from time import sleep
 from shutil import copy
 from pydicom.dataset import Dataset
@@ -190,14 +190,37 @@ class SeriesUploader():
         
         ss = Dataset.from_json(task.recon_settings)
 
+        # SIEMENS
         if ss.Manufacturer == 'SIEMENS':
-            recon_method = ss.ReconstructionMethod
-            iterations_index = recon_method.find('i')
-            subset_index = recon_method.find('s')
-            space_index = recon_method.find(' ')
-            iterations = int(recon_method[space_index+1:iterations_index])
-            subsets = int(recon_method[iterations_index+1:subset_index])
-            
+            recon_method = ss.ReconstructionMethod      
+            match = re.search(r'(\d+)i(\d+)s', recon_method, re.IGNORECASE)
+            try:
+                iterations = int(match.group(1))
+                subsets = int(match.group(2))
+            except:
+                return False, f"""No se encontraron las iteraciones y subsets 
+                en el campo ReconstructionMethod {recon_method} de Siemens """        
+        # CPS
+        elif ss.Manufacturer == 'CPS':                    
+            try:
+                recon_method = ss.ReconstructionMethod      
+                match = re.search(r'(\d+)i(\d+)s', recon_method, re.IGNORECASE)
+                iterations = int(match.group(1))
+                subsets = int(match.group(2))
+            except:
+                return False, f"""No se encontraron las iteraciones y subsets 
+                en el campo ReconstructionMethod {recon_method} de CPS"""
+                
+        elif ss.Manufacturer == 'Mediso':            
+            try:                
+                recon_method = ss.ReconstructionMethod      
+                match = re.search(r'i(\d+)s(\d+)', recon_method, re.IGNORECASE)
+                iterations = int(match.group(1))
+                subsets = int(match.group(2))
+            except:
+                return False, f"""No se encontraron las iteraciones y subsets 
+                en el campo ReconstructionMethod {recon_method} de Mediso """
+
         elif ss.Manufacturer == 'GE MEDICAL SYSTEMS':
             if type(ss[0x000910B2].value) == bytes:
                 iterations = int.from_bytes(ss[0x000910B2].value, "little")  
@@ -208,6 +231,20 @@ class SeriesUploader():
                 subsets = int.from_bytes(ss[0x000910B3].value, "little")  
             else:
                 subsets = ss[0x000910B3].value
+                
+        elif ss.Manufacturer == 'UIH':
+            recon_settings = ss[0x00671021][0]             
+            recon_alg = recon_settings[0x00189749][0]             
+            iterations = recon_alg[0x00189739].value                       
+            subsets = recon_alg[0x00189740].value
+            
+        elif ss.Manufacturer == 'Philips':
+            iterations = 0
+            subsets = 0
+        
+        elif ss.Manufacturer == 'Philips Medical Systems':
+            iterations = 0
+            subsets = 0
 
         else:        
             raise ValueError('Fabricante desconocido')

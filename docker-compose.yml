@@ -1,12 +1,11 @@
-version: "3.8"
 services:
 
   vpn:
     build: ./vpn/
     container_name: vpn
     ports:
-      - "8000:8000"
-      - "11115:11115"
+      - "${FLASK_RUN_PORT}:${FLASK_RUN_PORT}"
+      - "${DICOM_LISTENER_PORT}:${DICOM_LISTENER_PORT}"
     environment:
       - SERVER_ADDRESS
       - TZ
@@ -49,3 +48,4 @@ services:
 volumes:
   mysql_data:
   app_images:
+  app_logs:

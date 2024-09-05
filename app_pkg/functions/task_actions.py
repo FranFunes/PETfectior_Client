@@ -50,21 +50,28 @@ def retry_last_step(id):
 def delete_finished():    
 
     tasks = Task.query.filter_by(step_state = 2).all()
+    tasks_ids = [t.id for t in tasks]
     logger.info(f"deleting {len(tasks)} finished tasks")        
     processing_thread = threading.Thread(target = delete_finished_background, 
-                                            args = (tasks,), name = 'delete_finished_thread')   
+                                            args = (tasks_ids,), name = 'delete_finished_thread')   
+    for t in tasks:
+        t.visible = False
+        db.session.commit()
     db.session.close()
     processing_thread.start()
     return "Las tareas finalizadas están siendo eliminadas en segundo plano", 200
 
-def delete_finished_background(tasks):    
+def delete_finished_background(tasks_ids):    
     with application.app_context():
-        for t in tasks:
+        for id in tasks_ids:
+            t = Task.query.get(id)
             try:
                 if t.step_state == 2:
                     db.session.delete(t)
                     db.session.commit()        
             except Exception as e:
+                t.visible = True
+                db.session.commit()
                 logger.error("Error occurred when trying to delete finished tasks")
                 logger.error(traceback.format_exc())    
         clear_database()
@@ -72,21 +79,28 @@ def delete_finished_background(tasks):
 def delete_failed():
 
     tasks = Task.query.filter_by(step_state = -1).all()
+    tasks_ids = [t.id for t in tasks]
     logger.info(f"deleting {len(tasks)} failed tasks")
     processing_thread = threading.Thread(target = delete_failed_background, 
-                                            args = (tasks,), name = 'delete_failed_thread')   
+                                            args = (tasks_ids,), name = 'delete_failed_thread')   
+    for t in tasks:
+        t.visible = False
+        db.session.commit()
     db.session.close()
     processing_thread.start()
     return "Las tareas fallidas están siendo eliminadas en segundo plano", 200
     
-def delete_failed_background(tasks):
+def delete_failed_background(tasks_ids):
     with application.app_context():
-        for t in tasks:
+        for id in tasks_ids:
+            t = Task.query.get(id)
             try:
                 if t.step_state == -1:
                     db.session.delete(t)
                     db.session.commit()        
             except Exception as e:
+                t.visible = True
+                db.session.commit()
                 logger.error("Error occurred when trying to delete failed tasks")
                 logger.error(traceback.format_exc())
         clear_database()
@@ -148,16 +162,18 @@ def clear_storage():
         st_path = os.path.join('incoming', st)
         st_db = Study.query.filter_by(stored_in = st_path).first()
         if not st_db:
-            logger.info(f'Deleting non-db study {st_path}')
-            rmtree(st_path)
+            if os.path.isdir(st_path):
+                logger.info(f'Deleting non-db study {st_path}')
+                rmtree(st_path)
         else:            
             series = os.listdir(st_path)
             for ss in series:
                 ss_path = os.path.join(st_path, ss)
                 ss_db = Series.query.filter_by(stored_in = ss_path).first()
                 if not ss_db:
-                    logger.info(f'Deleting non-db series {ss_path}')     
-                    rmtree(ss_path)
+                    if os.path.isdir(ss_path):
+                        logger.info(f'Deleting non-db series {ss_path}')     
+                        rmtree(ss_path)
 
 
     

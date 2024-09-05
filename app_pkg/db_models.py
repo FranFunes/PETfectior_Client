@@ -124,8 +124,7 @@ class Instance(db.Model):
     SeriesInstanceUID = db.Column(db.String(64), db.ForeignKey('series.SeriesInstanceUID'))     
 
     def __repr__(self):
-        return f'<Instance {self.SOPInstanceUID} from {self.PatientID} stored at {self.filename}>'
-   
+        return f'<Instance {self.SOPInstanceUID} from {self.PatientID} stored at {self.filename}>'   
     
 class Device(db.Model):
 
@@ -136,8 +135,7 @@ class Device(db.Model):
     is_destination = db.Column(db.Boolean, default=False)
     
     def __repr__(self):
-        return f'<Device {self.name}: {self.ae_title}@{self.address}>'
-    
+        return f'<Device {self.name}: {self.ae_title}@{self.address}>'    
 
 class Source(db.Model):
 
@@ -160,6 +158,7 @@ class Task(db.Model):
     status_msg = db.Column(db.Text())
     full_status_msg = db.Column(db.Text())
     expected_imgs = db.Column(db.Integer)
+    visible = db.Column(db.Boolean, default=True) # Task should be shown on frontend
     
     # One-to-many relationships (as child)
     series = db.Column(db.String(64), db.ForeignKey('series.SeriesInstanceUID')) 
@@ -209,20 +208,18 @@ class AppLog(db.Model):
     msg = db.Column(db.String(256))
     
     def __repr__(self):
-        return f"{self.timestamp.strftime('%Y/%m/%d %H:%M:%S')} | {self.level} | {self.module} | {self.function} | {self.msg}"
-    
+        return f"{self.timestamp.strftime('%Y/%m/%d %H:%M:%S')} | {self.level} | {self.module} | {self.function} | {self.msg}"    
 
 class AppConfig(db.Model):    
     client_id = db.Column(db.String(64), default='GenericClient', primary_key=True)    
     min_instances_in_series = db.Column(db.Integer, default=47)
     slice_gap_tolerance = db.Column(db.Float, default=0.025)
     series_timeout = db.Column(db.Integer, default=30)
-    store_scp_port = db.Column(db.Integer, default=11115)
+    store_scp_port = db.Column(db.Integer, default=os.getenv('DICOM_LISTENER_PORT'))
     store_scp_aet = db.Column(db.String(64), default='PETFECTIOR')
     ip_address = db.Column(db.String(12), default = '')
     mirror_mode = db.Column(db.Boolean, default=False)
-    server_url = db.Column(db.String(64), default=os.getenv('SERVER_ADDRESS') + ':' + os.getenv('SERVER_PORT') )
-    shared_path = db.Column(db.String(128), default=os.getenv('SHARED_PATH') or '//10.87.141.15/Proyectos/PETfectior')
+    server_url = db.Column(db.String(64), default=os.getenv('SERVER_ADDRESS') + ':' + os.getenv('SERVER_PORT') )    
     shared_mount_point = db.Column(db.String(128), default=os.getenv('SHARED_MOUNT_POINT') or 'shared')
     zip_dir = db.Column(db.String(128), default=os.path.join('temp','packed_series'))
     unzip_dir = db.Column(db.String(128), default=os.path.join('temp','unpacked_series'))

@@ -111,7 +111,7 @@ if app_config_available:
                 task.step_state = -1
                 task.status_msg = 'cancelada'
                 task.full_status_msg = """La aplicación se reinició mientras esta tarea estaba
-                en progres. La podés reiniciar desde el principio o desde el último paso exitoso
+                en progreso. Se puede reiniciar desde el principio o desde el último paso exitoso
                 (usar los botones de reiniciar o reintentar último paso)"""
                 db.session.commit()
 

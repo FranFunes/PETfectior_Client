@@ -6,19 +6,14 @@ $(document).ready(function () {
         success: function(response) {                    
             // Update data
             $("#clientID").text(response.client_id)  
-            $("#serverURL").text(response.server_url)
             $( "#mirrorMode" ).prop( "checked", response.mirror_mode )  
             $('#localConfigAdminUser').val(response.username)
             $('#localConfigAdminPass').val(response.password)
-            localStorage.setItem("sharedPath", response.shared_path)
         },
         error: function(xhr, status, error) {
             // handle error response here
             $("#clientID").text('No disponible - error del servidor')
-            $("#serverURL").text('No disponible - error del servidor')
-            $( "#mirrorMode" ).prop( "checked", false )  
-
-            console.log(xhr.responseText);
+            $( "#mirrorMode" ).prop( "checked", false )              
         }
         }); 
 
@@ -62,7 +57,7 @@ $(document).ready(function () {
             { data: 'name', title:'Nombre' },
             { data: 'ae_title', title: 'AE Title' },
             { data: 'address', title: 'Dirección IP' },
-            { data: 'is_destination', title: 'Usar como destino' }
+            { data: 'is_destination', title: 'Usar como destino', render: (data) => data ? 'Sí' : 'No' }
         ],
         searching: false,
         paging: false,
@@ -139,12 +134,6 @@ $(document).ready(function () {
         // Fill form with local device info        
         $('.modal-title').text('Editar configuración de la aplicación') 
         $('#localConfigClientID').val($("#clientID").text()) 
-        $('#localConfigServerURL').val($("#serverURL").text()) 
-        if (localStorage.getItem('sharedPath') !== null) {
-            $('#localConfigSharedPath').val(localStorage.getItem('sharedPath'))            
-        } else {
-            $('#localConfigSharedPath').val("Desconocido")
-        }
         $( "#localConfigMirrorMode" ).prop( "checked", $( "#mirrorMode" ).prop( "checked" )) 
 
     })
@@ -153,8 +142,6 @@ $(document).ready(function () {
         event.preventDefault();      
         var ajax_data = {
             "client_id":  $('#localConfigClientID').val(),
-            "server_url":  $('#localConfigServerURL').val(),
-            "shared_path":  $('#localConfigSharedPath').val(),
             "mirror_mode": $("#localConfigMirrorMode").prop("checked"),
             "username": $('#localConfigAdminUser').val(),
             "password": $('#localConfigAdminPass').val()
@@ -170,8 +157,6 @@ $(document).ready(function () {
                 alert(response.message)
                 // Update local device info                 
                 $('#clientID').text(ajax_data.client_id)
-                $('#serverURL').text(ajax_data.server_url)
-                localStorage.setItem("sharedPath", ajax_data.shared_path)
                 $("#mirrorMode").prop("checked", ajax_data.mirror_mode)
             },
             error: function(xhr, status, error) {
@@ -255,7 +240,6 @@ $(document).ready(function () {
 
         var ajax_data = devices_table.rows({ selected: true }).data()[0]
         ajax_data.action = "delete"
-        console.log(ajax_data)
         if (confirm(`Eliminar dispositivo ${ajax_data.name}?`)){
             $.ajax({
                 url: "/manage_remote_devices",

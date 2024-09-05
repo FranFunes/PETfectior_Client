@@ -76,7 +76,7 @@ def get_tasks_table():
                 'status_msg':t.status_msg,
                 'status_full_msg':t.full_status_msg,
                 'updated': t.updated.strftime('%d/%m/%Y %H:%M:%S'),
-                'task_id': t.id} for t in Task.query.all()]
+                'task_id': t.id} for t in Task.query.filter_by(visible=True)]
     except Exception as e:
         logger.error("can't access database")
         logger.error(traceback.format_exc())
@@ -116,16 +116,12 @@ def get_app_config():
     try:
         c = AppConfig.query.first()
         client_id = c.client_id
-        server_url = c.server_url
-        mirror_mode = c.mirror_mode
-        shared_path = c.shared_path     
+        mirror_mode = c.mirror_mode   
         username = current_user.username
         password = current_user.password
 
         data = {
             "mirror_mode": mirror_mode,
-            "server_url": server_url,
-            "shared_path": shared_path,
             "client_id": client_id,
             "username": username,
             "password": password
@@ -249,8 +245,6 @@ def manage_app_config():
     try:
         c = AppConfig.query.first()
         c.client_id = request.json["client_id"]
-        c.server_url = request.json["server_url"]
-        c.shared_path = request.json["shared_path"]
         c.mirror_mode = request.json["mirror_mode"]        
         current_user.username = request.json["username"]
         current_user.password = request.json["password"]
@@ -271,7 +265,6 @@ def manage_local_device():
         c = AppConfig.query.first()
         c.store_scp_aet = request.json["ae_title"]
         c.ip_address = request.json["address"]        
-        c.store_scp_port = request.json.get("port", c.store_scp_port)
         db.session.commit()
         # Try to restart DICOM services with the new configuration
         services['Dicom Listener'].restart()

@@ -89,8 +89,11 @@ class StoreSCP(AE):
             try:
                 self.server = self.start_server(address = ('0.0.0.0', port), ae_title = ae_title, evt_handlers=handlers, block = False)     
                 logger.info(f'Starting Store SCP: {ae_title}@0.0.0.0:{port}')
+                self.server = self.start_server(address = ('0.0.0.0', port), ae_title = ae_title, evt_handlers=handlers, block = False)     
+                logger.info(f'Starting Store SCP: {ae_title}@0.0.0.0:{port}')
                 return "Dicom Listener inició exitosamente"
             except Exception as e:
+                logger.error(f'Failed when starting StoreSCP {ae_title}@0.0.0.0:{port}')
                 logger.error(f'Failed when starting StoreSCP {ae_title}@0.0.0.0:{port}')
                 logger.error(traceback.format_exc())
                 return "Dicom Listener could not be started"
