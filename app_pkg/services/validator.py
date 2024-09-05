@@ -408,7 +408,7 @@ class Validator():
                 iterations = recon_alg[0x00189739].value                       
                 subsets = recon_alg[0x00189740].value   
             except Exception as e:
-                msg = f"Falta algún en encabezado UIH: {repr(e)}"
+                msg = f"Falta algún encabezado en UIH: {repr(e)}"
                 logger.error(msg)
                 logger.error(traceback.format_exc())
                 return False, msg

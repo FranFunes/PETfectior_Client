@@ -150,7 +150,8 @@ def extract_from_dataset(ds):
                 0x000910B2,
                 0x000910BA,
                 0x000910BB,
-                0x000910DC]
+                0x000910DC,
+                0x00671021]
     for field in fields:
         try:
             recon_ds[field] = ds[field]
