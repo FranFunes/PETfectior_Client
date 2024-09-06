@@ -1,3 +1,19 @@
+"""
+
+    Entry point principal de la aplicación y del contenedor
+    docker correspondiente (a través de ``boot.sh``).
+
+    Se inicializan el resto de los módulos al importar desde app_pkg
+    (ver app_pkg/__init__.py).
+
+    En :py:func:`petfectior_client.terminate_processes` se definen acciones 
+    para disparar al terminar la aplicación.
+    
+    ffunes
+    6/9/2024
+    
+"""
+
 # Load environment variables
 from dotenv import load_dotenv
 load_dotenv()
@@ -9,13 +25,22 @@ from app_pkg.services import services
 
 logger = logging.getLogger('__main__')
 
-
-if os.getenv('FLASK_HTTP_LOGGGING') == 'False':
+# Disable Flask default logging
+if os.getenv('FLASK_HTTP_LOGGING') == 'False':
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)
 
 # Handle sigterm if app was started with flask run command
 def terminate_processes(signalNumber, frame):
+    """
+
+        Esta función define acciones a vincular con una señal SIGINT
+        desde el sistema operativo:
+
+         * Se detienen los diferentes threads de procesamiento en forma ordenada.
+         * Se borra la carpeta donde el servidor escribe los archivos procesados.
+
+    """
     # Stop threads
     logger.info(f"stopping processes...")
     for name, service in services.items():

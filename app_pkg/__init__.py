@@ -1,3 +1,18 @@
+"""
+
+    Inicialización de la aplicación flask.
+    Se importa la configuración de config.Config
+    Se inicializa:
+     * base de datos (Flask-SQLAlchemy) y gestor de migraciones (Flask-Migrate)
+     * gestor de autenticación (Flask-Login)
+     * endpoints (al importar routes)
+    
+    ffunes
+    6/9/2024
+    
+
+"""
+
 from flask import Flask
 from config import Config
 from sqlalchemy import MetaData

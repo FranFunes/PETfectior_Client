@@ -1,10 +1,13 @@
+"""
+    Endpoints de la API http    
+"""
+
 from flask import render_template, request, jsonify, redirect, flash, url_for
 from flask_login import login_user, logout_user, current_user, login_required
 import ipaddress, os, logging, traceback
 import pandas as pd
 from datetime import datetime
 from sqlalchemy.exc import OperationalError
-
 
 from app_pkg import application, db
 from app_pkg.db_models import Device, Task, AppConfig, FilterSettings, PetModel, User, Radiopharmaceutical
@@ -17,6 +20,12 @@ logger = logging.getLogger('__main__')
 
 @application.route('/login', methods=['GET', 'POST'])
 def login():
+    """
+        Endpoint para autenticación (para ver secciones admin).
+
+        :returns: redirección a /tasks si el login es exitoso.
+        :returns: template login.html para el login, si no.
+    """
     if current_user.is_authenticated:
         return redirect(url_for('tasks'))
     
@@ -32,6 +41,7 @@ def login():
 
 @application.route('/logout')
 def logout():
+
     logout_user()
     return redirect('/index')
 
@@ -39,6 +49,7 @@ def logout():
 @application.route('/index')
 @application.route('/tasks')
 def tasks():    
+
     return render_template('tasks.html', module = 'tasks')
 
 @application.route('/config')
@@ -63,7 +74,11 @@ def logs():
 ###################################################################################
 
 @application.route('/get_tasks_table')
-def get_tasks_table(): 
+def get_tasks_table() -> list[dict]:
+    """
+        Devuelve un JSON (lista de diccionarios) con la lista
+        de tareas visibles
+    """
     try:
         data = [{'source':t.task_source.identifier,
                 'destinations': '/'.join([dest.name for dest in t.destinations]),
@@ -85,7 +100,21 @@ def get_tasks_table():
     return {"data": data}
 
 @application.route('/manage_tasks', methods=['GET', 'POST'])
-def manage_tasks():
+def manage_tasks() -> str:
+    """
+        Endpoint para reintentar o eliminar tareas.
+        Espera un json en el cuerpo del request, con:
+        
+         * task_id (requerido para acciones de tareas individuales): id de la tarea a modificar
+         * action: 
+            - delete: eliminar una tarea
+            - retry_last_step: reintentar el último paso de una tarea
+            - restart: comenzar una tarea desde cero (Compilator)
+            - delete_finished: eliminar todas las tareas finalizadas
+            - delete_failed: eliminar todas las tareas fallidas
+        
+        Devuelve: ({"message": mensaje}, codigo http)
+    """
 
     action = request.json['action']
     if not action in ['delete_finished','delete_failed']:
