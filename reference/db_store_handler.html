@@ -182,10 +182,10 @@ otros opcionales.</p>
 <dd><p id="function-store-dataset">Genera o actualiza en base de datos los objetos correspondientes a un objeto DICOM:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p><a class="reference internal" href="database.html#class-db-table-patient"><span class="std std-ref">Patient</span></a></p></li>
-<li><p><a class="reference internal" href="database.html#class-db-table-study"><span class="std std-ref">Study</span></a></p></li>
-<li><p><a class="reference internal" href="database.html#class-db-table-series"><span class="std std-ref">Series</span></a></p></li>
-<li><p><a class="reference internal" href="database.html#class-db-table-instance"><span class="std std-ref">Instance</span></a></p></li>
+<li><p><span class="xref std std-ref">Patient</span></p></li>
+<li><p><span class="xref std std-ref">Study</span></p></li>
+<li><p><span class="xref std std-ref">Series</span></p></li>
+<li><p><span class="xref std std-ref">Instance</span></p></li>
 </ul>
 </div></blockquote>
 <p>Si la instancia no existía previamente en base de datos, además se guarda el objeto DICOM en el almacenamiento.</p>
@@ -210,8 +210,8 @@ otros opcionales.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="app_pkg.functions.db_store_handler.db_create_update_patient">
-<span class="sig-prename descclassname"><span class="pre">app_pkg.functions.db_store_handler.</span></span><span class="sig-name descname"><span class="pre">db_create_update_patient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><span class="pre">Dataset</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="database.html#app_pkg.db_models.Patient" title="app_pkg.db_models.Patient"><span class="pre">Patient</span></a></span></span><a class="headerlink" href="#app_pkg.functions.db_store_handler.db_create_update_patient" title="Link to this definition"></a></dt>
-<dd><p id="function-db-create-update-patient">Genera o actualiza en base de datos un objeto <a class="reference internal" href="database.html#class-db-table-patient"><span class="std std-ref">Patient</span></a> a partir de
+<span class="sig-prename descclassname"><span class="pre">app_pkg.functions.db_store_handler.</span></span><span class="sig-name descname"><span class="pre">db_create_update_patient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><span class="pre">Dataset</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Patient</span></span></span><a class="headerlink" href="#app_pkg.functions.db_store_handler.db_create_update_patient" title="Link to this definition"></a></dt>
+<dd><p id="function-db-create-update-patient">Genera o actualiza en base de datos un objeto <span class="xref std std-ref">Patient</span> a partir de
 la información contenida en el <a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> de entrada.
 Si ya existe un objeto con ese PatientID, se actualiza el PatientName del objeto ya existente.</p>
 <dl class="field-list simple">
@@ -222,15 +222,15 @@ Si ya existe un objeto con ese PatientID, se actualiza el PatientName del objeto
 </ul>
 </dd>
 <dt class="field-even">Devuelve<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference internal" href="database.html#class-db-table-patient"><span class="std std-ref">Patient</span></a> con el objeto generado o modificado.</p>
+<dd class="field-even"><p><span class="xref std std-ref">Patient</span> con el objeto generado o modificado.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="app_pkg.functions.db_store_handler.db_create_update_study">
-<span class="sig-prename descclassname"><span class="pre">app_pkg.functions.db_store_handler.</span></span><span class="sig-name descname"><span class="pre">db_create_update_study</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><span class="pre">Dataset</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(en Python versión 3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="database.html#app_pkg.db_models.Study" title="app_pkg.db_models.Study"><span class="pre">Study</span></a></span></span><a class="headerlink" href="#app_pkg.functions.db_store_handler.db_create_update_study" title="Link to this definition"></a></dt>
-<dd><p id="function-db-create-update-study">Genera o actualiza en base de datos un objeto <a class="reference internal" href="database.html#class-db-table-study"><span class="std std-ref">Study</span></a> a partir de
+<span class="sig-prename descclassname"><span class="pre">app_pkg.functions.db_store_handler.</span></span><span class="sig-name descname"><span class="pre">db_create_update_study</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><span class="pre">Dataset</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(en Python versión 3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Study</span></span></span><a class="headerlink" href="#app_pkg.functions.db_store_handler.db_create_update_study" title="Link to this definition"></a></dt>
+<dd><p id="function-db-create-update-study">Genera o actualiza en base de datos un objeto <span class="xref std std-ref">Study</span> a partir de
 la información contenida en el <a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> de entrada.
 Si ya existe un objeto con ese StudyInstanceUID, se actualizan los campos StudyDate, StudyDescription, PatientWeight,
 PatientSize, y PatientAge del objeto ya existente.</p>
@@ -242,15 +242,15 @@ PatientSize, y PatientAge del objeto ya existente.</p>
 </ul>
 </dd>
 <dt class="field-even">Devuelve<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference internal" href="database.html#class-db-table-study"><span class="std std-ref">Study</span></a> con el objeto generado o modificado.</p>
+<dd class="field-even"><p><span class="xref std std-ref">Study</span> con el objeto generado o modificado.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="app_pkg.functions.db_store_handler.db_create_update_series">
-<span class="sig-prename descclassname"><span class="pre">app_pkg.functions.db_store_handler.</span></span><span class="sig-name descname"><span class="pre">db_create_update_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><span class="pre">Dataset</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(en Python versión 3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="database.html#app_pkg.db_models.Series" title="app_pkg.db_models.Series"><span class="pre">Series</span></a></span></span><a class="headerlink" href="#app_pkg.functions.db_store_handler.db_create_update_series" title="Link to this definition"></a></dt>
-<dd><p id="function-db-create-update-series">Genera o actualiza en base de datos un objeto <a class="reference internal" href="database.html#class-db-table-series"><span class="std std-ref">Series</span></a> a partir de
+<span class="sig-prename descclassname"><span class="pre">app_pkg.functions.db_store_handler.</span></span><span class="sig-name descname"><span class="pre">db_create_update_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><span class="pre">Dataset</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(en Python versión 3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Series</span></span></span><a class="headerlink" href="#app_pkg.functions.db_store_handler.db_create_update_series" title="Link to this definition"></a></dt>
+<dd><p id="function-db-create-update-series">Genera o actualiza en base de datos un objeto <span class="xref std std-ref">Series</span> a partir de
 la información contenida en el <a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> de entrada.
 Si ya existe un objeto con ese SeriesInstanceUID, se actualizan los campos SeriesDate, SeriesTime, SeriesDescription,
 Modality, y SeriesNumber del objeto ya existente.</p>
@@ -262,15 +262,15 @@ Modality, y SeriesNumber del objeto ya existente.</p>
 </ul>
 </dd>
 <dt class="field-even">Devuelve<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference internal" href="database.html#class-db-table-series"><span class="std std-ref">Series</span></a> con el objeto generado o modificado.</p>
+<dd class="field-even"><p><span class="xref std std-ref">Series</span> con el objeto generado o modificado.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="app_pkg.functions.db_store_handler.db_create_instance">
-<span class="sig-prename descclassname"><span class="pre">app_pkg.functions.db_store_handler.</span></span><span class="sig-name descname"><span class="pre">db_create_instance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><span class="pre">Dataset</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(en Python versión 3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="database.html#app_pkg.db_models.Instance" title="app_pkg.db_models.Instance"><span class="pre">Instance</span></a></span></span><a class="headerlink" href="#app_pkg.functions.db_store_handler.db_create_instance" title="Link to this definition"></a></dt>
-<dd><p id="function-db-create-instance">Genera en base de datos un objeto <a class="reference internal" href="database.html#class-db-table-instance"><span class="std std-ref">Instance</span></a> a partir de
+<span class="sig-prename descclassname"><span class="pre">app_pkg.functions.db_store_handler.</span></span><span class="sig-name descname"><span class="pre">db_create_instance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><span class="pre">Dataset</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(en Python versión 3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Instance</span></span></span><a class="headerlink" href="#app_pkg.functions.db_store_handler.db_create_instance" title="Link to this definition"></a></dt>
+<dd><p id="function-db-create-instance">Genera en base de datos un objeto <span class="xref std std-ref">Instance</span> a partir de
 la información contenida en el <a class="reference external" href="https://pydicom.github.io/pydicom/stable/reference/generated/pydicom.dataset.Dataset.html#pydicom.dataset.Dataset" title="(en pydicom versión 2.4.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> de entrada.
 Genera ValueError si ya existe un objeto con ese SOPInstanceUID en base de datos.</p>
 <dl class="field-list simple">
@@ -281,7 +281,7 @@ Genera ValueError si ya existe un objeto con ese SOPInstanceUID en base de datos
 </ul>
 </dd>
 <dt class="field-even">Devuelve<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference internal" href="database.html#class-db-table-instance"><span class="std std-ref">Instance</span></a> con el objeto generado.</p>
+<dd class="field-even"><p><span class="xref std std-ref">Instance</span> con el objeto generado.</p>
 </dd>
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(en Python versión 3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ValueError</span></code></a> si la instancia ya existe.</p>
