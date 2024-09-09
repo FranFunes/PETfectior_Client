@@ -78,6 +78,7 @@ def get_tasks_table() -> list[dict]:
     """
         Devuelve un JSON (lista de diccionarios) con la lista
         de tareas visibles
+
     """
     try:
         data = [{'source':t.task_source.identifier,
@@ -100,7 +101,7 @@ def get_tasks_table() -> list[dict]:
     return {"data": data}
 
 @application.route('/manage_tasks', methods=['GET', 'POST'])
-def manage_tasks() -> str:
+def manage_tasks() -> tuple[str, str]:
     """
         Endpoint para reintentar o eliminar tareas.
         Espera un json en el cuerpo del request, con:
@@ -140,7 +141,18 @@ def manage_tasks() -> str:
 
 @application.route('/get_app_config')
 @login_required
-def get_app_config():
+def get_app_config() -> dict|tuple[str, int]:
+
+    """
+        Leer los parámetros de configuración general
+        de la aplicación.
+
+        Devuelve:
+         * un JSON (dict) con los parámetros de
+           configuración de la aplicación.
+         * mensaje y código de error 500, si hay algún fallo.
+
+    """
 
     try:
         c = AppConfig.query.first()
@@ -161,12 +173,21 @@ def get_app_config():
         logger.error("can't access config in database")
         logger.error(traceback.format_exc())  
         return 'Error al consultar la base de datos', 500   
-                
     
-
 @application.route('/get_local_device')
 @login_required
-def get_local_device():
+def get_local_device() -> dict|tuple[str, int]:
+
+    """
+        Leer los parámetros de configuración
+        de la aplicación DICOM local.
+
+        Devuelve:
+         * un JSON (dict) con los parámetros de
+           configuración de la aplicación DICOM local.
+         * mensaje y código de error 500, si hay algún fallo.
+
+    """
 
     try:
         c = AppConfig.query.first()
@@ -174,10 +195,7 @@ def get_local_device():
         port = c.store_scp_port
         address = c.ip_address
         device = {'ae_title': ae_title, 'address': address, 'port':port}
-        data = {
-            "data": device
-        }
-        return data
+        return device
     except Exception as e:
         logger.error("can't access config in database")
         logger.error(traceback.format_exc())
@@ -186,7 +204,17 @@ def get_local_device():
 
 @application.route('/get_pet_models')
 @login_required
-def get_pet_models():
+def get_pet_models() -> list[str]|tuple[str, int]:
+
+    """
+        Leer los modelos de equipos PET
+        conocidos en la aplicación.
+
+        Devuelve:
+         * un JSON (list de str) con los modelos de los equipos PET conocidos. 
+         * mensaje y código de error 500, si hay algún fallo.
+
+    """
 
     try:
         models = [m.name for m in PetModel.query.all()]
@@ -194,12 +222,21 @@ def get_pet_models():
     except Exception as e:
         logger.error("can't access pet models in database")
         logger.error(traceback.format_exc())
-        return {'message': "Error al consultar los modelos de PET en la base de datos"}, 500
+        return 'Error al consultar la base de datos', 500
 
     
 @application.route('/radiopharmaceuticals', methods=['GET', 'POST'])
 @login_required
-def radiopharmaceuticals():
+def radiopharmaceuticals() -> tuple[dict, int]:
+
+    """
+
+        Leer/manejar los radiofármacos conocidos
+        en la aplicación. El request puede ser un GET
+        (devuelve la lista de radiofármacos), o un POST
+        (agrega, modifica o elimina radiofármacos de la lista).
+
+    """
 
     if request.method == 'GET':
         try:
@@ -270,7 +307,11 @@ def radiopharmaceuticals():
 
 @application.route('/manage_app_config', methods=['GET', 'POST'])
 @login_required
-def manage_app_config():   
+def manage_app_config() -> tuple[dict, int]:
+    """
+        Endpoint para modificar la configuración
+        general de la aplicación.
+    """ 
     try:
         c = AppConfig.query.first()
         c.client_id = request.json["client_id"]
@@ -278,14 +319,19 @@ def manage_app_config():
         current_user.username = request.json["username"]
         current_user.password = request.json["password"]
         db.session.commit()
-        return {"message":"Configuración actualizada correctamente"}        
+        return {"message":"Configuración actualizada correctamente"}, 200  
     except OperationalError as e:
         logger.error("can't access config in database")
         return jsonify(message = 'Error: la base de datos no está disponible'), 500     
 
 @application.route('/manage_local_device', methods=['GET', 'POST'])
 @login_required
-def manage_local_device():   
+def manage_local_device()-> tuple[dict, int]:
+    """
+        Endpoint para modificar la configuración de
+        la aplicación DICOM local (listener)
+        
+    """ 
     
     try:
         # Check IP address
@@ -298,7 +344,7 @@ def manage_local_device():
         # Try to restart DICOM services with the new configuration
         services['Dicom Listener'].restart()
         services['StoreSCU'].restart()
-        return {"message":"Dispositivo DICOM local actualizado exitosamente"}
+        return {"message":"Dispositivo DICOM local actualizado exitosamente"}, 200
     except ValueError:
         logger.info('IP address not formatted properly')
         return {"message":"Error: la dirección IP no es válida"}, 500          
@@ -311,7 +357,13 @@ def manage_local_device():
 
 @application.route('/get_remote_devices')
 @login_required
-def get_remote_devices():
+def get_remote_devices() -> tuple[dict, int]:
+    
+    """
+        Endpoint para obtener la lista de
+        dispositivos DICOM remotos.
+
+    """
 
     try:
         devices = [{"name":d.name, 
@@ -322,7 +374,7 @@ def get_remote_devices():
         data = {
             "data": devices
         }
-        return data
+        return data, 200
     except Exception as e:
         logger.error("can't access devices in database")
         logger.error(traceback.format_exc())
@@ -330,7 +382,12 @@ def get_remote_devices():
 
 @application.route('/manage_remote_devices', methods=['GET', 'POST'])
 @login_required
-def manage_remote_devices(): 
+def manage_remote_devices() -> tuple[dict, int]:
+    """
+        Endpoint para crear, modificar o eliminar un
+        dispositivo DICOM remoto.
+
+    """
     
     device_name = request.json["name"]
     ae_title = request.json["ae_title"]
@@ -366,7 +423,7 @@ def manage_remote_devices():
         ipaddress.ip_address(address)
     except ValueError:
         logger.info('IP address not formatted properly')
-        return {"message":"Error: la dirección IP no es válida"}    
+        return {"message":"Error: la dirección IP no es válida"}, 400    
     
     # Check port
     port = request.json["port"]
@@ -375,13 +432,13 @@ def manage_remote_devices():
         port = int(port)
     except:
         logger.info('invalid port')
-        return {"message":"Error: el puerto no es válido"}    
+        return {"message":"Error: el puerto no es válido"}, 400    
             
     if action == "add":
         # Add new device        
         if d:
             logger.error('trying to create an already existent device') 
-            return jsonify(message = "Error: el dispositivo ya existe"), 500    
+            return jsonify(message = "Error: el dispositivo ya existe"), 400    
         try:
             # Add device to database
             new_d = Device(name = device_name, ae_title = ae_title, address = address, port = port, is_destination = request.json['is_destination'])
@@ -399,7 +456,7 @@ def manage_remote_devices():
         # Check if device exists
         if not d:
             logger.error('trying to edit an unexistent device') 
-            return jsonify(message = "Error: el dispositivo no existe"), 500    
+            return jsonify(message = "Error: el dispositivo no existe"), 400    
         
         # Edit device in database     
         try:       
@@ -409,14 +466,20 @@ def manage_remote_devices():
             d.is_destination = request.json['is_destination']
             db.session.commit()
             logger.info('device edited')
-            return {"message":"Dispositivo editado correctamente"}    
+            return {"message":"Dispositivo editado correctamente"}, 200    
         except Exception as e:
             logger.info('edit device failed')
             logger.error(traceback.format_exc())
-            return {"message":"Error al acceder a la base de datos"}
+            return {"message":"Error al acceder a la base de datos"}, 500
 
 @application.route('/ping_remote_device', methods=['GET', 'POST'])
-def ping_remote_device():   
+def ping_remote_device() -> tuple[dict, int]: 
+
+    """
+        Endpoint para verificar conectividad de
+        red hacia un dispositivo DICOM remoto.
+
+    """  
 
     ping_result = ping(request.json['address'], count = 2)
     if ping_result:
@@ -425,7 +488,13 @@ def ping_remote_device():
         return jsonify(message = request.json['address'] + ' no es alcanzable!!!'), 500
     
 @application.route('/echo_remote_device', methods=['GET', 'POST'])
-def echo_remote_device():       
+def echo_remote_device() -> tuple[dict, int]: 
+
+    """
+        Endpoint para verificar conectividad DICOM
+        (C-ECHO) hacia un dispositivo remoto.
+
+    """       
     echo_response = services['Dicom Listener'].echo(request.json)
     if echo_response == 0:
         return jsonify(message = f"DICOM ECHO a {request.json['ae_title']}@{request.json['address']}:{request.json['port']} exitoso"), 200
@@ -434,7 +503,17 @@ def echo_remote_device():
 
 @application.route('/recon_settings', methods=['GET', 'POST'])
 @login_required
-def recon_settings():
+def recon_settings() -> tuple[dict, int]: 
+
+    """
+
+        Leer/manejar la configuración de filtros a
+        aplicar a las imágenes procesadas.
+        El request puede ser un GET
+        (devuelve la lista de postfiltros), o un POST
+        (agrega, modifica o elimina postfiltros de la lista).
+
+    """
 
     if request.method == 'GET':
         try:
@@ -519,6 +598,12 @@ def recon_settings():
 @login_required
 def check_server_connection():
 
+    """
+        Endpoint para obtener las estadísticas de
+        conectividad con el servidor de procesamiento.
+
+    """  
+    
     data = services['Server Monitor'].get_statistics()
     data['state_duration'] = str(data['state_duration']) + ' sec'
     data['total_uptime'] = str(data['total_uptime']) + ' sec'
@@ -531,6 +616,12 @@ def check_server_connection():
 @login_required
 def get_services_status():
 
+    """
+        Endpoint para obtener el estado de
+        los diferentes procesos.
+
+    """  
+
     data = [{'service_name':name, 'status':service.get_status()} for name, service in services.items()]            
 
     return {"data": data}
@@ -538,6 +629,12 @@ def get_services_status():
 @application.route('/manage_service', methods=['GET', 'POST'])
 @login_required
 def manage_service():
+
+    """
+        Endpoint para modificar el estado de
+        los diferentes procesos.
+
+    """  
     
     action = request.json['action']
     service_name = request.json['service_name']
@@ -554,34 +651,58 @@ def manage_service():
 
 @application.route('/get_modules_names')
 def get_modules_names():
+    """
+        Devuelve la lista de módulos que generan
+        logs (para poder filtrar posteriormente)
 
-    modules = ['compilator',
-               'petfectior_client',
-               'db_models',
-               'db_store_handler',
-               'downloader',
-               'packer',
-               'routes',
-               'services',
-               'server_monitor',
-               'store_scp',               
-               'store_scu',
-               'task_actions',
-               'task_manager',
-               'unpacker',
-               'uploader',               
-               'validator',]
-    
-    return {'data': modules}
+    """
+
+    try:
+        df = pd.read_csv(os.path.join(os.environ['LOGGING_FILEPATH'],'output.log'), sep=';',
+                          names = ['datetime','level','module','function','message'])
+        modules = df.module.unique().tolist()
+        return {'data': modules}, 200
+    except:
+        logger.error("""No se pudo leer el archivo de logs. Reintentando con 
+                     encoding ISO-8859-1""")
+    try:
+        df = pd.read_csv(os.path.join(os.environ['LOGGING_FILEPATH'],'output.log'),
+                        names = ['datetime','level','module','function','message'],
+                        encoding = "ISO-8859-1", sep=';')
+        modules = df.module.unique().tolist()
+        return {'data': modules}, 200
+    except:
+        logger.error(traceback.format_exc())
+        return "No se pudo leer el archivo de errores", 500
 
 @application.route('/get_app_logs', methods = ['GET','POST'])
 def get_app_logs():
 
-    try:        
-        if request.json['ignore']:
-            return {"data": []}
+    """
+        Devuelve la tabla de mensajes de log de
+        la aplicación (con filtros opcionales de
+        fecha/hora, nivel, y módulo de origen).
         
-        df = pd.read_csv(os.path.join(os.environ['LOGGING_FILEPATH'],'output.log'), sep=';', names = ['datetime','level','module','function','message'])
+    """
+
+    if request.json['ignore']:
+        return {"data": []}
+    
+    try:
+        df = pd.read_csv(os.path.join(os.environ['LOGGING_FILEPATH'],'output.log'), sep=';',
+                          names = ['datetime','level','module','function','message'])
+    except:
+        logger.error("""No se pudo leer el archivo de logs. Reintentando con 
+                     encoding ISO-8859-1""")
+        try:
+            df = pd.read_csv(os.path.join(os.environ['LOGGING_FILEPATH'],'output.log'),
+                            names = ['datetime','level','module','function','message'],
+                            encoding = "ISO-8859-1", sep=';')
+        except:
+            logger.error(traceback.format_exc())
+            return "No se pudo leer el archivo de errores", 500
+
+    try:
         df['datetime'] = df['datetime'].map(lambda x: datetime.strptime(x,'%Y-%m-%d %H:%M:%S,%f'))
         
         # Filter by level
@@ -612,6 +733,13 @@ def get_app_logs():
    
 @application.route('/get_dicom_logs', methods = ['GET','POST'])
 def get_dicom_logs():
+    
+    """
+        Devuelve la tabla de mensajes de logs
+        generados por pynetdicom (con filtro
+        opcional de fecha/hora).
+        
+    """
 
     df = pd.read_csv(os.path.join(os.environ['LOGGING_FILEPATH'],'dicom.log'), sep=';', names = ['datetime','level','message'])
     df['timestamp'] = df['datetime'].map(lambda x: datetime.strptime(x,'%Y-%m-%d %H:%M:%S,%f'))
@@ -636,7 +764,8 @@ def process_ready():
 
     """"
 
-     The server uses this route to signal the completion of a processing task
+    Endpoint para notificar que el procesamiento
+    de una tarea ha finalizado / fallado.
 
     """
 

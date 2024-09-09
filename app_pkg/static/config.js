@@ -23,9 +23,9 @@ $(document).ready(function () {
         contentType: "application/json",
         success: function(response) {                    
             // Update local device info
-            $("#localAET").text(response.data.ae_title)
-            $("#localIP").text(response.data.address)
-            $("#localPort").text(response.data.port)   
+            $("#localAET").text(response.ae_title)
+            $("#localIP").text(response.address)
+            $("#localPort").text(response.port)   
         },
         error: function(xhr, status, error) {
             // handle error response here
@@ -46,7 +46,7 @@ $(document).ready(function () {
         },
         error: function(xhr, status, error) {
             // handle error response here
-            console.log(xhr.responseText);
+            alert(xhr.responseText);
         }
     });    
 
