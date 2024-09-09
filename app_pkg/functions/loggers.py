@@ -21,7 +21,7 @@ def dicom_logger():
     logger.handlers = []
     handler = RotatingFileHandler(os.path.join('data','logs','dicom.log'), maxBytes = 10*2**20, backupCount = 10)
     handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s; %(levelname).1s; %(message)s ')    
+    formatter = CapitalizeFormatter('%(asctime)s;%(levelname)s;%(module)s;%(funcName)s;%(message)s')   
     handler.setFormatter(formatter)
     logger.addHandler(handler)   
 

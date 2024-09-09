@@ -156,7 +156,10 @@ def extract_from_dataset(ds):
         try:
             recon_ds[field] = ds[field]
         except:
-            logger.debug(f"{field} not available")
+            if type(field) == 'str':
+                logger.debug(f"{field} not available")
+            elif type(field) == 'int':
+                logger.debug(f"0x{field:08X} not available")
     
     # Return a 'Success' status    
     return new_ds, recon_ds
