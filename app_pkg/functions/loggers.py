@@ -43,7 +43,7 @@ def app_logger():
     formatter = CapitalizeFormatter('%(asctime)s;%(levelname)s;%(module)s;%(funcName)s;%(message)s')
     handler.setFormatter(formatter)
     app_logger.addHandler(handler)
-
+    
     # Log to console
     handler = logging.StreamHandler()
     handler.setLevel(logging.INFO)

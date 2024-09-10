@@ -1,7 +1,7 @@
 from pynetdicom import AE
 from pynetdicom.sop_class import PositronEmissionTomographyImageStorage
 from pydicom.dataset import Dataset
-import threading, logging
+import threading, logging, traceback
 from time import sleep
 from typing import List, Union
 from pathlib import Path
@@ -89,37 +89,62 @@ class StoreSCU(AE):
         return results
     
     def main(self):
-        
-        while not self.stop_event.is_set() or not self.input_queue.empty():
 
-            if not self.input_queue.empty():
-                with application.app_context():
-                    
-                    # Read task from input queue and datasets from database
-                    task = Task.query.get(self.input_queue.get())                    
-                    datasets = []
-                    for result in task.result_series.all():
-                        for instance in result.instances.all():
-                            datasets.append(instance.filename)
+        while not self.stop_event.is_set() or not self.input_queue.empty():            
+                            
+                if not self.input_queue.empty():
+                    task_id = self.input_queue.get()
+                    with application.app_context():
+                        reprocess = self.task_step_handler(task_id)
+                    while reprocess and not self.stop_event.is_set():
+                        logger.info(f'reprocessing {task_id}')   
+                        with application.app_context():                     
+                            reprocess = self.task_step_handler(task_id)
+                        sleep(5)
+                else:
+                    sleep(1)
 
-                    logger.info(f'sending DICOMs for task {task.id}')
-                    task.status_msg = 'enviando DICOMs'
-                    db.session.commit()
-                    
-                    # Send datasets to each destination
-                    dest = {d.name: {'ae_title':d.ae_title,'address':d.address,'port':d.port} for d in task.destinations}                  
-                    msg = []
-                    for name, device in dest.items():
-                        succesful = self.send_datasets(device, datasets)
-                        msg.append(f"{name}: {sum(succesful)}/{len(datasets)}")
-                    logger.info(f'sending DICOMs task {task.id} ' + ' '.join(msg))
-                    status = '<br>'.join(msg)
-                    task.status_msg = status   
-                    task.step_state = 2             
+    def task_step_handler(self, task_id):
                 
-                    db.session.commit()
-            else:
-                sleep(1)
+        try:
+            task = Task.query.get(task_id)                   
+            datasets = []
+            for result in task.result_series.all():
+                for instance in result.instances.all():
+                    datasets.append(instance.filename)
+
+            logger.info(f'sending DICOMs for task {task.id}')
+            task.status_msg = 'enviando DICOMs'
+            db.session.commit()
+            
+            # Send datasets to each destination
+            dest = {d.name: {'ae_title':d.ae_title,'address':d.address,'port':d.port} for d in task.destinations}                  
+            msg = []
+            for name, device in dest.items():
+                succesful = self.send_datasets(device, datasets)
+                msg.append(f"{name}: {sum(succesful)}/{len(datasets)}")
+            logger.info(f'sending DICOMs task {task.id} ' + ' '.join(msg))
+            status = '<br>'.join(msg)
+            task.status_msg = status   
+            task.step_state = 2    
+            db.session.commit()
+            return False
+        except:
+            logger.error(f"failed when sending dicoms for task {task_id}")
+            logger.error(traceback.format_exc())
+            # Flag step as failed
+            try:
+                task.status_msg = f"fallo - envío dicom"                             
+                task.step_state = -1
+                task.full_status_msg = f"""Hubo un error desconocido al intentar enviar los objetos
+                DICOM a los destinos."""
+                db.session.commit()   
+                return False
+            except:
+                logger.error(f"task {task_id} status can't be updated")
+                logger.error(traceback.format_exc())   
+                return True
+
 
 
     def start(self):

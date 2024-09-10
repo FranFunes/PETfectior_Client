@@ -98,55 +98,76 @@ class SeriesDownloader():
         
     def main(self):
 
-        while not self.stop_event.is_set() or not self.input_queue.empty():
-            with application.app_context():
+        while not self.stop_event.is_set() or not self.input_queue.empty():            
+                            
                 if not self.input_queue.empty():
-                    task = Task.query.get(self.input_queue.get())
-                    config = AppConfig.query.first()
-
-                    # Reconstruct the filename from task_id and client_id
-                    fname = task.id + '_' + config.client_id + '.zip'
-                    task.status_msg = 'descargando'
-                    db.session.commit()
-
-                    # Download fname                
-                    try:
-                        fpath = os.path.join(os.path.join(config.shared_mount_point, 'processed'), fname)
-                        local_fname = os.path.join(config.download_path, fname)                    
-                        logger.info(f"downloading {fpath} over vpn")     
-                        db.session.commit()               
-                        copy(fpath, local_fname)
-                    except FileNotFoundError as e:
-                        logger.error('Download error: file ' + fpath + ' not found')
-                        task.status_msg = 'descarga fallida'
-                        task.full_status_msg = """Error al descargar el archivo procesado del servidor remoto: la aplicación no
-                        recibió los archivos esperados del servidor remoto. Verificar los mensajes de error del Downloader para
-                        mayor información"""                        
-                        task.step_state = -1                        
-                    except Exception as e:
-                        logger.error('Unknown error during download')
-                        logger.error(traceback.format_exc())
-                        task.status_msg = 'descarga fallida'
-                        task.full_status_msg = """Error desconocido al descargar el archivo procesado del servidor remoto.
-                        Mensaje de error completo:\n\n """ + repr(e)
-                        task.step_state = -1
-                    else:                    
-                        # If download was successful, flag step as completed
-                        task.current_step = self.next_step
-                        task.status_msg = 'descarga ok'
-                        task.step_state = 1
-                        logger.info(f"{fname} downloaded successfully")
-                        # Delete file from vpn shared folder
-                        try:
-                            os.remove(fpath)
-                            logger.info(f"{fpath} deleted from vpn shared folder")
-                        except Exception as e:
-                            logger.error(f"Unknown error when trying to delete {fpath} from vpn shared folder")
-                            logger.error(traceback.format_exc()) 
-
-                    db.session.commit()
-            
+                    task_id = self.input_queue.get()
+                    with application.app_context():
+                        reprocess = self.task_step_handler(task_id)
+                    while reprocess and not self.stop_event.is_set():
+                        logger.info(f'reprocessing {task_id}')   
+                        with application.app_context():                     
+                            reprocess = self.task_step_handler(task_id)
+                        sleep(5)
                 else:
                     sleep(1)
 
-    
+    def task_step_handler(self, task_id):
+                
+        try:
+            task = Task.query.get(task_id)
+            config = AppConfig.query.first()
+
+            # Reconstruct the filename from task_id and client_id
+            fname = task.id + '_' + config.client_id + '.zip'
+            task.status_msg = 'descargando'
+            db.session.commit()
+
+            # Download fname                
+            fpath = os.path.join(os.path.join(config.shared_mount_point, 'processed'), fname)
+            local_fname = os.path.join(config.download_path, fname)                    
+            logger.info(f"downloading {fpath} over vpn")     
+            db.session.commit()               
+            copy(fpath, local_fname)
+        except FileNotFoundError as e:
+            logger.error('Download error: file ' + fpath + ' not found')
+            task.status_msg = 'descarga fallida'
+            task.full_status_msg = """Error al descargar el archivo procesado del servidor remoto: la aplicación no
+            recibió los archivos esperados del servidor remoto. Verificar los mensajes de error del Downloader para
+            mayor información"""                        
+            task.step_state = -1
+            db.session.commit()
+            return False                  
+        except Exception as e:
+            try:
+                logger.error('Unknown error during download')
+                logger.error(traceback.format_exc())
+                task.status_msg = 'descarga fallida'
+                task.full_status_msg = """Error desconocido al descargar el archivo procesado del servidor remoto.
+                Mensaje de error completo:\n\n """ + repr(e)
+                task.step_state = -1
+                db.session.commit()
+                return False
+            except:
+                logger.error(f"task {task_id} status can't be updated")
+                logger.error(traceback.format_exc())   
+                return True        
+        try:
+            # If download was successful, flag step as completed
+            task.current_step = self.next_step
+            task.status_msg = 'descarga ok'
+            task.step_state = 1
+            db.session.commit()
+            logger.info(f"{fname} downloaded successfully")
+            # Delete file from vpn shared folder
+            try:
+                os.remove(fpath)
+                logger.info(f"{fpath} deleted from vpn shared folder")
+            except Exception as e:
+                logger.error(f"Unknown error when trying to delete {fpath} from vpn shared folder")
+                logger.error(traceback.format_exc()) 
+            return False
+        except:
+            logger.error(f"task {task_id} status can't be updated")
+            logger.error(traceback.format_exc())   
+            return True

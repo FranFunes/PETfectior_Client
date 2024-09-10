@@ -107,17 +107,16 @@ class Compilator():
 
         while not self.stop_event.is_set() or not self.input_queue.empty():
             
-            try:
 
-                with application.app_context():
-                    # If there are any elements in the input queue, read them.
-                    if not self.input_queue.empty():
-                        
-                        # Reset inactivity timer
-                        inactive_time = 0
+            with application.app_context():
+                # If there are any elements in the input queue, read them.
+                if not self.input_queue.empty():
+                    # Reset inactivity timer
+                    inactive_time = 0
+                    # Read element from queue
+                    queue_element = self.input_queue.get()
 
-                        # Read element from queue
-                        queue_element = self.input_queue.get()
+                    try:                        
                         dataset = queue_element['dataset']
                         series_uid = dataset.SeriesInstanceUID
                         sop_uid = dataset.SOPInstanceUID
@@ -171,12 +170,17 @@ class Compilator():
                             matching_task.instances.append(Instance.query.get(sop_uid))
 
                         db.session.commit()
+                    
+                    except Exception as e:
+                        logger.error("error processing queue element. Putting it back in the queue.")
+                        logger.error(traceback.format_exc())
+                        self.input_queue.put(queue_element)
                         
-                    # If there are no elements in the queue and the thread has been inactive for 5 seconds, check
-                    # tasks status
-                    elif inactive_time >= 5:
-
-                        logger.debug(f"Inactive, checking tasks status...")
+                # If there are no elements in the queue and the thread has been inactive for 5 seconds, check
+                # tasks status
+                elif inactive_time >= 5:
+                        
+                    try:
                         # Reset inactivity timer
                         inactive_time = 0
                         for task in Task.query.filter((Task.current_step == 'compilator')&(Task.step_state==0)).all():
@@ -213,16 +217,16 @@ class Compilator():
                                     task.recon_settings = recon_settings.to_json()
                                     task.current_step = self.next_step
                                     task.step_state = 1
-                                    logger.info(f"Task {task.id} completed.")                       
-                        
+                                    logger.info(f"Task {task.id} completed.")
                         db.session.commit()
-                    else:
-                        sleep(1)
-                        inactive_time += 1     
-            except Exception as e:
-                logger.error("error in main loop.")
-                logger.error(traceback.format_exc())
-                            
+                    
+                    except:
+                        logger.error("error processing current tasks.")
+                        logger.error(traceback.format_exc())
+
+                else:
+                    sleep(1)
+                    inactive_time += 1     
 
     def task_status(self, datasets, n_imgs, last_received):
 

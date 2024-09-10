@@ -86,76 +86,98 @@ class SeriesPacker():
 
     def main(self):
 
-        while not self.stop_event.is_set() or not self.input_queue.empty():
-            with application.app_context():
-                    
-                # If there are any elements in the input queue, read them.
-                if not self.input_queue.empty():                    
-                    task = Task.query.get(self.input_queue.get())
-                    task.status_msg = 'comprimiendo'
-                    db.session.commit()
-                    config = AppConfig.query.first()
-                                        
-                    try:
-                        # Get filenames for the instances of this task
-                        filenames = [i.filename for i in task.instances]
-
-                        # Extract voxel values
-                        voxels = self.extract_voxels(filenames)           
-
-                        # Save voxel values to disk
-                        os.makedirs('temp_series_packer', exist_ok = True)
-                        np.save(os.path.join('temp_series_packer', 'voxels'), voxels)
-                                            
-                        # Save neccesary metadata
-                        metadata = {
-                            'client_id': config.client_id,
-                            'task_id': task.id,
-                            'recon_settings': json.loads(task.recon_settings),
-                            'PatientWeight': task.task_series.study.PatientWeight,
-                            'PatientSize': task.task_series.study.PatientSize,
-                            'PatientAge': task.task_series.study.PatientAge,
-                            'StudyInstanceUID': task.task_series.study.StudyInstanceUID,
-                            'SeriesInstanceUID': task.series,
-                            'SeriesNumber': task.task_series.SeriesNumber,
-                            'SeriesDate': task.task_series.SeriesDate.strftime('%Y-%m-%d'),
-                            'SeriesTime': task.task_series.SeriesDate.strftime('%H:%M:%S'),
-                            'sha256':get_checksum(os.path.join('temp_series_packer', 'voxels.npy'), algorithm="SHA256")
-                        }
-                        with open(os.path.join("temp_series_packer", "metadata.json"), "w") as jsonfile:  
-                            json.dump(metadata, jsonfile, indent = 2)     
-
-                        # Zip voxels and metadata in a file with the task id and client id as name
-                        zip_fname = task.id + '_' + config.client_id
-                        archive_name = os.path.join(config.zip_dir, zip_fname)           
-                        logger.info('zipping files to ' + archive_name)         
-                        make_archive(archive_name, 'zip', "temp_series_packer")
-                        
-                        # Delete temporary folder
-                        try:
-                            logger.info('removing temp folder')
-                            rmtree('temp_series_packer')
-                        except Exception as e:
-                            logger.info('could not remove temporary folder')
-                            logger.info(traceback.format_exc())
-                        
-                        # Flag step as completed                                
-                        task.current_step = self.next_step
-                        task.status_msg = 'comprimido'
-                        task.step_state = 1
-                        logger.info(f"Task {task.id} packed.")
-
-                    except Exception as e:
-                        logger.info(f'compressing failed for task {task.id}')
-                        logger.error(traceback.format_exc())
-                        task.status_msg = 'falló la compresión'
-                        task.step_state = -1
-                        task.full_status_msg = """Ocurrió un error desconocido al intentar comprimir los datos de imagen para
-                         enviar al servidor remoto. Mensaje completo de error:\n\n""" + repr(e)  
-                                    
-                    db.session.commit()
-                else:   
+        while not self.stop_event.is_set() or not self.input_queue.empty():            
+                            
+                if not self.input_queue.empty():
+                    task_id = self.input_queue.get()
+                    with application.app_context():
+                        reprocess = self.task_step_handler(task_id)
+                    while reprocess and not self.stop_event.is_set():
+                        logger.info(f'reprocessing {task_id}')   
+                        with application.app_context():                     
+                            reprocess = self.task_step_handler(task_id)
+                        sleep(5)
+                else:
                     sleep(1)
+
+    def task_step_handler(self, task_id):
+                            
+        try:
+            task = Task.query.get(task_id)
+            task.status_msg = 'comprimiendo'
+            db.session.commit()
+        except:
+            logger.error(f"task {task_id} status can't be updated")
+            logger.error(traceback.format_exc())   
+            return True
+
+        try:
+            config = AppConfig.query.first()
+
+            # Get filenames for the instances of this task
+            filenames = [i.filename for i in task.instances]
+
+            # Extract voxel values
+            voxels = self.extract_voxels(filenames)           
+
+            # Save voxel values to disk
+            os.makedirs('temp_series_packer', exist_ok = True)
+            np.save(os.path.join('temp_series_packer', 'voxels'), voxels)
+                                
+            # Save neccesary metadata
+            metadata = {
+                'client_id': config.client_id,
+                'task_id': task_id,
+                'recon_settings': json.loads(task.recon_settings),
+                'PatientWeight': task.task_series.study.PatientWeight,
+                'PatientSize': task.task_series.study.PatientSize,
+                'PatientAge': task.task_series.study.PatientAge,
+                'StudyInstanceUID': task.task_series.study.StudyInstanceUID,
+                'SeriesInstanceUID': task.series,
+                'SeriesNumber': task.task_series.SeriesNumber,
+                'SeriesDate': task.task_series.SeriesDate.strftime('%Y-%m-%d'),
+                'SeriesTime': task.task_series.SeriesDate.strftime('%H:%M:%S'),
+                'sha256':get_checksum(os.path.join('temp_series_packer', 'voxels.npy'), algorithm="SHA256")
+            }
+            with open(os.path.join("temp_series_packer", "metadata.json"), "w") as jsonfile:  
+                json.dump(metadata, jsonfile, indent = 2)     
+
+            # Zip voxels and metadata in a file with the task id and client id as name
+            zip_fname = task_id + '_' + config.client_id
+            archive_name = os.path.join(config.zip_dir, zip_fname)           
+            logger.info('zipping files to ' + archive_name)         
+            make_archive(archive_name, 'zip', "temp_series_packer")
+            
+            # Delete temporary folder
+            try:
+                logger.info('removing temp folder')
+                rmtree('temp_series_packer')
+            except Exception as e:
+                logger.info('could not remove temporary folder')
+                logger.info(traceback.format_exc())
+            
+            # Flag step as completed                                
+            task.current_step = self.next_step
+            task.status_msg = 'comprimido'
+            task.step_state = 1
+            logger.info(f"Task {task_id} packed.")
+            db.session.commit()
+            return False
+
+        except Exception as e:
+            logger.info(f'compressing failed for task {task_id}')
+            logger.error(traceback.format_exc())
+            try:
+                task.status_msg = 'falló la compresión'
+                task.step_state = -1
+                task.full_status_msg = """Ocurrió un error desconocido al intentar comprimir los datos de imagen para
+                    enviar al servidor remoto. Mensaje completo de error:\n\n""" + repr(e)
+                db.session.commit()
+                return False
+            except:
+                logger.error(f"task {task_id} status can't be updated")
+                logger.error(traceback.format_exc())   
+                return True
     
     def extract_voxels(self, filenames):
 

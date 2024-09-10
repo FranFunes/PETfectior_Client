@@ -93,117 +93,197 @@ class SeriesUnpacker():
 
     def main(self):
 
-        while not self.stop_event.is_set() or not self.input_queue.empty():
-            with application.app_context():
-                    
-                # If there are any elements in the input queue, read them.
+        while not self.stop_event.is_set() or not self.input_queue.empty():            
+                            
                 if not self.input_queue.empty():
-                    # Get zip filename and task id from the queue
-                    task = Task.query.get(self.input_queue.get())
-                    config = AppConfig.query.first()
-                    templates = [dcmread(i.filename) for i in task.instances]  
-
-                    filename = os.path.join(config.download_path, task.id + '_' + config.client_id + '.zip')
-
-                    # Build zip filename
-                    zip_fname = os.path.splitext(os.path.basename(filename))[0]               
-
-                    # Decompress files                
-                    extract_dir = os.path.join(config.unzip_dir, zip_fname)
-                    logger.info(f"Decompressing {filename} to {extract_dir}")
-                    task.status_msg = 'descomprimiendo'    
-                    db.session.commit()
-                    try:
-                        unpack_archive(filename, extract_dir)
-                        logger.info(f"{filename} decompressed successfully")
-                        task.status_msg = 'descompresión ok'
-                        db.session.commit()
-                    except Exception as e:
-                        logger.error(f"Could not decompress file {filename}")
-                        logger.error(traceback.format_exc())
-                        task.status_msg = 'falló la descompresión'     
-                        task.step_state = -1
-                        task.full_status_msg = """Ocurrió un error desconocido al intentar descomprimir los datos de imagen
-                        enviados por el servidor remoto. Mensaje de error completo: \n\n""" + repr(e)                   
-                    else:                        
-                        # List decompressed files
-                        filelist = os.listdir(extract_dir)
-
-                        # Apply postfilters
-                        task.status_msg = 'aplicando postfiltros'
-                        db.session.commit()                        
-                        try:
-                            voxel_size = np.array([templates[0].PixelSpacing[0],templates[0].PixelSpacing[1],templates[0].SliceThickness])
-                            series = self.apply_postfilter(extract_dir, templates[0], voxel_size)
-                        except FileNotFoundError as e:
-                            logger.error(f"Failed when reading {extract_dir}")
-                            logger.error(traceback.format_exc())                                                        
-                            task.status_msg = f"fallo - .npy no encontrado"
-                            task.step_state = -1
-                            task.full_status_msg = """Se espera un archivo .npy en los datos enviados por el servidor, pero no
-                            fue encontrado. Por favor contacte a soporte."""  
-                        except ValueError as e:
-                            logger.info(e)
-                            logger.error(traceback.format_exc())                                                        
-                            task.status_msg = f"fallo - postfiltro "
-                            task.step_state = -1
-                            task.full_status_msg = """No hay ningún postfiltro configurado para esta combinación de equipo y
-                            radiofármaco. Por favor, configurar al menos uno en la pestaña Config."""
-                        except Exception as e:
-                            logger.error(f"Failed when filtering {extract_dir}")
-                            logger.error(traceback.format_exc())                                                        
-                            task.status_msg = f"fallo - postfiltro "
-                            task.step_state = -1
-                            task.full_status_msg = """Ocurrió un error inesperado al intentar aplicar el postfiltro a la imagen
-                            resultado. Mensaje de error completo:\n\n""" + repr(e)
-                        else:
-                            task.status_msg = 'creando dicoms' 
-                            db.session.commit()                            
-                            success = 0
-                            stored_ok = 0
-                            for ss in series:
-                                # Build dicom files
-                                try:
-                                    series_uid, datasets = self.build_dicom_files(ss, templates)
-                                    # Add datasets to the database 
-                                    for ds in datasets:
-                                        stored_ok += store_dataset(ds, 'incoming') == 0
-                                    # Link this series as a result for this task
-                                    s = Series.query.get(series_uid)
-                                    task.result_series.append(s)
-                                    success += 1
-                                    logger.info(f"Building dicoms for {extract_dir} successful")
-                                except Exception as e:
-                                    logger.error(f"Failed when building dicoms for {extract_dir}")
-                                    logger.error(traceback.format_exc())
-
-                            logger.info(f"{stored_ok} dicoms stored succesfully")                        
-                            task.status_msg = f"creación dicoms {success}/{len(series)}" 
-                            db.session.commit()
-
-                            # Check if all the expected instances have been correctly stored
-                            # in the database
-                            if stored_ok == len(series) * len(task.instances):
-                                # Flag step as completed
-                                logger.info(f"{task.id}: all expected instances succesfully stored in database")                              
-                                task.current_step = self.next_step
-                                task.step_state = 1    
-                                task.status_msg = f"resultados guardados"
-
-                                # Delete temporary files
-                                os.remove(filename)
-                                rmtree(extract_dir)
-                            else:
-                                # Flag step as failed
-                                logger.info(f"{task.id}: not all expected instances stored")
-                                logger.info(f"{task.id}: expected {len(series) * len(task.instances)}, stored {stored_ok}")
-                                task.status_msg = f"fallo - escritura dicom"                             
-                                task.step_state = -1
-                                task.full_status_msg = f"""Se esperaban {len(series) * len(task.instances)} imágenes para esta tarea,
-                                pero sólo {stored_ok} fueron escritas en el disco y en la base de datos."""    
-                    db.session.commit()
+                    task_id = self.input_queue.get()
+                    with application.app_context():
+                        reprocess = self.task_step_handler(task_id)
+                    while reprocess and not self.stop_event.is_set():
+                        logger.info(f'reprocessing {task_id}')   
+                        with application.app_context():                     
+                            reprocess = self.task_step_handler(task_id)
+                        sleep(5)
                 else:
                     sleep(1)
+
+    def task_step_handler(self, task_id):
+                
+        try:
+            task = Task.query.get(task_id)
+            config = AppConfig.query.first()
+            templates = [dcmread(i.filename) for i in task.instances]
+        except:
+            logger.error(f"task {task_id} status can't be updated")
+            logger.error(traceback.format_exc())   
+            return True 
+
+        # Delete existent results series for this task
+        try:
+            for ss in task.result_series:
+                db.session.delete(ss)
+        except Exception as e:
+            logger.error(f"Could not delete existent results")
+            logger.error(traceback.format_exc())
+            try:
+                task.status_msg = 'falló - base de datos'     
+                task.step_state = -1
+                task.full_status_msg = """Ocurrió un error desconocido al intentar eliminar
+                resultados preexistentes para esta tarea."""
+                db.session.commit()
+                return False
+            except:
+                logger.error(f"task {task_id} status can't be updated")
+                logger.error(traceback.format_exc())   
+                return True  
+
+        try:
+
+            filename = os.path.join(config.download_path, task.id + '_' + config.client_id + '.zip')
+
+            # Build zip filename
+            zip_fname = os.path.splitext(os.path.basename(filename))[0]               
+
+            # Decompress files                
+            extract_dir = os.path.join(config.unzip_dir, zip_fname)
+            logger.info(f"Decompressing {filename} to {extract_dir}")
+            task.status_msg = 'descomprimiendo'    
+            db.session.commit()
+
+            unpack_archive(filename, extract_dir)
+            logger.info(f"{filename} decompressed successfully")
+        except Exception as e:
+            logger.error(f"Could not decompress file {filename}")
+            logger.error(traceback.format_exc())
+            try:
+                task.status_msg = 'falló la descompresión'     
+                task.step_state = -1
+                task.full_status_msg = """Ocurrió un error desconocido al intentar descomprimir los datos de imagen
+                enviados por el servidor remoto. Mensaje de error completo: \n\n""" + repr(e)
+                db.session.commit()
+                return False
+            except:
+                logger.error(f"task {task_id} status can't be updated")
+                logger.error(traceback.format_exc())   
+                return True    
+
+        try:
+            task.status_msg = 'aplicando postfiltros'
+            db.session.commit()
+            voxel_size = np.array([templates[0].PixelSpacing[0],templates[0].PixelSpacing[1],templates[0].SliceThickness])
+            series = self.apply_postfilter(extract_dir, templates[0], voxel_size)
+        except FileNotFoundError as e:
+            logger.error(f"Failed when reading {extract_dir}")
+            logger.error(traceback.format_exc())          
+            try:                                              
+                task.status_msg = f"fallo - .npy no encontrado"
+                task.step_state = -1
+                task.full_status_msg = """Se espera un archivo .npy en los datos enviados por el servidor, pero no
+                fue encontrado. Por favor contacte a soporte."""
+                db.session.commit()
+                return False 
+            except:
+                logger.error(f"task {task_id} status can't be updated")
+                logger.error(traceback.format_exc())   
+                return True
+        except ValueError as e:
+            logger.info(e)
+            logger.error(traceback.format_exc())
+            try:
+                task.status_msg = f"fallo - postfiltro "
+                task.step_state = -1
+                task.full_status_msg = """No hay ningún postfiltro configurado para esta combinación de equipo y
+                radiofármaco. Por favor, configurar al menos uno en la pestaña Config."""
+                db.session.commit()
+                return False 
+            except:
+                logger.error(f"task {task_id} status can't be updated")
+                logger.error(traceback.format_exc())   
+                return True
+        except Exception as e:
+            logger.error(f"Failed when filtering {extract_dir}")
+            logger.error(traceback.format_exc())     
+            try:                                                   
+                task.status_msg = f"fallo - postfiltro "
+                task.step_state = -1
+                task.full_status_msg = """Ocurrió un error inesperado al intentar aplicar el postfiltro a la imagen
+                resultado. Mensaje de error completo:\n\n""" + repr(e)
+                db.session.commit()
+                return False 
+            except:
+                logger.error(f"task {task_id} status can't be updated")
+                logger.error(traceback.format_exc())   
+                return True
+        
+        try:
+            task.status_msg = 'creando dicoms' 
+            db.session.commit()                            
+            success = 0
+            stored_ok = 0
+            for ss in series:
+                # Build dicom files
+                try:
+                    series_uid, datasets = self.build_dicom_files(ss, templates)
+                    # Add datasets to the database 
+                    for ds in datasets:
+                        stored_ok += store_dataset(ds, 'incoming') == 0
+                    # Link this series as a result for this task
+                    s = Series.query.get(series_uid)
+                    task.result_series.append(s)
+                    success += 1
+                    logger.info(f"Building dicoms for {extract_dir} successful")
+                except Exception as e:
+                    logger.error(f"Failed when building dicoms for {extract_dir}")
+                    logger.error(traceback.format_exc())
+
+            logger.info(f"{stored_ok} dicoms stored succesfully")                        
+            task.status_msg = f"creación dicoms {success}/{len(series)}" 
+            db.session.commit()
+
+            # Check if all the expected instances have been correctly stored
+            # in the database
+            if stored_ok == len(series) * len(task.instances):
+                # Flag step as completed
+                logger.info(f"{task.id}: all expected instances succesfully stored in database")                              
+                task.current_step = self.next_step
+                task.step_state = 1    
+                task.status_msg = f"resultados guardados"
+                db.session.commit()
+
+                # Delete temporary files
+                os.remove(filename)
+                rmtree(extract_dir)
+                return False
+            else:
+                # Flag step as failed
+                logger.info(f"{task.id}: not all expected instances stored")
+                logger.info(f"{task.id}: expected {len(series) * len(task.instances)}, stored {stored_ok}")
+                try:
+                    task.status_msg = f"fallo - escritura dicom"                             
+                    task.step_state = -1
+                    task.full_status_msg = f"""Se esperaban {len(series) * len(task.instances)} imágenes para esta tarea,
+                    pero sólo {stored_ok} fueron escritas en el disco y en la base de datos."""
+                    db.session.commit()   
+                    return False
+                except:
+                    logger.error(f"task {task_id} status can't be updated")
+                    logger.error(traceback.format_exc())   
+                    return True
+        except:
+            logger.error(f"failed when building dicoms for task {task_id}")
+            logger.error(traceback.format_exc())
+            # Flag step as failed
+            try:
+                task.status_msg = f"fallo - creación dicom"                             
+                task.step_state = -1
+                task.full_status_msg = f"""Hubo un error desconocido al intentar crear los objetos
+                DICOM con los resultados."""
+                db.session.commit()   
+                return False
+            except:
+                logger.error(f"task {task_id} status can't be updated")
+                logger.error(traceback.format_exc())   
+                return True
 
     def apply_postfilter(self, extract_dir, original_series, voxel_size):
 
