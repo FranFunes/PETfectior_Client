@@ -584,19 +584,25 @@ def get_app_logs():
 @application.route('/get_dicom_logs', methods = ['GET','POST'])
 def get_dicom_logs():
 
-    df = pd.read_csv(os.path.join(os.environ['LOGGING_FILEPATH'],'dicom.log'), sep=';', names = ['datetime','level','module','function','message'])    
-    df.drop(['level','module','function'], axis = 1, inplace=True)
-    df['timestamp'] = df['datetime'].map(lambda x: datetime.strptime(x,'%Y-%m-%d %H:%M:%S,%f'))
+    try:
+        df = pd.read_csv(os.path.join(os.environ['LOGGING_FILEPATH'],'dicom.log'), sep=';', names = ['datetime','level','module','function','message'])    
+        df.drop(['level','module','function'], axis = 1, inplace=True)
+        df['timestamp'] = df['datetime'].map(lambda x: datetime.strptime(x,'%Y-%m-%d %H:%M:%S,%f'))
 
-    # Filter by date
-    if request.json['dateSelector'] == 'range':
-        start_date = pd.Timestamp(request.json['startDate'] + " " + request.json['startTime'])
-        end_date = pd.Timestamp(request.json['endDate'] + " " + request.json['endTime'])
-        df = df[(df['timestamp'] >= start_date) & (df['timestamp'] <= end_date)]  
-    
-    log = df.drop(['timestamp'], axis = 1).to_csv(index = False, header = False, sep = ';')
+        # Filter by date
+        if request.json['dateSelector'] == 'range':
+            start_date = pd.Timestamp(request.json['startDate'] + " " + request.json['startTime'])
+            end_date = pd.Timestamp(request.json['endDate'] + " " + request.json['endTime'])
+            df = df[(df['timestamp'] >= start_date) & (df['timestamp'] <= end_date)]  
+        
+        log = df.drop(['timestamp'], axis = 1).to_csv(index = False, header = False, sep = ';')
 
-    return {"data": log}
+        return {"data": log}
+
+    except Exception as e:
+        logger.error("can't show dicom logs")
+        logger.error(traceback.format_exc())
+        return {"data": []}    
 
 ###################################################################################
 ######################          SERVER INTERACTION           ######################

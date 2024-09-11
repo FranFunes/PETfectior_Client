@@ -111,7 +111,7 @@ class TaskManager():
                 # If server interaction is disabled, simulate processing
                 if not os.environ["SERVER_INTERACTION"] == "True":
                     try:
-                        to_process = Task.query.filter_by(status_msg = 'procesando')
+                        to_process = Task.query.filter_by(status_msg = 'procesando').all()
                     except:
                         logger.error(f"can't access database")
                         logger.error(traceback.format_exc())
