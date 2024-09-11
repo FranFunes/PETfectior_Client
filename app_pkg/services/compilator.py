@@ -175,6 +175,7 @@ class Compilator():
                         logger.error("error processing queue element. Putting it back in the queue.")
                         logger.error(traceback.format_exc())
                         self.input_queue.put(queue_element)
+                        sleep(1)
                         
                 # If there are no elements in the queue and the thread has been inactive for 5 seconds, check
                 # tasks status
