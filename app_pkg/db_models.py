@@ -141,10 +141,10 @@ class Task(db.Model):
 
     # Many-to-many relationships (as parent)
     destinations = db.relationship('Device', secondary=task_destination, backref='tasks')  
-    instances =  db.relationship('Instance', secondary=task_instance, backref='tasks')  
+    instances =  db.relationship('Instance', secondary=task_instance, backref='tasks')
 
     def __repr__(self):
-        return f'<Task {self.id}>' 
+        return f'<Task {self.id}>'
 
 @event.listens_for(Task, 'before_update')
 def update_task_modified_timestamp(mapper, connection, target):
@@ -167,8 +167,6 @@ def delete_task(mapper, connection, target):
             logger.info(f"task {target.id} source series won't be deleted")
     else:
         logger.info(f"task {target.id} source series not found")
-
-    # Delete results series
 
 class AppLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)

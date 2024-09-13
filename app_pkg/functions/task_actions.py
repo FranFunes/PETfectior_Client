@@ -70,8 +70,11 @@ def delete_finished():
         processing_thread = threading.Thread(target = delete_finished_background, 
                                                 args = (tasks_ids,), name = 'delete_finished_thread')    
         for t in tasks:
-            t.visible = False
-            db.session.commit()
+            try:
+                t.visible = False
+                db.session.commit()
+            except:
+                db.session.rollback()
         db.session.close()
         processing_thread.start()
         return "Las tareas finalizadas están siendo eliminadas en segundo plano", 200    
@@ -91,6 +94,7 @@ def delete_finished_background(tasks_ids):
                 logger.error("Error occurred when trying to delete finished tasks")
                 logger.error(traceback.format_exc())    
                 try:
+                    db.session.rollback()
                     t.visible = True
                     db.session.commit()
                 except:
@@ -108,8 +112,11 @@ def delete_failed():
         processing_thread = threading.Thread(target = delete_failed_background, 
                                                 args = (tasks_ids,), name = 'delete_failed_thread')   
         for t in tasks:
-            t.visible = False
-            db.session.commit()
+            try:
+                t.visible = False
+                db.session.commit()
+            except:
+                db.session.rollback()
         db.session.close()
         processing_thread.start()
         return "Las tareas fallidas están siendo eliminadas en segundo plano", 200
@@ -130,6 +137,7 @@ def delete_failed_background(tasks_ids):
                 logger.error("Error occurred when trying to delete failed tasks")
                 logger.error(traceback.format_exc())    
                 try:
+                    db.session.rollback()
                     t.visible = True
                     db.session.commit()
                 except:
@@ -151,6 +159,10 @@ def clear_database():
             except Exception as e:
                     logger.error(f'error when deleting empty series {ss}')
                     logger.error(traceback.format_exc())
+                    try:
+                        db.session.rollback()
+                    except:
+                        logger.error("db session can't be rolled back")
     except:
         logger.error(f'error when deleting empty series')
         logger.error(traceback.format_exc())
@@ -167,6 +179,10 @@ def clear_database():
             except Exception as e:
                 logger.error(f'error when deleting instance {instance}')
                 logger.error(traceback.format_exc())
+                try:
+                    db.session.rollback()
+                except:
+                    logger.error("db session can't be rolled back")
     except:
         logger.error(f'error when deleting orphan instances')
         logger.error(traceback.format_exc())
@@ -183,10 +199,13 @@ def clear_database():
             except Exception as e:
                     logger.error(f'error when deleting empty study {st}')
                     logger.error(traceback.format_exc())
+                    try:
+                        db.session.rollback()
+                    except:
+                        logger.error("db session can't be rolled back")
     except:
         logger.error(f'error when deleting studies with no series')
         logger.error(traceback.format_exc())
-
 
     # Clear patients with no studies
     try:
@@ -200,14 +219,19 @@ def clear_database():
             except:
                     logger.error(f'error when deleting empty patient {pt}')
                     logger.error(traceback.format_exc())
+                    try:
+                        db.session.rollback()
+                    except:
+                        logger.error("db session can't be rolled back")
     except:
         logger.error(f'error when deleting studies with no series')
         logger.error(traceback.format_exc())
 
-    # Delete files with no corresponding database objects
     clear_storage()
     
 def clear_storage():
+    """Delete files with no corresponding database objects"""
+    
     studies = os.listdir('incoming')
     for st in studies:
         st_path = os.path.join('incoming', st)

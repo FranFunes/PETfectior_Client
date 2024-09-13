@@ -175,6 +175,7 @@ class Compilator():
                         logger.error("error processing queue element. Putting it back in the queue.")
                         logger.error(traceback.format_exc())
                         self.input_queue.put(queue_element)
+                        sleep(1)
                         
                 # If there are no elements in the queue and the thread has been inactive for 5 seconds, check
                 # tasks status
@@ -212,12 +213,13 @@ class Compilator():
 
                                     # From task_data, keep the required for the next step only
                                     recon_settings = self.summarize_data(recon_settings, datasets)
-                                    
+
                                     # Write task_data to the database and pass the task to the next step
                                     task.recon_settings = recon_settings.to_json()
                                     task.current_step = self.next_step
                                     task.step_state = 1
                                     logger.info(f"Task {task.id} completed.")
+
                         db.session.commit()
                     
                     except:
@@ -351,7 +353,7 @@ class Compilator():
     def fetch_task_data(self, task_id):
 
         logger.info(f"fetching datasets for task {task_id}")
-        t = Task.query.get(task_id)        
+        t = Task.query.get(task_id)
         dss, recon = list(zip(*[extract_from_dataset(inst.filename) for inst in t.instances]))        
 
         return list(dss), list(recon)

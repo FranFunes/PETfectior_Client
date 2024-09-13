@@ -109,8 +109,8 @@ class StoreSCU(AE):
         try:
             task = Task.query.get(task_id)                   
             datasets = []
-            for result in task.result_series.all():
-                for instance in result.instances.all():
+            for result in task.result_series:
+                for instance in result.instances:
                     datasets.append(instance.filename)
 
             logger.info(f'sending DICOMs for task {task.id}')
