@@ -124,7 +124,6 @@ class TaskManager():
                         except Exception as e:
                             logger.error(f"simulated processing failed")
                             logger.error(traceback.format_exc())
-                
-                if not tasks:
-                    sleep(1)
+                            
+            sleep(1)
            

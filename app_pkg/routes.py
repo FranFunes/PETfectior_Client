@@ -623,9 +623,4 @@ def process_ready():
         return jsonify(message = 'Acknowledge'), 200    
     except:
         logger.error("request.json['task_id'] couldn't be read")
-        return jsonify(message = 'Missing task_id in request json'), 500    
-
-
-
-
-
+        return jsonify(message = 'Missing task_id in request json'), 500
