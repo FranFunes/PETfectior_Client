@@ -71,13 +71,14 @@ class Series(db.Model):
         return f'<Series {self.SeriesDescription} from {self.PatientID}>'    
 
 def clear_storage(mapper, connection, target):
-    # Log message    
-    logger.info(f"deleting {target}")
+       
+    logger.info(f"deleting storage before deleting Series or Study")
     # Delete files from disk
     try:
         rmtree(target.stored_in)
+        logger.info(f"deleted {target.stored_in}")
     except Exception as e:
-        logger.error(f"could'n delete {target.stored_in} from storage")
+        logger.error(f"could'n delete {target} from storage")
         logger.error(traceback.format_exc())
 
 event.listen(Study, 'before_delete', clear_storage)

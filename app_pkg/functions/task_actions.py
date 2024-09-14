@@ -102,7 +102,7 @@ def delete_finished_background(tasks_ids):
                     logger.error(traceback.format_exc())
         clear_database()
                     
-
+                    
 def delete_failed():
     
     try:

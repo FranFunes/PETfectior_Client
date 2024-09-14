@@ -122,15 +122,15 @@ class SeriesUploader():
             basename = os.path.basename(filename)
             copy(filename, os.path.join(config.shared_mount_point, 'to_process'))
              
-            # Delete file and send a message to the server                   
+            # Send a message to the server                   
             logger.info(f"copied {filename} to {os.path.join(config.shared_mount_point, 'to_process')} for task {task.id}")
 
             assert self.send_message(basename, task, config)
-            os.remove(filename)
             logger.info('commit to server ok')
             logger.info(f"File {filename} deleted")
             task.status_msg = 'procesando'
             db.session.commit()
+            os.remove(filename)
             return False            
         except Exception as e:            
             logger.error(traceback.format_exc())

@@ -142,7 +142,6 @@ $(document).ready(function () {
         event.preventDefault();
 
         var button = $('button[type=submit]')
-        console.log(button)
         button[0].innerHTML = `<span class="spinner-border spinner-border-sm"></span>`
 
         if ($('#logtype-select').val() == 'App'){

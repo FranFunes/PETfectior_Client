@@ -548,11 +548,31 @@ def get_modules_names():
 @application.route('/get_app_logs', methods = ['GET','POST'])
 def get_app_logs():
 
-    try:        
-        if request.json['ignore']:
-            return {"data": []}
+    """
+        Devuelve la tabla de mensajes de log de
+        la aplicación (con filtros opcionales de
+        fecha/hora, nivel, y módulo de origen).
         
-        df = pd.read_csv(os.path.join(os.environ['LOGGING_FILEPATH'],'output.log'), sep=';', names = ['datetime','level','module','function','message'])
+    """
+
+    if request.json['ignore']:
+        return {"data": []}
+    
+    try:
+        df = pd.read_csv(os.path.join(os.environ['LOGGING_FILEPATH'],'output.log'), sep=';',
+                          names = ['datetime','level','module','function','message'])
+    except:
+        logger.error("""No se pudo leer el archivo de logs. Reintentando con 
+                     encoding ISO-8859-1""")
+        try:
+            df = pd.read_csv(os.path.join(os.environ['LOGGING_FILEPATH'],'output.log'),
+                            names = ['datetime','level','module','function','message'],
+                            encoding = "ISO-8859-1", sep=';')
+        except:
+            logger.error(traceback.format_exc())
+            return "No se pudo leer el archivo de errores", 500
+
+    try:
         df['datetime'] = df['datetime'].map(lambda x: datetime.strptime(x,'%Y-%m-%d %H:%M:%S,%f'))
         
         # Filter by level
@@ -579,7 +599,7 @@ def get_app_logs():
     except Exception as e:
         logger.error("can't show app logs")
         logger.error(traceback.format_exc())
-        return {"data": []}        
+        return {"data": []}
    
 @application.route('/get_dicom_logs', methods = ['GET','POST'])
 def get_dicom_logs():
