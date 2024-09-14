@@ -123,7 +123,7 @@ class SeriesUnpacker():
             for ss in task.result_series:
                 db.session.delete(ss)
         except Exception as e:
-            logger.error(f"Could not delete existent results")
+            logger.error(f"Could not delete existent results for task {task_id}")
             logger.error(traceback.format_exc())
             try:
                 task.status_msg = 'falló - base de datos'     
@@ -224,12 +224,13 @@ class SeriesUnpacker():
                 # Build dicom files
                 try:
                     series_uid, datasets = self.build_dicom_files(ss, templates)
+                    # Link this series as a result for this task
+                    s = Series(SeriesInstanceUID = series_uid)
+                    task.result_series.append(s)
+                    db.session.commit()
                     # Add datasets to the database 
                     for ds in datasets:
                         stored_ok += store_dataset(ds, 'incoming') == 0
-                    # Link this series as a result for this task
-                    s = Series.query.get(series_uid)
-                    task.result_series.append(s)
                     success += 1
                     logger.info(f"Building dicoms for {extract_dir} successful")
                 except Exception as e:
