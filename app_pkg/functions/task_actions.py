@@ -153,7 +153,7 @@ def clear_database():
         for ss in series:
             try:
                 if not ss.tasks.first() and not ss.originating_task:
-                    logger.info(f'deleting empty series {ss}')
+                    logger.info(f'deleting empty series {ss.SeriesInstanceUID}')
                     db.session.delete(ss)
                     db.session.commit()
             except Exception as e:
