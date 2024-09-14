@@ -83,7 +83,7 @@ class StoreSCU(AE):
             except Exception as e:
                 results.append(False)
                 logger.error(f"c-store failed")     
-                logger.error(repr(e))     
+                logger.error(traceback.format_exc())     
 
         association.release()
         return results
