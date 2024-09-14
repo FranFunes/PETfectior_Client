@@ -218,9 +218,10 @@ class Compilator():
                                     task.recon_settings = recon_settings.to_json()
                                     task.current_step = self.next_step
                                     task.step_state = 1
+                                    task.status_msg = 'validando...'
                                     logger.info(f"Task {task.id} completed.")
 
-                        db.session.commit()
+                            db.session.commit()
                     
                     except:
                         logger.error("error processing current tasks.")
