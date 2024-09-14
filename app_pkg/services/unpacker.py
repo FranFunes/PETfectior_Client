@@ -225,7 +225,11 @@ class SeriesUnpacker():
                 try:
                     series_uid, datasets = self.build_dicom_files(ss, templates)
                     # Link this series as a result for this task
-                    s = Series(SeriesInstanceUID = series_uid)
+                    s = Series(SeriesInstanceUID = series_uid, 
+                               patient = task.task_series.patient, 
+                               study = task.task_series.study,
+                               stored_in = os.path.join(task.task_series.study.stored_in,series_uid))
+                    db.session.add(s)
                     task.result_series.append(s)
                     db.session.commit()
                     # Add datasets to the database 
