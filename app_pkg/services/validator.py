@@ -579,12 +579,12 @@ class Validator():
         post_rsp = requests.post('http://' + c.server_url + '/check_model', json = data)
 
         messages = {
-            "Ok": "La tarea ha sido validada por el servidor",
-            "Radiopharmaceutical Inactive": f"""No cuentas con una licencia activa para el radiofármaco
+            200: "La tarea ha sido validada por el servidor",
+            405: "No tienes una licencia activa",
+            406: f"""No cuentas con una licencia activa para el radiofármaco
                                                 {ss.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical}""",
-            "Client Inactive": "No tienes una licencia activa",
-            "Not avialable Model": f"""No hay algoritmos de procesamiento entrenados para estos parámetros de reconstrucción
+            407: f"""No hay algoritmos de procesamiento entrenados para estos parámetros de reconstrucción
              o este radiofármaco."""
         }
 
-        return post_rsp.json()['response'], messages[post_rsp.json()['reason']]
+        return post_rsp.status_code == 200, messages[post_rsp.status_code]
