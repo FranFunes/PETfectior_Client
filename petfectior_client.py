@@ -9,8 +9,7 @@ from app_pkg.services import services
 
 logger = logging.getLogger('__main__')
 
-
-if os.getenv('FLASK_HTTP_LOGGGING') == 'False':
+if os.getenv('FLASK_HTTP_LOGGING') == 'False':
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)
 

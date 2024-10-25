@@ -71,13 +71,20 @@ class Series(db.Model):
         return f'<Series {self.SeriesDescription} from {self.PatientID}>'    
 
 def clear_storage(mapper, connection, target):
-    # Log message    
-    logger.info(f"deleting {target}")
+    
+    try:
+        logger.info(f"deleting storage before deleting Series {target.SeriesInstanceUID}")
+    except:
+        try:
+            logger.info(f"deleting storage before deleting Series {target.StudyInstanceUID}")
+        except:
+            logger.info(f"deleting storage before deleting Series or Study")
     # Delete files from disk
     try:
         rmtree(target.stored_in)
+        logger.info(f"deleted {target.stored_in}")
     except Exception as e:
-        logger.error(f"could'n delete {target.stored_in} from storage")
+        logger.error(f"could'n delete {target} from storage")
         logger.error(traceback.format_exc())
 
 event.listen(Study, 'before_delete', clear_storage)
@@ -141,10 +148,10 @@ class Task(db.Model):
 
     # Many-to-many relationships (as parent)
     destinations = db.relationship('Device', secondary=task_destination, backref='tasks')  
-    instances =  db.relationship('Instance', secondary=task_instance, backref='tasks')  
+    instances =  db.relationship('Instance', secondary=task_instance, backref='tasks')
 
     def __repr__(self):
-        return f'<Task {self.id}>' 
+        return f'<Task {self.id}>'
 
 @event.listens_for(Task, 'before_update')
 def update_task_modified_timestamp(mapper, connection, target):
@@ -161,14 +168,12 @@ def delete_task(mapper, connection, target):
     if source_series:
         has_other_related_tasks = db.session.query(db.exists().where(Task.series == source_series.SeriesInstanceUID, Task.id != target.id)).scalar()
         if not has_other_related_tasks:
-            logger.info(f"task {target.id} deleting source series")
+            logger.info(f"task {target.id} deleting source series {source_series.SeriesInstanceUID}")
             db.session.delete(source_series)        
         else:
-            logger.info(f"task {target.id} source series won't be deleted")
+            logger.info(f"task {target.id} source series {source_series.SeriesInstanceUID} won't be deleted")
     else:
         logger.info(f"task {target.id} source series not found")
-
-    # Delete results series
 
 class AppLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)

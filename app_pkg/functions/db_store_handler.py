@@ -1,4 +1,4 @@
-import os, logging
+import os, logging, traceback
 from queue import Queue
 from datetime import datetime
 from pynetdicom.events import Event
@@ -203,14 +203,7 @@ def store_dataset(ds, root_dir):
             return 1        
         except Exception as e:            
             logger.error("Can't write new instance to database")
-            logger.error(repr(e))
-            """
-            # Try to delete written file from disk
-            try:
-                os.remove(filepath)
-            except Exception as e:
-                logger.error(f"Can't delete file {filepath} from disk: {repr(e)}")
-            """
+            logger.error(traceback.format_exc())
             return -1        
     
     return 0

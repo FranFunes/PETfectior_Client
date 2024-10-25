@@ -23,4 +23,4 @@ done
 
 # Create the admin user if it doesn't exist
 python init_db.py
-exec gunicorn -b :$FLASK_RUN_PORT --access-logfile - --error-logfile - petfectior_client:application
+exec gunicorn -b :$FLASK_RUN_PORT --access-logfile $LOGGING_FILEPATH/gunicorn_access.log --error-logfile $LOGGING_FILEPATH/gunicorn_errors.log petfectior_client:application

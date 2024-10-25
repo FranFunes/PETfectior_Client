@@ -76,6 +76,21 @@ class Validator():
             logger.info("stopped")
             return "Validator no pudo ser detenido"
 
+    def main(self):
+
+        while not self.stop_event.is_set() or not self.input_queue.empty():            
+                            
+                if not self.input_queue.empty():
+                    task_id = self.input_queue.get()
+                    with application.app_context():
+                        reprocess = self.task_step_handler(task_id)
+                    while reprocess and not self.stop_event.is_set():
+                        logger.info(f'reprocessing {task_id}')   
+                        with application.app_context():                     
+                            reprocess = self.task_step_handler(task_id)
+                        sleep(5)
+                else:
+                    sleep(1)
 
     def get_status(self):
 
@@ -90,130 +105,188 @@ class Validator():
         else:
             return 'Corriendo'
 
-    def main(self):
-
-        """
+    def task_step_handler(self, task_id):
         
-            The main processing function that is called when thread is started.
-            · Reads a task id from the input queue
-            · Tries to find an appropiate destination for the Task, and flags it as failed if
-            it couldn't
-            · Checks if recon settings (available as serialized JSON in Task.recon_settings)
-            is enough to complete
-            · Sends a POST to the server to check if there exists a model for these recon settings         
-               
+        try:
+            task = Task.query.get(task_id)
+            task.status_msg = 'validando'
+            db.session.commit()
+        except:
+            logger.error(f"can't read task with {task_id} from database")
+            logger.error(traceback.format_exc())
+            return True
 
-        """
+        # Set destinations for this task
+        destinations = self.set_destinations(task)
+        if not destinations:
+            logger.error(f"task {task_id} destination is unknown.")
+            try:
+                task.status_msg = 'failed - destino desconocido'
+                task.step_state = -1
+                task.full_status_msg = """El procesamiento de esta tarea no puede continuar porque no hay destinos
+                configurados para las series resultantes. Por favor verifique la configuración de los dispositivos
+                DICOM remotos y asegúrese de que al menos un dispositivo esté marcado como destino, o que el modo
+                espejo esté activo y que el dispositivo origen de esta tarea esté declarado en PETfectior."""
+                db.session.commit()
+                return False
+            except:
+                logger.error(f"task {task_id} status can't be updated")
+                logger.error(traceback.format_exc())
+                return True
+        
+        for dest in destinations:
+            if not dest in task.destinations:
+                task.destinations.append(dest)
 
-        while not self.stop_event.is_set() or not self.input_queue.empty():
+        # Check if dicom information is complete
+        valid, msg = self.check_dicom_parameters(task)
+        if not valid:
+            logger.info(f"task {task_id} completed but there is missing dicom information.")
+            try:
+                task.status_msg = 'fallo - info DICOM'
+                task.step_state = -1
+                task.full_status_msg = """El procesamiento de esta tarea no puede continuar porque hay
+                información faltante o inválida en el encabezado DICOM. """ + msg   
+                db.session.commit()
+                return False
+            except:
+                logger.error(f"task {task_id} status can't be updated")
+                logger.error(traceback.format_exc())            
+                return True
+
+        try:
+            # Check if the radiopharmaceutical is known and use it for this task
+            rf_str = Dataset.from_json(task.recon_settings).RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical
+            rf = [r for r in Radiopharmaceutical.query.all() 
+                    if rf_str in r.synonyms]
+        except:
+            logger.error(f"task {task_id} can't check rf")
+            logger.error(traceback.format_exc())            
+            return True
+
+        if not rf:
+            logger.info(f"unknown radiopharmaceutical {rf_str} for task {task_id}")
+            try:
+                task.status_msg = 'fallo - radiofármaco desconocido'
+                task.step_state = -1    
+                task.full_status_msg = f"""El encabezado DICOM de esta tarea tiene un valor desconocido ({rf_str})
+                en el campo Radiopharmaceutical. Por favor, use el menú Config para añadir un nuevo radiofármaco incluyendo
+                esta identificación en el encabezado DICOM, o añada esta identificación a un radiofármaco ya existente 
+                (usar valores separados por coma), y luego reintente este paso.                                
+                """
+                db.session.commit()
+                return False
+            except:
+                logger.error(f"task {task_id} status can't be updated")
+                logger.error(traceback.format_exc())            
+                return True
+        
+        try:
+            task.task_radiopharmaceutical = rf[0]
+            db.session.commit()
+        except:
+            logger.error(f"task {task_id} rf can't be updated")
+            logger.error(traceback.format_exc())   
+            return True
+
+        # Check if a model exists in the remote processing server for this model                            
+        try:
+            model_available, message = self.check_model(task)
+            assert model_available
+        except AssertionError:                            
+            logger.info(f"server rejected the task {task_id}: " + message)
+            try:
+                task.status_msg = 'fallo - rechazada'
+                task.step_state = -1    
+                task.full_status_msg = "El servidor remoto rechazó esta tarea por la siguiente razón:\n" + message
+                db.session.commit()
+                return False
+            except:
+                logger.error(f"task {task_id} status can't be updated")
+                logger.error(traceback.format_exc())   
+                return True
+
+        except ConnectionError as e:
+            logger.info(f"server connection failed.")
+            logger.info(traceback.format_exc())
+            try:
+                task.status_msg = 'fallo - conexión con el servidor'    
+                task.full_status_msg = """No hay conexión con el servidor remoto. Por favor verifique
+                la conexión a internet del dispositivo donde corre esta aplicación. Si tiene conexión
+                y este mensaje sigue apareciendo, contacte a soporte."""
+                task.step_state = -1
+                db.session.commit()
+                return False
+            except:
+                logger.error(f"task {task_id} status can't be updated")
+                logger.error(traceback.format_exc())   
+                return True
+        except (JSONDecodeError, KeyError) as e:
+            try:
+                logger.info(f"the server returned an incorrect JSON object during /check_model.")
+                logger.info(traceback.format_exc())
+                task.status_msg = 'fallo - servidor'    
+                task.full_status_msg = """El servidor remoto envío un mensaje que no pudo ser
+                entendido. Por favor contacte a soporte."""
+                task.step_state = -1
+                db.session.commit()
+                return False
+            except:
+                logger.error(f"task {task_id} status can't be updated")
+                logger.error(traceback.format_exc())  
+                return True
+        except AttributeError as e:
+            logger.info(f"missing dicom information for task {task_id}.")
+            logger.info(traceback.format_exc())
+            try:
+                task.status_msg = 'fallo - info DICOM'    
+                task.full_status_msg = """El procesamiento de esta tarea no puede continuar porque hay 
+                información faltante o inválida en el encabezado DICOM. """
+                task.step_state = -1
+                db.session.commit()
+                return False
+            except:
+                logger.error(f"task {task_id} status can't be updated")
+                logger.error(traceback.format_exc())
+                return True
+        except Exception as e:
+            logger.error(f"unknown error during check_model.")                                
+            logger.error(traceback.format_exc())
+            try:
+                task.status_msg = 'fallo - servidor'    
+                task.full_status_msg = """Ocurrió un error desconocido al verificar la tarea con el
+                servidor remoto. Por favor contacte a soporte."""
+                task.step_state = -1
+                db.session.commit()
+                return False
+            except:
+                logger.error(f"task {task_id} status can't be updated")
+                logger.error(traceback.format_exc())
+                return True
+
+        # Add this PET device name to the database
+        try:
+            names = [m.name for m in PetModel.query.all()]
+            if not Dataset.from_json(task.recon_settings).ManufacturerModelName in names:
+                model = PetModel(name = Dataset.from_json(task.recon_settings).ManufacturerModelName)
+                db.session.add(model)        
+                db.session.commit()        
+        except:
+            logger.error(f"pet models can't be updated")
+            logger.error(traceback.format_exc())
             
-            with application.app_context():
-
-                # If there are any elements in the input queue, read them.
-                if not self.input_queue.empty():
-
-                    # Read task id from the input queue
-                    task = Task.query.get(self.input_queue.get())
-                    task.status_msg = 'validando'
-                    db.session.commit()
-
-                    # Set destinations for this task
-                    destinations = self.set_destinations(task)
-                    if not destinations:
-                        logger.error(f"task {task.id} destination is unknown.")
-                        task.status_msg = 'failed - destino desconocido'
-                        task.step_state = -1
-                        task.full_status_msg = """El procesamiento de esta tarea no puede continuar porque no hay destinos
-                        configurados para las series resultantes. Por favor verifique la configuración de los dispositivos
-                        DICOM remotos y asegúrese de que al menos un dispositivo esté marcado como destino, o que el modo
-                        espejo esté activo y que el dispositivo origen de esta tarea esté declarado en PETfectior."""
-                    else:
-                        for dest in destinations:
-                            if not dest in task.destinations:
-                                task.destinations.append(dest)
-                        # Check if dicom information is complete
-                        valid, msg = self.check_dicom_parameters(task)
-                        if not valid:
-                            logger.info(f"task {task.id} completed but there is missing dicom information.")
-                            task.status_msg = 'fallo - info DICOM'
-                            task.step_state = -1
-                            task.full_status_msg = """El procesamiento de esta tarea no puede continuar porque hay
-                            información faltante o inválida en el encabezado DICOM. """ + msg                  
-                        else:
-                            # Check if the radiopharmaceutical is known and use it for this task
-                            rf_str = Dataset.from_json(task.recon_settings).RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical
-                            rf = [r for r in Radiopharmaceutical.query.all() 
-                                  if rf_str in r.synonyms]
-                            if not rf:
-                                logger.info(f"unknown radiopharmaceutical {rf_str} for task {task.id}")
-                                task.status_msg = 'fallo - radiofármaco desconocido'
-                                task.step_state = -1    
-                                task.full_status_msg = f"""El encabezado DICOM de esta tarea tiene un valor desconocido ({rf_str})
-                                en el campo Radiopharmaceutical. Por favor, use el menú Config para añadir un nuevo radiofármaco incluyendo
-                                esta identificación en el encabezado DICOM, o añada esta identificación a un radiofármaco ya existente 
-                                (usar valores separados por coma), y luego reintente este paso.                                
-                                """    
-                            else:
-                                task.task_radiopharmaceutical = rf[0]
-                                db.session.commit()
-
-                                # Check if a model exists in the remote processing server for this model                            
-                                try:
-                                    model_available, message = self.check_model(task)
-                                    assert model_available
-                                except AssertionError:                            
-                                    logger.info(f"server rejected the task {task.id}: " + message)
-                                    task.status_msg = 'fallo - rechazada'
-                                    task.step_state = -1    
-                                    task.full_status_msg = "El servidor remoto rechazó esta tarea por la siguiente razón:\n" + message                                    
-                                except ConnectionError as e:                            
-                                    logger.info(f"server connection failed.")
-                                    logger.info(traceback.format_exc())
-                                    task.status_msg = 'fallo - conexión con el servidor'    
-                                    task.full_status_msg = """No hay conexión con el servidor remoto. Por favor verifique
-                                    la conexión a internet del dispositivo donde corre esta aplicación. Si tiene conexión
-                                    y este mensaje sigue apareciendo, contacte a soporte."""
-                                    task.step_state = -1
-                                except (JSONDecodeError, KeyError) as e:                           
-                                    logger.info(f"the server returned an incorrect JSON object during /check_model.")
-                                    logger.info(traceback.format_exc())
-                                    task.status_msg = 'fallo - servidor'    
-                                    task.full_status_msg = """El servidor remoto envío un mensaje que no pudo ser
-                                    entendido. Por favor contacte a soporte."""
-                                    task.step_state = -1 
-                                except AttributeError as e:
-                                    logger.info(f"missing dicom information for task {task.id}.")
-                                    logger.info(traceback.format_exc())
-                                    task.status_msg = 'fallo - info DICOM'    
-                                    task.full_status_msg = """El procesamiento de esta tarea no puede continuar porque hay 
-                                    información faltante o inválida en el encabezado DICOM. """
-                                    task.step_state = -1 
-                                except Exception as e:
-                                    logger.error(f"unknown error during check_model.")                                
-                                    logger.error(traceback.format_exc())
-                                    task.status_msg = 'fallo - servidor'    
-                                    task.full_status_msg = """Ocurrió un error desconocido al verificar la tarea con el
-                                    servidor remoto. Por favor contacte a soporte."""
-                                    task.step_state = -1   
-
-                                else:
-                                    # Add this PET device name to the database
-                                    names = [m.name for m in PetModel.query.all()]
-                                    if not Dataset.from_json(task.recon_settings).ManufacturerModelName in names:
-                                        model = PetModel(name = Dataset.from_json(task.recon_settings).ManufacturerModelName)
-                                        db.session.add(model)                          
-
-                                    # Flag step as completed                                
-                                    task.current_step = self.next_step
-                                    task.status_msg = 'validada'
-                                    task.step_state = 1
-                                    logger.info(f"Task {task.id} validated.")
-                                
-                    db.session.commit()
-                                            
-                else:
-                    sleep(1)
-
+        try:
+            # Flag step as completed                                
+            task.current_step = self.next_step
+            task.status_msg = 'validada'
+            task.step_state = 1
+            logger.info(f"Task {task.id} validated.")
+            db.session.commit()            
+            return False
+        except:
+            logger.error(f"task {task_id} status can't be updated")
+            logger.error(traceback.format_exc())
+            return True
                         
     def set_destinations(self, task: Task) -> List[Device]:
 
@@ -506,12 +579,12 @@ class Validator():
         post_rsp = requests.post('http://' + c.server_url + '/check_model', json = data)
 
         messages = {
-            "Ok": "La tarea ha sido validada por el servidor",
-            "Radiopharmaceutical Inactive": f"""No cuentas con una licencia activa para el radiofármaco
+            200: "La tarea ha sido validada por el servidor",
+            405: "No tienes una licencia activa",
+            406: f"""No cuentas con una licencia activa para el radiofármaco
                                                 {ss.RadiopharmaceuticalInformationSequence[0].Radiopharmaceutical}""",
-            "Client Inactive": "No tienes una licencia activa",
-            "Not avialable Model": f"""No hay algoritmos de procesamiento entrenados para estos parámetros de reconstrucción
+            407: f"""No hay algoritmos de procesamiento entrenados para estos parámetros de reconstrucción
              o este radiofármaco."""
         }
 
-        return post_rsp.json()['response'], messages[post_rsp.json()['reason']]
+        return post_rsp.status_code == 200, messages[post_rsp.status_code]

@@ -548,11 +548,31 @@ def get_modules_names():
 @application.route('/get_app_logs', methods = ['GET','POST'])
 def get_app_logs():
 
-    try:        
-        if request.json['ignore']:
-            return {"data": []}
+    """
+        Devuelve la tabla de mensajes de log de
+        la aplicación (con filtros opcionales de
+        fecha/hora, nivel, y módulo de origen).
         
-        df = pd.read_csv(os.path.join(os.environ['LOGGING_FILEPATH'],'output.log'), sep=';', names = ['datetime','level','module','function','message'])
+    """
+
+    if request.json['ignore']:
+        return {"data": []}
+    
+    try:
+        df = pd.read_csv(os.path.join(os.environ['LOGGING_FILEPATH'],'output.log'), sep=';',
+                          names = ['datetime','level','module','function','message'])
+    except:
+        logger.error("""No se pudo leer el archivo de logs. Reintentando con 
+                     encoding ISO-8859-1""")
+        try:
+            df = pd.read_csv(os.path.join(os.environ['LOGGING_FILEPATH'],'output.log'),
+                            names = ['datetime','level','module','function','message'],
+                            encoding = "ISO-8859-1", sep=';')
+        except:
+            logger.error(traceback.format_exc())
+            return "No se pudo leer el archivo de errores", 500
+
+    try:
         df['datetime'] = df['datetime'].map(lambda x: datetime.strptime(x,'%Y-%m-%d %H:%M:%S,%f'))
         
         # Filter by level
@@ -579,24 +599,30 @@ def get_app_logs():
     except Exception as e:
         logger.error("can't show app logs")
         logger.error(traceback.format_exc())
-        return {"data": []}        
+        return {"data": []}
    
 @application.route('/get_dicom_logs', methods = ['GET','POST'])
 def get_dicom_logs():
 
-    df = pd.read_csv(os.path.join(os.environ['LOGGING_FILEPATH'],'dicom.log'), sep=';', names = ['datetime','level','module','function','message'])    
-    df.drop(['level','module','function'], axis = 1, inplace=True)
-    df['timestamp'] = df['datetime'].map(lambda x: datetime.strptime(x,'%Y-%m-%d %H:%M:%S,%f'))
+    try:
+        df = pd.read_csv(os.path.join(os.environ['LOGGING_FILEPATH'],'dicom.log'), sep=';', names = ['datetime','level','module','function','message'])    
+        df.drop(['level','module','function'], axis = 1, inplace=True)
+        df['timestamp'] = df['datetime'].map(lambda x: datetime.strptime(x,'%Y-%m-%d %H:%M:%S,%f'))
 
-    # Filter by date
-    if request.json['dateSelector'] == 'range':
-        start_date = pd.Timestamp(request.json['startDate'] + " " + request.json['startTime'])
-        end_date = pd.Timestamp(request.json['endDate'] + " " + request.json['endTime'])
-        df = df[(df['timestamp'] >= start_date) & (df['timestamp'] <= end_date)]  
-    
-    log = df.drop(['timestamp'], axis = 1).to_csv(index = False, header = False, sep = ';')
+        # Filter by date
+        if request.json['dateSelector'] == 'range':
+            start_date = pd.Timestamp(request.json['startDate'] + " " + request.json['startTime'])
+            end_date = pd.Timestamp(request.json['endDate'] + " " + request.json['endTime'])
+            df = df[(df['timestamp'] >= start_date) & (df['timestamp'] <= end_date)]  
+        
+        log = df.drop(['timestamp'], axis = 1).to_csv(index = False, header = False, sep = ';')
 
-    return {"data": log}
+        return {"data": log}
+
+    except Exception as e:
+        logger.error("can't show dicom logs")
+        logger.error(traceback.format_exc())
+        return {"data": []}    
 
 ###################################################################################
 ######################          SERVER INTERACTION           ######################
@@ -623,9 +649,4 @@ def process_ready():
         return jsonify(message = 'Acknowledge'), 200    
     except:
         logger.error("request.json['task_id'] couldn't be read")
-        return jsonify(message = 'Missing task_id in request json'), 500    
-
-
-
-
-
+        return jsonify(message = 'Missing task_id in request json'), 500

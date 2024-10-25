@@ -89,25 +89,41 @@ class TaskManager():
             with application.app_context():
                 # Find tasks with step_state = 1 (step completed) and
                 # put them in the next step input queue
-                tasks = Task.query.filter_by(step_state = 1).all()
+                try:
+                    tasks = Task.query.filter_by(step_state = 1)
+                except:
+                    logger.error(f"can't access database")
+                    logger.error(traceback.format_exc())
+                    continue
+
                 for task in tasks:
-                    # Update task_status
-                    logger.info(f'passing task {task.id} to {task.current_step}')
-                    task.step_state = 0
-                    # Trigger next step by putting an element in its input queue
-                    self.input_queues[task.current_step].put(task.id)
-                    db.session.commit()
+                    try:
+                        # Update task_status
+                        logger.info(f'passing task {task.id} to {task.current_step}')
+                        task.step_state = 0
+                        # Trigger next step by putting an element in its input queue
+                        self.input_queues[task.current_step].put(task.id)
+                        db.session.commit()
+                    except:
+                        logger.error(f"can't access database")
+                        logger.error(traceback.format_exc())
                 
                 # If server interaction is disabled, simulate processing
                 if not os.environ["SERVER_INTERACTION"] == "True":
-                    to_process = Task.query.filter_by(status_msg = 'procesando').all()
+                    try:
+                        to_process = Task.query.filter_by(status_msg = 'procesando').all()
+                    except:
+                        logger.error(f"can't access database")
+                        logger.error(traceback.format_exc())
+                        continue
                     for task in to_process:
                         try:
-                            process(task.id)
-                            logger.info(f"simulated processing for task {task.id}")                        
+                            task_id = task.id
+                            process(task_id)
+                            logger.info(f"simulated processing for task {task_id}")
                         except Exception as e:
-                            logger.error(f"simulated processing for task {task.id} failed")
+                            logger.error(f"simulated processing failed")
                             logger.error(traceback.format_exc())
-                
-                if not tasks:
-                    sleep(1)
+                            
+            sleep(1)
+           

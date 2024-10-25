@@ -94,50 +94,59 @@ class SeriesUploader():
 
     def main(self):
 
-        while not self.stop_event.is_set() or not self.input_queue.empty():
-            with application.app_context():
-
-                # If there are any elements in the input queue, read them.
+        while not self.stop_event.is_set() or not self.input_queue.empty():            
+                            
                 if not self.input_queue.empty():
-                    task = Task.query.get(self.input_queue.get())
-                    config = AppConfig.query.first()
-                    filename = os.path.join(config.zip_dir, task.id + '_' + config.client_id + '.zip')
-
-                    # Read and copy file to the shared folder
-                    try:                    
-                        logger.info(f"Uploading {filename}")    
-                        task.status_msg = 'enviando'
-                        db.session.commit()
-                        basename = os.path.basename(filename)
-                        copy(filename, os.path.join(config.shared_mount_point, 'to_process'))
-                    except Exception as e:
-                        logger.error(f"Unknown error occurred while copying {filename} to {os.path.join(config.shared_mount_point, 'to_process')}")
-                        logger.error(traceback.format_exc())
-                        task.status_msg = 'envío fallido'
-                        task.step_state = -1
-                        task.full_status_msg = """Ocurrió un error inesperado al intentar enviar los datos de la tarea
-                        al servidor remoto. Mensaje de error completo:\n\n""" + repr(e)                           
-                    else:
-                        # If upload was succesful, delete file and send a message to the server                    
-                        logger.info(f"copied {filename} to {os.path.join(config.shared_mount_point, 'to_process')} for task {task.id}")
-                        task.status_msg = 'envío ok'
-                        db.session.commit()
-                        try:                                                        
-                            assert self.send_message(basename, task, config)
-                            os.remove(filename)
-                            task.status_msg = 'procesando'
-                            logger.info('commit to server ok')
-                            logger.info(f"File {filename} deleted")
-                        except Exception as e:
-                            logger.error('commit to server failed')
-                            logger.error(traceback.format_exc())
-                            task.status_msg = 'envío fallido'
-                            task.step_state = -1
-                            task.full_status_msg = """Ocurrió un error al intentar notificar el envío de una nueva
-                             tarea al servidor remoto."""                              
-                    db.session.commit()
+                    task_id = self.input_queue.get()
+                    with application.app_context():
+                        reprocess = self.task_step_handler(task_id)
+                    while reprocess and not self.stop_event.is_set():
+                        logger.info(f'reprocessing {task_id}')   
+                        with application.app_context():                     
+                            reprocess = self.task_step_handler(task_id)
+                        sleep(5)
                 else:
                     sleep(1)
+
+    def task_step_handler(self, task_id):
+        
+        try:                    
+            task = Task.query.get(task_id)
+            config = AppConfig.query.first()
+            filename = os.path.join(config.zip_dir, task.id + '_' + config.client_id + '.zip')
+
+            # Read and copy file to the shared folder
+            logger.info(f"Uploading {filename}")    
+            task.status_msg = 'enviando'
+            db.session.commit()
+            basename = os.path.basename(filename)
+            copy(filename, os.path.join(config.shared_mount_point, 'to_process'))
+             
+            # Send a message to the server                   
+            logger.info(f"copied {filename} to {os.path.join(config.shared_mount_point, 'to_process')} for task {task.id}")
+
+            assert self.send_message(basename, task, config)
+            logger.info('commit to server ok')
+            logger.info(f"File {filename} deleted")
+            task.status_msg = 'procesando'
+            db.session.commit()
+            os.remove(filename)
+            return False            
+        except Exception as e:            
+            logger.error(traceback.format_exc())
+            try:
+                task.status_msg = 'envío fallido'
+                task.step_state = -1
+                task.full_status_msg = """Ocurrió un error al intentar enviar la
+                    tarea al servidor remoto."""
+                db.session.commit() 
+                return False
+            except:
+                logger.error(f"task {task_id} status can't be updated")
+                logger.error(traceback.format_exc())   
+                return True
+
+            
 
     def send_message(self, filename, task, config):
         
