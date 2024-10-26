@@ -209,7 +209,7 @@ class Compilator():
                                     task.step_state = -1                        
                                 
                                 elif status == 'wait':
-                                    logger.info(f"Waiting for task {task.id} with {len(task.instances)} instances to complete.")
+                                    logger.info(f"Waiting for task {task.id} with {task.imgs} instances to complete.")
 
                                 elif status == 'completed':
 
