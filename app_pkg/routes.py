@@ -4,10 +4,11 @@ import ipaddress, os, logging, traceback
 import pandas as pd
 from datetime import datetime
 from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import joinedload
 
 
 from app_pkg import application, db
-from app_pkg.db_models import Device, Task, AppConfig, FilterSettings, PetModel, User, Radiopharmaceutical
+from app_pkg.db_models import Device, Task, Study, Series, AppConfig, FilterSettings, PetModel, User, Radiopharmaceutical
 from app_pkg.services import services
 from app_pkg.functions.task_actions import delete_task, restart_task, retry_last_step, delete_finished, delete_failed
 from app_pkg.functions.helper_funcs import ping
@@ -65,18 +66,28 @@ def logs():
 @application.route('/get_tasks_table')
 def get_tasks_table(): 
     try:
+        tasks = (
+            Task.query
+            .options(
+                joinedload(Task.destinations),         # Load destinations (Device model)
+                joinedload(Task.task_series)           # Load Series model
+                .joinedload(Series.study)              # Load Study model through Series
+                .joinedload(Study.patient)             # Load Patient model through Study
+            )
+            .all()
+        )
         data = [{'source':t.task_source.identifier,
                 'destinations': '/'.join([dest.name for dest in t.destinations]),
                 'PatientName': t.task_series.patient.PatientName,
                 'StudyDate': t.task_series.study.StudyDate.strftime('%d/%m/%Y'),
                 'description': t.task_series.SeriesDescription,
-                'imgs': str(len(t.instances))+ '/' + str(t.expected_imgs),
+                'imgs': str(t.imgs)+ '/' + str(t.expected_imgs),
                 'started':t.started.strftime('%d/%m/%Y %H:%M:%S'),
                 'status': {-1:'failed', 0: 'processing', 1: 'processing',2: 'completed'}[t.step_state],
                 'status_msg':t.status_msg,
                 'status_full_msg':t.full_status_msg,
                 'updated': t.updated.strftime('%d/%m/%Y %H:%M:%S'),
-                'task_id': t.id} for t in Task.query.filter_by(visible=True)]
+                'task_id': t.id} for t in tasks]
     except Exception as e:
         logger.error("can't access database")
         logger.error(traceback.format_exc())

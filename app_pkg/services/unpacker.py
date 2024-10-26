@@ -247,7 +247,7 @@ class SeriesUnpacker():
 
             # Check if all the expected instances have been correctly stored
             # in the database
-            if stored_ok == len(series) * len(task.instances):
+            if stored_ok == len(series) * task.imgs:
                 # Flag step as completed
                 logger.info(f"{task.id}: all expected instances succesfully stored in database")                              
                 task.current_step = self.next_step
@@ -262,11 +262,11 @@ class SeriesUnpacker():
             else:
                 # Flag step as failed
                 logger.info(f"{task.id}: not all expected instances stored")
-                logger.info(f"{task.id}: expected {len(series) * len(task.instances)}, stored {stored_ok}")
+                logger.info(f"{task.id}: expected {len(series) * task.imgs}, stored {stored_ok}")
                 try:
                     task.status_msg = f"fallo - escritura dicom"                             
                     task.step_state = -1
-                    task.full_status_msg = f"""Se esperaban {len(series) * len(task.instances)} imágenes para esta tarea,
+                    task.full_status_msg = f"""Se esperaban {len(series) * task.imgs} imágenes para esta tarea,
                     pero sólo {stored_ok} fueron escritas en el disco y en la base de datos."""
                     db.session.commit()   
                     return False

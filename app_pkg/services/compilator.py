@@ -158,6 +158,7 @@ class Compilator():
                                 status_msg = 'recibiendo',
                                 step_state = 0,
                                 expected_imgs = self.instances_in_series(dataset),
+                                imgs = 1,
                                 task_series = Series.query.get(series_uid),
                                 instances = [Instance.query.get(sop_uid)],
                                 task_source = source
@@ -168,6 +169,7 @@ class Compilator():
                             # Append to existing series                    
                             logger.debug(f"Appending instance {sop_uid} to task {matching_task}")
                             matching_task.instances.append(Instance.query.get(sop_uid))
+                            matching_task.imgs+=1
 
                         db.session.commit()
                     
@@ -207,7 +209,7 @@ class Compilator():
                                     task.step_state = -1                        
                                 
                                 elif status == 'wait':
-                                    logger.info(f"Waiting for task {task.id} with {len(task.instances)} instances to complete.")
+                                    logger.info(f"Waiting for task {task.id} with {task.imgs} instances to complete.")
 
                                 elif status == 'completed':
 
