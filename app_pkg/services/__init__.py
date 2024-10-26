@@ -1,4 +1,4 @@
-import queue, logging, sys, traceback
+import queue, logging, sys, traceback, os
 
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
@@ -89,6 +89,9 @@ with application.app_context():
         assert config 
         logger.info('app config found in the database')
         app_config_available = True
+        # Read shared mount point from environment
+        config.shared_mount_point = os.getenv('SHARED_MOUNT_POINT') or 'shared'
+        db.session.commit()
     except AssertionError:        
         logger.info('database is available but app config not found.')
         logger.info('initializing app config with default settings.')
@@ -123,6 +126,5 @@ if app_config_available:
                 except Exception as e:
                     logger.error(f"failed when starting {name}")
                     logger.error(traceback.format_exc())
-
 else:
     logger.error(f"services won't start as database is not available")

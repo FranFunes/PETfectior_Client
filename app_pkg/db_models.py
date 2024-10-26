@@ -135,6 +135,7 @@ class Task(db.Model):
     step_state = db.Column(db.Integer, index=True) # -1 failed, 0 processing, 1 processing, 2 completed
     status_msg = db.Column(db.Text())
     full_status_msg = db.Column(db.Text())
+    imgs = db.Column(db.Integer)
     expected_imgs = db.Column(db.Integer)
     visible = db.Column(db.Boolean, default=True) # Task should be shown on frontend
     

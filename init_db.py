@@ -45,6 +45,13 @@ with application.app_context():
     # Inicializar el atributo visible en True para las tareas
     for task in Task.query.filter_by(visible = None).all():
         task.visible = True
+
+    # Inicializar el campo imgs
+    for task in Task.query.filter_by(imgs = None).all():
+        try:
+            task.imgs = len(task.instances)
+        except:
+            pass
     
     db.session.commit()
 
